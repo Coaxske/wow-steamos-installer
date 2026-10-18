@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+dist/
+*.exe
+*.log
+state.json
+pending.json
+backups/
+prefix/
+downloads/
+.env
+.DS_Store

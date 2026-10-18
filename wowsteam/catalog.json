@@ -1,0 +1,11 @@
+[
+  {"id":"retail","name":"World of Warcraft (Retail)","folders":["_retail_"],"hint":"Choose World of Warcraft in Battle.net."},
+  {"id":"forever","name":"World of Warcraft Forever","folders":["_forever_","_classic_beta_"],"hint":"Choose Forever, or Forever Beta under In Development while testing. Folder names can change; confirm the client."},
+  {"id":"era","name":"Classic Era / Hardcore / Season of Discovery","folders":["_classic_era_"],"hint":"Choose Classic Era. Select an available Hardcore or Season of Discovery realm inside the game. This is one client tile, not a realm selector."},
+  {"id":"classic","name":"Classic Progression","folders":["_classic_"],"hint":"Choose the current progression expansion in Battle.net. The expansion name changes over time."},
+  {"id":"anniversary","name":"Classic Anniversary","folders":["_anniversary_","_classic_anniversary_"],"hint":"Choose the Anniversary product offered by Battle.net. If it shares a client with another edition, register that executable once; do not assume a dedicated folder exists."},
+  {"id":"ptr","name":"Retail PTR","folders":["_ptr_","_xptr_"],"hint":"Choose the appropriate PTR under In Development. Access and availability are controlled by Blizzard."},
+  {"id":"beta","name":"Retail Beta","folders":["_beta_"],"hint":"Choose the current beta under In Development. Beta access is required."},
+  {"id":"classic-test","name":"Classic PTR / Beta","folders":["_classic_ptr_","_classic_era_ptr_","_classic_beta_"],"hint":"Choose the intended Classic test product. _classic_beta_ is reused across tests; it may currently contain Forever. Verify before registering."},
+  {"id":"other","name":"Other / future WoW client","folders":[],"hint":"Select the official client in Battle.net, then provide its installed game executable. No hard-coded product code is required."}
+]

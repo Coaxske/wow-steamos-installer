@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=WoW SteamOS Installer (source folder)
+Comment=Choose WoW editions and add them to Steam
+Icon=applications-games
+Terminal=true
+Exec=python3 -c "import pathlib,runpy,sys,urllib.parse; p=urllib.parse.urlparse(sys.argv[1]); f=pathlib.Path(urllib.parse.unquote(p.path) if p.scheme=='file' else sys.argv[1]); d=f.resolve().parent; sys.path.insert(0,str(d)); sys.argv=[str(d/'wow_on_steam.py')]; runpy.run_path(sys.argv[0],run_name='__main__')" %k
+Categories=Game;Utility;

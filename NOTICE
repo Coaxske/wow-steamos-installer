@@ -1,0 +1,10 @@
+WoW SteamOS Installer
+
+Steam VDF handling in wowsteam/vdf.py was adapted from the earlier
+WoW Deck Setup 1.6 source, contributed under the project license. The community project
+reorganizes that work and adds version selection, separate storage, explicit
+ownership, interrupted-transaction recovery, and regression tests.
+
+No third-party runtime packages or proprietary game assets are bundled.
+World of Warcraft and Battle.net are Blizzard Entertainment trademarks.
+Steam and Steam Deck are Valve trademarks. No affiliation is implied.

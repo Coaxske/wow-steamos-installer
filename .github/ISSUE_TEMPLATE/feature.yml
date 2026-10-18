@@ -1,0 +1,13 @@
+name: Feature request
+description: Suggest an improvement.
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What should the installer help you do?
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Suggested behavior and any version-specific evidence

@@ -1,0 +1,40 @@
+name: Prerelease
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest discover -s tests -v
+      - name: Resolve and validate release version
+        run: |
+          python3 - <<'PY'
+          import os, re, runpy
+          version = runpy.run_path('scripts/package.py')['VERSION']
+          assert re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?', version), 'Invalid release version'
+          tag = 'v' + version
+          if os.environ['GITHUB_EVENT_NAME'] != 'workflow_dispatch':
+              assert os.environ['GITHUB_REF_NAME'] == tag, 'Update package version before tagging'
+          else:
+              assert os.environ['GITHUB_REF_TYPE'] == 'branch', 'Run manual releases from a branch'
+          with open(os.environ['GITHUB_ENV'], 'a') as env:
+              env.write('RELEASE_TAG=' + tag + '\n')
+          PY
+      - run: python3 scripts/package.py
+      - name: Create a new tag for a manual release
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git tag "$RELEASE_TAG"
+          git push origin "refs/tags/$RELEASE_TAG"
+      - name: Publish standalone launchers, source, and checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$RELEASE_TAG" dist/*.zip dist/*.desktop dist/*.pyz dist/SHA256SUMS --verify-tag --prerelease --title "WoW SteamOS Installer $RELEASE_TAG" --notes-file docs/RELEASE_NOTES.md

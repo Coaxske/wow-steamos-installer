@@ -1,0 +1,28 @@
+name: Bug report
+description: Report an installer or shortcut problem.
+body:
+  - type: markdown
+    attributes:
+      value: Do not attach credentials, full Steam configuration, Battle.net settings, or backups. Redact local usernames and account IDs from error text.
+  - type: input
+    id: environment
+    attributes:
+      label: OS, Steam version/channel, and Proton version
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Tool version and WoW edition/build
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps and expected versus actual result
+    validations:
+      required: true
+  - type: textarea
+    id: message
+    attributes:
+      label: Sanitized error message
