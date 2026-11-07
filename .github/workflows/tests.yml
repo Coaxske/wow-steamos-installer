@@ -1,0 +1,20 @@
+# Runs the installer's automated tests every time something new is uploaded.
+name: Tests
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: source
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check code formatting
+        run: cargo fmt --all -- --check
+      - name: Run automated tests
+        run: cargo test --offline -- --test-threads=1

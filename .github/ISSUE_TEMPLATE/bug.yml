@@ -1,0 +1,49 @@
+name: Something isn't working
+description: Tell us about a problem with the installer.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Please answer what you can.
+
+        **For your privacy:** do not attach Steam configuration files, Battle.net settings, the installer's backup folders, or anything containing passwords. If you copy an error message, remove your username or account names first.
+  - type: dropdown
+    id: device
+    attributes:
+      label: What are you using?
+      options:
+        - Steam Deck
+        - Bazzite
+        - Other Linux computer
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Which installer version did you download?
+      description: The release name on the download page, for example "Candidate 44".
+    validations:
+      required: true
+  - type: dropdown
+    id: edition
+    attributes:
+      label: Which game version?
+      multiple: true
+      options:
+        - Retail
+        - Classic Era
+        - Forever
+        - Not sure
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What were you doing, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: message
+    attributes:
+      label: Error message (if any)
+      description: Copy the exact message. Remove your username or account names first.
