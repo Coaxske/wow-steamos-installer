@@ -1,0 +1,14 @@
+# Optional local older-glibc build; no publishing. Not executed for alpha2.
+FROM rust:1.85.1-bookworm
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cmake ninja-build g++ pkg-config python3 curl libsdl2-dev \
+    qt6-base-dev qt6-declarative-dev qt6-wayland \
+    qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts \
+    qml6-module-qtquick-dialogs qml6-module-qtquick-window \
+    qml6-module-qtquick-templates qml6-module-qtqml-workerscript \
+    && rm -rf /var/lib/apt/lists/*
+RUN rustup component add clippy rustfmt
+WORKDIR /src
+COPY . .
+RUN rm -rf target build dist && ./scripts/build.sh && python3 scripts/package.py --qt-prefix /usr
+CMD ["sh","-c","cp dist/WoW-SteamOS-Rust-Linux-x86_64 dist/Source.zip dist/BUILD-INFO.json /output/"]

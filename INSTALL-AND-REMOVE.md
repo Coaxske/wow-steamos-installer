@@ -1,0 +1,45 @@
+# Install, use, repair and remove
+
+## Setup and normal play
+
+1. On Steam Deck in Desktop Mode, download WoW-SteamOS-Rust-Linux-x86_64 and its checksum, enable execution in the file's Properties if needed, then open it. Keep the portable in a permanent folder. Use the checksum file to verify the download. No FUSE installation is needed.
+2. Select the intended Steam profile and owned game environment, or explicitly create a separate copy. Keep the working Proton/prefix when reusing an installation. Choose Retail and/or Classic Era; Forever is experimental. Edition choices control what to download, not which edition a Steam tile selects.
+3. If Proton11 or its required Steam runtime is missing, use Get Proton/Get required Steam runtime. Confirm Steam's installation and let it complete, then Check again. Keep installed tools; a rerun reuses completed downloads. Do not uninstall shared tools.
+4. Review the proposed setup before Apply. Let Steam close normally for approved metadata changes and reopen; if reopening is not confirmed, open Steam normally before continuing. No forced Steam/game exit. The sole tile is named Battle.net; during initial installation it opens Blizzard's installer, then the same identity opens installed Battle.net.
+5. Sign in privately only inside Battle.net, choose the account that owns the game, and complete official downloads in the default selected environment. Close Battle.net and WoW normally when asked, then return to Check games. The installer never requests passwords or authentication codes.
+6. Complete the normal Required: close Battle.net after Play step. Inspect its current-status message. For a change, explicitly approve this installation-wide behavior in BOTH Desktop and Game Mode, review and Apply. A verified private original-settings copy precedes the write. If already enabled, use the no-write confirmation. Leaving settings unchanged preserves them but setup stays incomplete unless current Close after Play is verified. Missing/unreadable/changed preferences require review; reruns never silently reapply a saved choice.
+7. Review the sole Battle.net tile and finish core setup. In Game Mode open it, choose an installed edition inside ordinary Battle.net and press Play. Main Battle.net should exit completely while that same WoW stays alive. Quit using WoW's own Exit Game menu and wait for Steam's same Battle.net tile with green Play. Reopen it to choose another edition. Steam's Exit game stops the whole tile and is not a substitute for launcher-only exit.
+
+## Games and addon folders in Desktop Mode
+
+After setup, choose **Open folders** on the normal completion screen, or open **~/World of Warcraft** in the Desktop Mode file manager. Links point to the actual detected Battle.net installation, each installed WoW client and its existing Interface/AddOns directory. Use **Retail AddOns**, **Classic Era AddOns** or **Forever AddOns** for the matching edition.
+
+Download an addon compatible with that edition and extract its addon folder into the matching AddOns link. The result should look like Retail AddOns/ExampleAddon/ExampleAddon.toc, without an extra nested archive folder. Writing through the link writes directly to that edition's real Interface/AddOns directory. Follow the addon's own instructions; the installer does not download/update third-party addons.
+
+Games and addons remain in place. Other-drive installations are discovered through Steam libraries and explicitly selected search locations. Select an additional search location through the normal installer when needed. Reconnect unavailable drives and use **Create / refresh links**. Missing/ambiguous actual AddOns folders are reported without guessing or creating a substitute. Finish the official installation, ensure its actual Interface/AddOns directory exists, then refresh.
+
+Rerun/repair reuses correct installer-owned links without duplicates. Multiple detected copies get distinct stable labels. An occupied user filename, an unowned existing World of Warcraft directory, or a changed link is preserved and reported; it is never silently adopted or overwritten. Do not remove an existing personal folder merely to satisfy setup.
+
+For just the access links, choose **Remove access links only — keep games and addons** on the removal page and confirm it. Only unchanged verified installer-owned links are unlinked; installation/addon targets stay intact. The empty access directory/private ownership record may remain for safe reuse. This is separate from full game/environment removal below.
+
+## Pointer and controller
+
+Open Gaming Mode pointer setup in normal setup for this exact Battle.net tile. Keep already-working custom controls. If a change is needed, save/export the original layout through Steam. For a shared layout, first use Layout Options → Switch To Unique Configuration For This Device; if unavailable, stop rather than alter another device's bindings. Set only Right Trackpad Behavior to Mouse and its click/press to Left Mouse Click. A new/default tile may use Gamepad with Mouse Trackpad as a starting template; verify both bindings afterward. Leave other bindings/global/Desktop controls unchanged.
+
+Without holding Steam, verify pointer movement/click in Battle.net and one harmless WoW menu control. These are menu controls, not complete gameplay bindings. Original layouts remain preserved during migration; retaining an ID alone does not establish Steam's effective postrename layout. If pointer behavior differs, report exactly what happened before changing it. Automatic pointer automation and display-wake/inhibition are unavailable; OS policy owns brightness/display/sleep/lock.
+
+## Rerun, later edition and upgrade
+
+Select the same existing copy to reuse its installed launcher, games, prefix, Proton, choices and sole tile. To add an edition later, download it through that Battle.net, close launcher/game normally and check installed games/repair. No duplicate edition tile or new environment is required.
+
+For older per-edition or C42 two-tile setups, inspect the listed owned identities and explicitly choose which existing controller association to retain. The review consolidates only validated installer-owned launcher/edition records into one Battle.net tile. It preserves unrelated shortcuts, installed games/addons/settings, original controller layouts/exports and artwork. Layout files are not merged, deleted or silently reapplied. A verified metadata/controller backup is stored outside the game environment under the application's data directory, shared-tile-backups/<review token>; artwork files are left untouched rather than promised in that backup. Changed ownership/targets/prefixes, conflicting Proton choices or ambiguous identities stop the review.
+
+## Backups, removal and restoration
+
+Use the installer's normal removal review for the selected copy. Read every listed folder and choose Keep personal settings when wanted. The installer previews the scope; complete owned-environment removal is offered only for a verified dedicated owned copy. Approve the reviewed deletion checkbox only for the selected environment you intend to remove. Existing shared/external game folders and shared Proton/runtime tools are protected; removing a client does not authorize deleting another copy.
+
+Personal-data backups are verified outside the removal target under the application data directory, settings-backups/<review token>. The Settings backups/restore interface reports its location and available backups. Open/restore through that interface; after an authorized reinstall choose Restore saved settings, or explicitly keep new settings while retaining the backup. Verify the destination and contents before deleting any backup. Only Interface and WTF folders are backed up/restored; SavedVariables within WTF is included. Screenshots, game files, the prefix/sign-in state and other folders need a separate verified backup. This is not a full game-download or full-profile backup.
+
+Steam metadata/configuration transaction journals are in backups under the same application data directory; reviewed shortcut undo has conflict checks and cannot recreate deleted game data. The migration backup is separate and retained outside journal rotation. Original launcher preferences for a reviewed Close after Play write are in launcher-exit-backups/<review token>/Battle.net.config.original with a verified SHA256.json. Keep those private because vendor/configuration files may contain account data. Do not restore raw configuration while Steam/Battle.net/WoW are running; preserve conflicting current data and use the supported review/recovery path.
+
+The data directory normally defaults to ~/.local/share/wow-steamos-rust, or the configured XDG data directory. Use the location shown by the app for the actual device. Private backups, settings and logs are not public release files. Addon-manager integration and separate WoW/edition tiles are deferred. See the acceptance and limitations notes for tested scope.

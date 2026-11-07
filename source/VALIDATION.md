@@ -1,0 +1,11 @@
+# Candidate 44 validation boundary
+
+C44's actual final packaged production engine is exercised with synthetic/disposable filesystem and Steam fixtures. Folder checks cover normal setup, rerun, repair, upgrade from frozen C43, correct installation/AddOns links, sample addon routing, no duplicate links, occupied names, external/unavailable drives, changed user entries, link-only and reviewed owned-removal hooks. Targets/addon contents are preserved by access-link removal. GUI checks use simulated engine replies and a harmless file-manager command stub to verify Open folders resolves the intended existing location; they do not establish a live desktop file-manager session.
+
+Source review must show no launch, Proton, controller or automatic-exit behavior change beyond folder hooks. Exact executable/native/embedded payload/source identity, checksums, runtime corresponding sources, licenses, notices and final public/history/account privacy review are release gates.
+
+Actual C43 Steam Deck Game Mode results carry forward: Era and Retail automatic main Battle.net exit while the same correct game survives, safe character screens, own-menu quits and same Battle.net ready tile; Era physical pointer/menu with the existing generic Battle.net layout. Launcher, Agent and game were observed separately. Window-query UNKNOWN is not absence; startup/current PID/start/image correlation is not continuous lifetime or an exit-status proof. No extra C44 game launch or physical acceptance is claimed.
+
+Earlier C41/C40 Forever character-screen coverage remains inherited with its recorded limits. Changed Forever 1.60.1.70862 was not tested, an explicitly accepted release limit. Original Era FIRST partial, Error134 and WOW51900319 remain separate unexplained records. A later pass is not a proven cause/fix. Timed QA limits are not product startup requirements. Brightness evidence is bounded filesystem/policy observation, not continuous physical-panel measurement.
+
+Accepted prerequisite/download rerun, preservation, removal/restoration and physical-control evidence is reused with original build/method boundaries. Bazzite testing in progress; Bazzite manual acceptance is deferred and nonblocking. No private R3 development, new game launch, controller reconfiguration or display-policy change is part of C44.

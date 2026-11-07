@@ -1,0 +1,13 @@
+# Editions and platform limits
+
+Retail and Classic Era are the core setup choices. Forever is experimental: earlier coverage reached character selection/creation only, without creating a character or entering the world. The changed Forever 1.60.1.70862 file was not tested; that limit is accepted for release. Availability depends on the player's account, region, service and official clients. Other test/PTR/Classic products are unsupported or experimental and have no accepted core coverage.
+
+All selected installed editions use exactly ONE installer-managed **Battle.net** Steam tile for this copy and its controller association. Choose edition/account inside ordinary Battle.net and press Play. Separate WoW/edition tiles and automatic routing are deferred. Existing third-party addon managers/addons are preserved; manager integration is unavailable.
+
+Automatic main-launcher exit requires the backed-up Close after Play preference configured/verified in normal guided setup. It affects this installation in BOTH Desktop and Game Mode; shared changes require explicit consent. A saved preference alone does not establish runtime exit. Main Battle.net, Agent, game and windows are separate observations. Hiding, loss of focus or exit after the game ends does not satisfy launcher exit while the same game survives. Steam's Exit game stops the whole tile.
+
+C43 actual Steam Deck Game Mode Era/Retail automatic-exit, normal-quit and same-tile results are inherited by source-reviewed unchanged C44 launch/controller code. Era's pointer/menu worked with the existing generic Battle.net layout. Right-trackpad Mouse/Left Mouse Click guide covers menus, not complete gameplay. Existing custom layouts remain untouched; automatic pointer configuration is unavailable.
+
+C44 adds Desktop folder access only. Actual final-package checks are automated with disposable synthetic installations and simulated GUI responses; no C44 device/game/controller session is claimed. Links use detected actual directories, not fixed machine paths. Missing AddOns directories, occupied user names and disconnected drives require resolving the reported local condition and refreshing. Links do not install/download/update addons. Access-link removal preserves targets; full installation removal is a separate reviewed destructive operation.
+
+No continuous process/display trace, full gameplay/performance guarantee, successful meaning for UNKNOWN window queries, or cause/fix for historical Error134/WOW51900319 is claimed. Brightness and filesystem comparisons have recorded gaps. Bazzite testing in progress; deferred Bazzite manual acceptance does not block this Steam Deck release. Normal brightness, display power, sleep and lock policies remain in effect.

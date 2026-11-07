@@ -1,0 +1,33 @@
+[package]
+name = "wow-steamos-core"
+version = "0.2.0-alpha.10-candidate.44"
+edition = "2021"
+rust-version = "1.75"
+publish = false
+
+[lib]
+name = "wow_steamos_core"
+crate-type = ["staticlib", "rlib"]
+
+[[bin]]
+name = "wow-steamos-cli"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+libc = "0.2"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+
+
+[build-dependencies]
+sha2 = "0.10"
+
+[[bin]]
+name = "wow-release"
+path = "src/bin/release.rs"

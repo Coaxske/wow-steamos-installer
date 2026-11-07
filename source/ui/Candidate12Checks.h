@@ -1,0 +1,23 @@
+#pragma once
+#include <QClipboard>
+#include <QJSValue>
+#include <functional>
+inline int candidate12Checks(QQuickWindow *window, Bridge &bridge,const QString &screenshot=QString()){
+ int failures=0;auto verify=[&](bool ok,const char *name){std::cout<<(ok?"PASS ":"FAIL ")<<name<<std::endl;if(!ok)++failures;};
+ auto find=[&](const QString &text)->QQuickItem*{QQuickItem *result=nullptr;std::function<void(QQuickItem*)> visit=[&](QQuickItem *i){if(i->isVisible()&&i->activeFocusOnTab()&&i->property("text").toString()==text)result=i;for(auto*c:i->childItems())visit(c);};visit(window->contentItem());return result;};
+ QVariant result;QMetaObject::invokeMethod(window,"seedC12Checks",Q_RETURN_ARG(QVariant,result));verify(result.toBool(),"preview-only fixture seeded");QTest::qWait(80);
+ auto *reinstall=find("Review reinstall of selected copy");verify(reinstall&&QMetaObject::invokeMethod(reinstall,"clicked"),"actual reinstall entry handler");QTest::qWait(80);
+ auto *combo=window->findChild<QQuickItem*>("setupAddon");verify(combo&&combo->property("currentValue")=="curseforge","saved CurseForge visible in reinstall dropdown");
+ QVariant args;QMetaObject::invokeMethod(window,"setupArguments",Q_RETURN_ARG(QVariant,args));auto values=args.value<QJSValue>().toVariant().toMap();verify(values.value("addon_manager")=="curseforge","GUI request agrees with visible saved choice");
+ if(combo){combo->setProperty("currentIndex",0);QMetaObject::invokeMethod(combo,"activated",Q_ARG(int,0));QTest::qWait(30);verify(window->property("wantedAddon")=="none"&&combo->property("currentValue")=="none","explicit user change to none retained");window->setProperty("wantedAddon","curseforge");QTest::qWait(30);verify(combo->property("currentValue")=="curseforge","backing choice resynchronizes display");}
+ window->setProperty("plan",QVariantMap{{"kind","reinstall"},{"destructive",true},{"download",false},{"choices",QVariantMap{{"addon_manager","curseforge"},{"editions",QVariantList{QString("era")}},{"launcher_tile",true}}}});QMetaObject::invokeMethod(window,"go",Q_ARG(QVariant,QVariant("review")));QTest::qWait(60);auto *label=window->findChild<QObject*>("reviewChoices");verify(label&&label->property("text").toString().contains("CurseForge"),"review displays proposed CurseForge choice");QMetaObject::invokeMethod(window,"back");QTest::qWait(60);verify(window->property("page")=="setup"&&combo&&combo->property("currentValue")=="curseforge","Back preserves synchronized reinstall choice");
+ window->requestActivate();if(!diagnosticWait("Qt active",[&]{return QGuiApplication::focusWindow()==window;}))return 33;
+ if(combo){combo->forceActiveFocus();auto *popup=qvariant_cast<QObject*>(combo->property("popup"));QTest::keyClick(window,Qt::Key_Down,Qt::AltModifier);QTest::qWait(40);verify(popup&&popup->property("visible").toBool(),"Alt+Down reaches native ComboBox popup");QTest::keyClick(window,Qt::Key_Escape);}
+ window->setWidth(800);window->setHeight(600);window->setProperty("page","addons");QTest::qWait(100);auto *button=find("Set up Gear Lever and add CurseForge to Steam");auto *scroll=window->findChild<QQuickItem*>("mainContentScroll");auto *viewport=scroll?qvariant_cast<QQuickItem*>(scroll->property("contentItem")):nullptr;
+ auto visible=[&]{if(!button||!viewport)return false;auto rect=button->mapRectToItem(viewport,QRectF(0,0,button->width(),button->height()));return rect.top()>=-1&&rect.bottom()<=viewport->height()+1;};
+ if(button)button->forceActiveFocus();window->setProperty("errorText","Choose the official Linux CurseForge AppImage with Browse.\nNo software was installed.\nDownload the official file first if needed.");verify(diagnosticWait("error layout reveal",visible),"focused control fully inside viewport after error");
+ window->setProperty("notice","A longer notification changes layout while focus stays on the same control.");verify(diagnosticWait("notice layout reveal",visible),"focused control visible after notice");window->setProperty("errorText","");window->setProperty("notice","");verify(diagnosticWait("removed banners reveal",visible),"focused control visible after banners clear");
+ QVariantMap response{{"ok",true},{"data",QVariantMap{{"message","Launch requested. Confirm the correct edition opens; this is not a verified gameplay result."}}}};bridge.completed("launch",response);verify(window->property("notice").toString().startsWith("Launch requested")&&!window->property("notice").toString().contains("Opened in Steam"),"GUI preserves request-only launch message");
+ if(!screenshot.isEmpty())window->grabWindow().save(screenshot);
+ return failures?38:0;
+}

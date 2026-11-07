@@ -1,0 +1,107 @@
+{
+  "schema": 1,
+  "release": "v0.2.0-alpha.10-candidate.44",
+  "version": "0.2.0-alpha.10-candidate.44",
+  "portable_sha256": "5d839fa43b23a626509f1caea4c084271178de34775a3b29bdfb37ea88e2844c",
+  "native_payload_sha256": "439def8c4341b3b891f698b69d418ef4b8951a4f63cfc85158b382376c6e3dc1",
+  "matching_source_zip_sha256": "3492cbce40c0ee421b61ab97fc7c4ebe092c0f11e6759e26277ba0a0089aa830",
+  "source_fingerprint": "daf7bdc9fd427efaff4a766e48227109d7f0951867853da7f06d1df327e569ba",
+  "source_files": 903,
+  "folder": "~/World of Warcraft",
+  "Steam_tiles": [
+    "Battle.net"
+  ],
+  "platforms": {
+    "Steam_Deck": "Tested on Steam Deck in Game Mode: C43 Era/Retail and generic Battle.net pointer; C44 automated folder-only verification",
+    "Bazzite": "testing in progress"
+  },
+  "accepted_limit": "Forever changed1.60.1.70862 untested; prior character-screen evidence inherited",
+  "public_assets": [
+    {
+      "name": "ACCEPTANCE-SUMMARY.md",
+      "bytes": 3951,
+      "sha256": "fa155810e698d4c35756eb10556f1eaa224a56ce89bfb7321874cef453b09ed8"
+    },
+    {
+      "name": "INSTALL-AND-REMOVE.md",
+      "bytes": 9013,
+      "sha256": "a9ff8e848d53a9193ad6c2785717035fa327a205f2e441f96103b681cf3f4590"
+    },
+    {
+      "name": "LICENSE",
+      "bytes": 1092,
+      "sha256": "077688e10a39f62304a00072a67e495fe847beeef2b4d05a64cdea67bfde5fac"
+    },
+    {
+      "name": "LICENSE-INVENTORY.json",
+      "bytes": 14673,
+      "sha256": "e5f9353f14971cdaac2b1d455536047479ef0b995e627130ddd91597bc6cd925"
+    },
+    {
+      "name": "RELEASE-NOTES.md",
+      "bytes": 2484,
+      "sha256": "1052383733f23340f26738fabb83b019ca5ff0595d69dbdd72713043c72aa8db"
+    },
+    {
+      "name": "RUNTIME-PROVENANCE.md",
+      "bytes": 1315,
+      "sha256": "70d436800350da58dbfb45e06de27407145f7de7d83f7c08aa90b655855fef05"
+    },
+    {
+      "name": "Runtime-Notices-C44.zip",
+      "bytes": 1167602,
+      "sha256": "1886dd593442e46d5ac985e0d7d81b4d8a02b96bd04abd04fb3ff10e2c5d1924"
+    },
+    {
+      "name": "Runtime-Notices-C44.zip.sha256",
+      "bytes": 90,
+      "sha256": "ae2e6bf242ee84fc1fdf3fa7edba2bfe602dfdb04e554520712dfd3b9c348165"
+    },
+    {
+      "name": "Runtime-Sources-C44.zip",
+      "bytes": 777516172,
+      "sha256": "ac7d13fd83368e7498dbb86e9d79467b174b7d17b1d05321eba3b85a2761db37"
+    },
+    {
+      "name": "Runtime-Sources-C44.zip.sha256",
+      "bytes": 90,
+      "sha256": "b4803ca4bc7375fc7d2cf4b3c0b9bd1b178b0a2ff979973c448f8bdb6a5cc1d0"
+    },
+    {
+      "name": "SHA256SUMS",
+      "bytes": 1429,
+      "sha256": "9f4ff7987f6d092cd3468a7bdbf6ec09eac0017f5c09f08ba568a112658e0048"
+    },
+    {
+      "name": "SUPPORTED-EDITIONS-AND-LIMITATIONS.md",
+      "bytes": 2741,
+      "sha256": "bb6a88b2508a97425737a9be7d30881095f3b90325bf38a1b3064726665d393d"
+    },
+    {
+      "name": "Source.zip",
+      "bytes": 9613461,
+      "sha256": "3492cbce40c0ee421b61ab97fc7c4ebe092c0f11e6759e26277ba0a0089aa830"
+    },
+    {
+      "name": "Source.zip.sha256",
+      "bytes": 77,
+      "sha256": "4170a5879f7d4069df40c42a0e750231ea70dad552ad1a0d37b95ad94c087120"
+    },
+    {
+      "name": "THIRD-PARTY.md",
+      "bytes": 3887,
+      "sha256": "0db89392c039a5fcb3ae6312aa955807dd65ae508e598c32d6ab8a30a5fd5b8a"
+    },
+    {
+      "name": "WoW-SteamOS-Rust-Linux-x86_64",
+      "bytes": 58956136,
+      "sha256": "5d839fa43b23a626509f1caea4c084271178de34775a3b29bdfb37ea88e2844c"
+    },
+    {
+      "name": "WoW-SteamOS-Rust-Linux-x86_64.sha256",
+      "bytes": 96,
+      "sha256": "fd0e99444e0013faa4910def9fb5d2d6b843f674e145ecc16a8b158c489d5c85"
+    }
+  ],
+  "private_material": "Excluded: QA tools/packets, raw reports/logs/captures, device settings/backups/handoffs/real symlink targets"
+}
