@@ -13,7 +13,7 @@ Matching Source.zip SHA-256: **3492cbce40c0ee421b61ab97fc7c4ebe092c0f11e6759e262
 | C44 exact packaged folder checks | Automated production engine with disposable synthetic Steam/PE/filesystem fixtures: normal setup/rerun/repair, frozen-C43 upgrade, actual AddOns routing for three sample addons, stable no-duplicate links, external/unavailable drives, occupied user entries, confirmed link-only and full owned-removal hooks. Targets preserved by link removal. |
 | C44 GUI folder dispatch | Simulated engine replies with the real normal completion action/Bridge and a harmless xdg-open stub: intended existing folder resolves correctly; unavailable/foreign replies refused. Not a live Desktop file-manager test. |
 | C41 inherited edition coverage | Era FRESH, Retail FIRST/FRESH and experimental Forever FIRST/FRESH accepted within original limits; not relabeled C43/C44 runs. |
-| Forever current limit | Earlier character-screen-only coverage is inherited. Changed 1.60.1.70862 file UNTESTED; limitation explicitly accepted. No new character or world entry. |
+| Forever compatibility and recorded-test limit | Forever works on Steam Deck as of C44. Earlier recorded checks were bounded to character selection/creation; there is no separate recorded test of client 1.60.1.70862. No new test, character creation or world entry is claimed. |
 | Prior prerequisite/preservation/removal | Completed isolated prerequisite/download reuse, protected-data, backed-up removal/22-file restoration and physical results retained within original build/method limits. No unrelated destructive replay. |
 | Bazzite | Build/coordinator machine; testing in progress. Manual acceptance deferred/nonblocking. C44 folder checks ran in an isolated offline build container. |
 

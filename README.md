@@ -10,6 +10,6 @@ Set up Retail, Classic Era or experimental Forever through one installer-managed
 
 Read [install/addon/removal instructions](INSTALL-AND-REMOVE.md), [acceptance evidence](ACCEPTANCE-SUMMARY.md), [limitations](SUPPORTED-EDITIONS-AND-LIMITATIONS.md) and [release notes](RELEASE-NOTES.md). Existing controls are preserved; pointer setup uses the normal manual Steam guide.
 
-C43 actual Steam Deck Era/Retail Game Mode acceptance is inherited by unchanged C44 launch/controller code. C44 folder checks are automated disposable verification, not a new device/game session. Earlier Forever coverage is character-screen bounded; changed **1.60.1.70862 was untested**, an accepted release limitation. No full-gameplay guarantee.
+C43 actual Steam Deck Era/Retail Game Mode acceptance is inherited by unchanged C44 launch/controller code. C44 folder checks are automated disposable verification, not a new device/game session. **Forever works on Steam Deck as of C44.** Earlier recorded checks were bounded to character selection/creation; there is no separate recorded test of client 1.60.1.70862. No new test or full-gameplay claim is added by this documentation correction.
 
 Installer source is in [source](source/README.md); matching Source.zip, corresponding runtime sources, licenses and notices are release assets. Private device/QA records, captures, logs, settings and backups are excluded. Earlier internal alpha assets/history are historical and are not the recommended download.

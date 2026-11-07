@@ -10,6 +10,6 @@ Actual C43 Steam Deck Game Mode acceptance passed Era and Retail automatic main-
 
 C44's new folder feature passed automated verification through the final packaged production engine with disposable synthetic setups: setup/rerun/repair, frozen-C43 upgrade, sample addon routing for all three editions, no duplicate links, external/disconnected drives, occupied/changed user entries and owned unlink/removal. Open folders dispatch was checked with a harmless command stub, not a live file-manager session.
 
-Earlier Forever evidence is bounded to character selection/creation. The changed Forever **1.60.1.70862 file was untested**; this release explicitly accepts that limitation. No new character/world entry or full gameplay claim. Historical Era Error134 and WOW51900319 remain recorded without a proven cause/fix. Agent/window/brightness/passive-observation limits remain in ACCEPTANCE-SUMMARY.md.
+**Forever works on Steam Deck as of C44.** Earlier recorded checks were bounded to character selection/creation; there is no separate recorded test of client 1.60.1.70862. No new test, character/world entry or full-gameplay claim is added by this documentation correction. Historical Era Error134 and WOW51900319 remain recorded without a proven cause/fix. Agent/window/brightness/passive-observation limits remain in ACCEPTANCE-SUMMARY.md.
 
 Separate WoW/edition tiles, automatic edition routing, automatic pointer setup and addon-manager integration are deferred. Existing installations, addons, layouts, preferences and normal display/sleep policy are preserved.

@@ -15,12 +15,12 @@
     "Steam_Deck": "Tested on Steam Deck in Game Mode: C43 Era/Retail and generic Battle.net pointer; C44 automated folder-only verification",
     "Bazzite": "testing in progress"
   },
-  "accepted_limit": "Forever changed1.60.1.70862 untested; prior character-screen evidence inherited",
+  "accepted_limit": "Historical recorded-test limit: no separate recorded test of client1.60.1.70862; earlier checks bounded to character selection/creation",
   "public_assets": [
     {
       "name": "ACCEPTANCE-SUMMARY.md",
-      "bytes": 3951,
-      "sha256": "fa155810e698d4c35756eb10556f1eaa224a56ce89bfb7321874cef453b09ed8"
+      "bytes": 4048,
+      "sha256": "bbe80f58aedb77f0e42ab6174d47fb668f1d7599e35088ed0d3fcda1a1f4308a"
     },
     {
       "name": "INSTALL-AND-REMOVE.md",
@@ -39,13 +39,13 @@
     },
     {
       "name": "RELEASE-NOTES.md",
-      "bytes": 2484,
-      "sha256": "1052383733f23340f26738fabb83b019ca5ff0595d69dbdd72713043c72aa8db"
+      "bytes": 2530,
+      "sha256": "3db11ca9a2b527ca330c7584ab3b1d91988c36bd4929025b95458651a11948cc"
     },
     {
       "name": "RUNTIME-PROVENANCE.md",
-      "bytes": 1315,
-      "sha256": "70d436800350da58dbfb45e06de27407145f7de7d83f7c08aa90b655855fef05"
+      "bytes": 1409,
+      "sha256": "f340fbd812d0919a35d5e08fded040f205512f6a1261a9ada2e7be20394e6058"
     },
     {
       "name": "Runtime-Notices-C44.zip",
@@ -70,12 +70,12 @@
     {
       "name": "SHA256SUMS",
       "bytes": 1429,
-      "sha256": "9f4ff7987f6d092cd3468a7bdbf6ec09eac0017f5c09f08ba568a112658e0048"
+      "sha256": "19a594ca97bb3c7672c64fb30bf6702f65c7e2e292e67564b296978859bfea7f"
     },
     {
       "name": "SUPPORTED-EDITIONS-AND-LIMITATIONS.md",
-      "bytes": 2741,
-      "sha256": "bb6a88b2508a97425737a9be7d30881095f3b90325bf38a1b3064726665d393d"
+      "bytes": 2818,
+      "sha256": "058e8016d98d15544c911a9df71466ccfc3156485f8c2276e5513bc2c54b5444"
     },
     {
       "name": "Source.zip",
@@ -103,5 +103,7 @@
       "sha256": "fd0e99444e0013faa4910def9fb5d2d6b843f674e145ecc16a8b158c489d5c85"
     }
   ],
-  "private_material": "Excluded: QA tools/packets, raw reports/logs/captures, device settings/backups/handoffs/real symlink targets"
+  "private_material": "Excluded: QA tools/packets, raw reports/logs/captures, device settings/backups/handoffs/real symlink targets",
+  "Forever_compatibility": "Forever works on Steam Deck as of C44.",
+  "documentation_correction": "2026-11-07: current compatibility wording corrected; no new test; frozen executable, matching Source.zip, runtime/source/notices/license bytes and original release tag unchanged"
 }

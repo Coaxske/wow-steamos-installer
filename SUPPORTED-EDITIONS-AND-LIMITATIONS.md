@@ -1,6 +1,6 @@
 # Editions and platform limits
 
-Retail and Classic Era are the core setup choices. Forever is experimental: earlier coverage reached character selection/creation only, without creating a character or entering the world. The changed Forever 1.60.1.70862 file was not tested; that limit is accepted for release. Availability depends on the player's account, region, service and official clients. Other test/PTR/Classic products are unsupported or experimental and have no accepted core coverage.
+Retail and Classic Era are the core setup choices. Forever works on Steam Deck as of C44. Forever remains experimental beyond the recorded scope. Earlier recorded checks were bounded to character selection/creation; there is no separate recorded test of client 1.60.1.70862. No new test or full-gameplay claim is added by this documentation correction. Availability depends on the player’s account, region, service and official clients. Other test/PTR/Classic products are unsupported or experimental and have no accepted core coverage.
 
 All selected installed editions use exactly ONE installer-managed **Battle.net** Steam tile for this copy and its controller association. Choose edition/account inside ordinary Battle.net and press Play. Separate WoW/edition tiles and automatic routing are deferred. Existing third-party addon managers/addons are preserved; manager integration is unavailable.
 
