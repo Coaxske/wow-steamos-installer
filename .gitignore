@@ -1,0 +1,37 @@
+# This file stops build output and private files from being uploaded by accident.
+
+# Build output
+/target/
+/build/
+/dist/
+/source/target/
+/source/build/
+/source/dist/
+__pycache__/
+*.py[cod]
+
+# Release downloads belong on the Releases page, not in the code
+/WoW-SteamOS-Rust-Linux-x86_64
+*.AppImage
+Source.zip
+Runtime-Sources-*.zip
+Runtime-Notices-*.zip
+
+# Private files: never upload these
+*.log
+.env
+*.vdf
+Battle.net.config
+backups/
+settings-backups/
+shared-tile-backups/
+launcher-exit-backups/
+wow-steamos-rust/
+wow-steamos-runtime/
+
+# Local AI instructions stay on this computer
+AGENTS.md
+
+# Computer clutter
+.DS_Store
+Thumbs.db
