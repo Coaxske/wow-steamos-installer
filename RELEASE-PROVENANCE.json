@@ -17,9 +17,9 @@
   "access_folder": "~/World of Warcraft",
   "platforms": {
     "Bazzite": "C48 read-only scan and simulated packaged interface checks before Apply; game testing in progress",
-    "Steam_Deck": "C48 not tested; historical C43 Era/Retail and earlier Forever evidence only"
+    "Steam_Deck": "Published C48 existing-installation Game Mode Retail/Era checks and Desktop discovery/Repair/access-link checks, with bounded comparisons; optional fresh setup unrun"
   },
-  "Forever_limit": "Works on Steam Deck as of C44; earlier character-screen checks; client 1.60.1.70862 has no separate recorded test",
+  "Forever_limit": "Tester personally observed Forever working correctly; initial client 1.60.1.70862 automatic launcher exit recorded while same game survived; later session interrupted/different lifetime; not one uninterrupted instrumented cycle; experimental",
   "runtime_source_coverage": "Unchanged verified 83-group source archive is a coverage superset; public runtime uses 48 distribution groups plus pinned SDL supplied in Source.zip",
   "assets_excluding_self_and_manifest": [
     {
@@ -106,5 +106,11 @@
   "private_material": "Excluded: QA packets/drivers, raw device reports, logs, captures, settings, backups, handoffs and private addresses",
   "source_merge_commit": "0ead653070e05aaf28d0eba61f1612a3155361d4",
   "approved_pr_head": "75384a26fb83ea5f9e6dffa028f6d33e23603e6f",
-  "release_title": "Candidate 48: Find existing Battle.net and WoW installations (test version)"
+  "release_title": "Candidate 48: Find existing Battle.net and WoW installations (test version)",
+  "coverage_update": {
+    "date": "2026-11-08",
+    "scope": "Later existing-installation acceptance; source and released executable unchanged",
+    "fresh_setup": "Unrun, requires separate approval",
+    "artifact_record_scope": "The asset byte counts and hashes below describe the original published C48 release assets, which remain unchanged. Root documentation has later coverage updates; the proposed release-body edit requires review."
+  }
 }
