@@ -87,7 +87,7 @@ The installer shows you exactly what it will remove and asks you to confirm befo
 
 - **Steam Deck, Gaming Mode:** Retail and Classic Era start from the Battle.net button, Battle.net closes itself while the game keeps running, and quitting the game returns you to the same Battle.net button. Testing reached the character screen. Full gameplay has not been formally tested.
 - **Trackpad mouse:** Worked in Battle.net and game menus.
-- **Forever:** Works on Steam Deck. Earlier recorded tests reached character selection. Build 1.60.1.70862 did not receive a separate recorded test.
+- **Forever:** Works on Steam Deck. It is still marked experimental because the formal recorded tests only went as far as character selection, and the newest Forever update has not had its own recorded test.
 - **Addon folders:** Checked with automated tests, not yet on a real Steam Deck.
 - **Bazzite:** Testing in progress.
 
@@ -100,7 +100,7 @@ If you see **error 134** or **WOW51900319**, these appeared in earlier testing a
 This test version also contains tools the developer uses to test the installer. Normal setup does not use any of them.
 
 - A **Test this build** checklist under **Help & advanced options**. It runs read-only checks and saves your answers in the installer's own data folder. You can ignore it.
-- Tools that can take screenshots, move the mouse, and read the list of open windows for automated testing. The source includes command-line options for these tools.
+- Tools that can take screenshots, move the mouse, and read the list of open windows for automated testing. They cannot be started from the installer’s screens. They only run if someone starts them on purpose with special commands.
 - Unused code for downloading addon managers (CurseForge or WowUp). Its buttons are hidden.
 
 These tools will be removed from public downloads in the next version.
