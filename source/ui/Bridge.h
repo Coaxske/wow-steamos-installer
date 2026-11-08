@@ -12,13 +12,18 @@
 class Bridge : public QObject {
  Q_OBJECT
  Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
+ Q_PROPERTY(bool updateBusy READ updateBusy NOTIFY updateBusyChanged)
+ Q_PROPERTY(bool startupPending READ startupPending NOTIFY busyChanged)
  Q_PROPERTY(bool demo READ demo CONSTANT)
  Q_PROPERTY(bool directInput READ directInput WRITE setDirectInput NOTIFY directInputChanged)
  Q_PROPERTY(QString controllerStatus READ controllerStatus NOTIFY controllerStatusChanged)
 public:
  explicit Bridge(bool demo, QObject *parent=nullptr, bool selfCheck=false);
  ~Bridge() override;
- bool busy()const{return m_busy;}
+ bool busy()const{return m_busy||m_updateInstalling||m_startupPending;}
+ bool startupPending()const{return m_startupPending;}
+ void completeUpdateStartup(){if(m_startupPending){m_startupPending=false;emit busyChanged();}}
+ bool updateBusy()const{return m_updateBusy;}
  bool demo()const{return m_demo;}
  bool directInput()const{return m_direct;}
  QString controllerStatus()const{return m_status;}
@@ -42,7 +47,9 @@ public:
  unsigned selfCheckProbeSequence()const{return m_probeSequence;}
  Q_INVOKABLE void request(const QString &action,const QVariantMap &arguments=QVariantMap());
  Q_INVOKABLE bool styleFolderDialog(QObject *window);
- Q_INVOKABLE void cancel();
+ Q_INVOKABLE void requestUpdate(const QString &action,const QVariantMap &arguments=QVariantMap());
+ Q_INVOKABLE void openReleasePage(const QString &page=QString());
+ Q_INVOKABLE bool cancel();
  Q_INVOKABLE QString classicGuideMode();
  Q_INVOKABLE void setClassicGuideMode(const QString &mode);
  Q_INVOKABLE void copyText(const QString &text);
@@ -51,6 +58,8 @@ public:
  Q_INVOKABLE QString localPath(const QUrl &url);
 signals:
  void busyChanged();
+ void updateBusyChanged();
+ void updateCompleted(const QString &action,const QVariantMap &response);
  void directInputChanged();
  void controllerStatusChanged();
  void completed(const QString &action,const QVariantMap &response);
@@ -65,6 +74,8 @@ private:
  bool m_busy=false,m_demo=false,m_direct=false,m_active=false;
  QString m_status="Direct input is off. Steam desktop controls can be used.";
  QFutureWatcher<QByteArray> m_worker;
+ QFutureWatcher<QByteArray> m_updateWorker;
+ bool m_updateBusy=false,m_updateInstalling=false,m_startupPending=false;
  QFutureWatcher<int> m_steamWorker;
  bool m_steamKnown=false,m_steamError=false,m_probePending=false;
  unsigned m_probeSequence=0;

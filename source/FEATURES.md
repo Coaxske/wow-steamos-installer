@@ -1,4 +1,4 @@
-# Candidate 48 features and limits
+# Candidate 49 development features and limits
 
 - One installer-managed Battle.net button per selected installation. Choose Retail, Classic Era or experimental Forever inside Battle.net.
 - Guided setup, missing-button repair, reviewed reuse of an existing setup, and removal with separately verified settings backups.
@@ -11,5 +11,10 @@
 - Manual pointer and click guide for the Battle.net button. Working custom or shared controls are preserved.
 - The public executable excludes the developer checklist, capture, external mouse control, window reading and addon-manager downloader. Separate private builds can include developer tools.
 - No automatic edition routing, extra edition buttons, addon installation or addon updates.
-- Candidate 48 was checked on Bazzite by a read-only scan and simulated interface tests before Apply. No Candidate 48 Steam Deck, game or physical-controller test is claimed.
-- Earlier Steam Deck results and their limits are listed in ACCEPTANCE-SUMMARY.md. Forever works as of Candidate 44; client 1.60.1.70862 has no separate recorded test.
+- Published Candidate 48 was tested on an existing Steam Deck setup in Game Mode: Retail and Classic Era automatic main-launcher exit while the same game survived, physical pointer/menu input and normal quit to the same Battle.net button. Desktop discovery, Repair and access-link removal/recreation were checked with recorded limits.
+- Forever was personally observed working correctly. Its initial automatic launcher-exit point and interrupted later session are separate evidence, not one uninterrupted instrumented cycle. It remains experimental.
+- Fresh installation was not part of the device check. Bazzite checks used a read-only scan and simulated interface tests before Apply; Bazzite gameplay testing remains in progress.
+- Exact build identities, earlier results and method limits are listed in ACCEPTANCE-SUMMARY.md.
+
+- Installer update checks, explicit Update now consent, checksum and signature verification, and backup/rollback passed offline and simulated private-feed checks. No production key is configured; updates fail closed until reviewed key provisioning. Unfinished saved setups pause updates. Live GitHub transport and C49 Deck checks remain unrun.
+- Candidate 49 has no Steam Deck acceptance yet. The earlier existing-installation results above belong to published Candidate 48.

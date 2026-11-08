@@ -1,3 +1,41 @@
+# Candidate 49 development acceptance
+
+Candidate 49 is not released. The production signing key is not configured. No Candidate 49 Steam Deck or game acceptance is claimed.
+
+## Automated development checks
+
+These checks ran on the Bazzite build machine in an isolated container, using disposable files and records. They did not use the working Steam installation, game prefix or Blizzard account.
+
+| Check | Result and limits |
+| --- | --- |
+| Required formatting and offline tests | PASS: 268 library tests, 41 regression tests and one public-build refusal test. |
+| Public native build | PASS: strict clippy, Qt public-mode build, source correspondence and offscreen native self-check. |
+| Portable handoff checks | PASS: eight serial checks, including READY/exit binding, retained recovery, cache-parent aliases and refusal of a final runtime symlink. |
+| Packaged private-feed update | PASS: simulated feed and synthetic compiled test key; actual checksum/signature, staging, atomic replacement, restart and prior-version backup. A second case used an aliased cache parent. |
+| Packaged failed-start rollback | PASS: controlled candidate exit before readiness restored the original executable and inode, then reopened it. No real service or game was stopped. |
+| Packaged refusal paths | PASS: incorrect checksum, incorrect signature, interrupted download and unwritable portable directory kept the original usable. |
+| Packaged ordinary choices | PASS: Not now kept Home usable; opt-out persisted after reopening; offline failure remained silent and did not repeat within the day. |
+| URL and release policy | Offline checks cover numeric ordering, prereleases, drafts, no downgrade, daily throttling, opt-out, busy or unfinished workflows, repository URL boundaries and redirect/header rejection. No live GitHub transport test is claimed. |
+| New dependencies | Eighteen exact-version additions were checked against official archive metadata and complete per-file manifests. The original nineteen packages remain unchanged from the verified C48 baseline; their sparse inherited manifests are not a new complete upstream-file audit. Notices are included. |
+| Actual C49 Steam Deck, games or physical input | NOT RUN. Earlier C48 results below remain labeled C48. |
+| Production signing and final release package | PENDING. No production private key has been generated. These development snapshots are not final release artifacts. |
+
+The positive update and rollback fixtures use copies with a known synthetic public key compiled in; the second version changes only that key and the test version where required. Their hashes differ from the public-mode development snapshot. Network replies and Qt actions were simulated privately. No private feed override, synthetic key, QA driver, log, capture, settings or backup is part of the public build.
+
+Update checks are conservatively paused while any saved setup is unfinished, including an older inactive copy. Unverified child exit prevents automatic rollback; the backup and recovery records are retained for manual reopening. Normal display and sleep policy is unchanged.
+
+## Public-mode development snapshot, not a release
+
+Portable SHA-256: **63ff25c45735e1de8058ea8340bf63b189410e555ffcad220e1f04f9d9fc698f**.
+
+Matching Source.zip SHA-256: **ae14cccb6bb59193ad89db9fc680c8ae82933898522ef08fc83e41321db335fc**.
+
+Source fingerprint: **9118b2e7ff41f509a55b6a84f140f06db0b8ce3488ebf1e0ef0d0eb2d1d4bc50**.
+
+These identify the private unsigned development snapshot with no production key configured, not a final signed Candidate 49 release.
+
+---
+
 # Candidate 48 acceptance
 
 Candidate 48 was tested on a Steam Deck that already had Battle.net and WoW set up. A brand-new installation has not been tested with this version yet. Bazzite testing is in progress.

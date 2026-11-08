@@ -1,116 +1,32 @@
 {
-  "schema": 2,
-  "release": "v0.2.0-alpha.10-candidate.48",
-  "version": "0.2.0-alpha.10-candidate.48",
-  "build_mode": "public",
-  "developer_tools": false,
-  "portable_sha256": "19508288b4ace65e230930c704609b23be6e176fe1fc9a837a693abc13e2f6ac",
-  "native_payload_sha256": "2f54be65d37c65754b049cfae0b8f760289d63fd5cb079fc1d211a06f926a263",
-  "matching_source_zip_sha256": "eebea66950b2235d4cb3c08be4dc8b039b7ee3e26f5952d70ae63f63ceaf8150",
-  "source_fingerprint": "2ab87185e310d415cca876cb72af059c06563596866dc2ec8356ad3a7e026017",
-  "source_files": 894,
-  "runtime_files": 768,
-  "license_inventory_mappings": 87,
-  "steam_tiles": [
-    "Battle.net"
-  ],
-  "access_folder": "~/World of Warcraft",
-  "platforms": {
-    "Bazzite": "C48 read-only scan and simulated packaged interface checks before Apply; game testing in progress",
-    "Steam_Deck": "Published C48 existing-installation Game Mode Retail/Era checks and Desktop discovery/Repair/access-link checks, with bounded comparisons; optional fresh setup unrun"
+  "schema": 1,
+  "status": "C49 development, NOT released or frozen",
+  "version": "0.2.0-alpha.10-candidate.49",
+  "production_public_key_configured": false,
+  "source_base_commit": "40699f6dffab778616721e365cc31dcbb7ce8ddc",
+  "development_snapshot": {
+    "build_mode": "public",
+    "developer_tools": false,
+    "portable_executable_sha256": "63ff25c45735e1de8058ea8340bf63b189410e555ffcad220e1f04f9d9fc698f",
+    "source_archive_sha256": "ae14cccb6bb59193ad89db9fc680c8ae82933898522ef08fc83e41321db335fc",
+    "source_fingerprint": "9118b2e7ff41f509a55b6a84f140f06db0b8ce3488ebf1e0ef0d0eb2d1d4bc50",
+    "native_payload_sha256": "b084a85d5e5d52670b2545c6abcfd9199a53b4be3f23d4a15749cb0f7952e7c8",
+    "final_release": false
   },
-  "Forever_limit": "Tester personally observed Forever working correctly; initial client 1.60.1.70862 automatic launcher exit recorded while same game survived; later session interrupted/different lifetime; not one uninterrupted instrumented cycle; experimental",
-  "runtime_source_coverage": "Unchanged verified 83-group source archive is a coverage superset; public runtime uses 48 distribution groups plus pinned SDL supplied in Source.zip",
-  "assets_excluding_self_and_manifest": [
-    {
-      "name": "ACCEPTANCE-SUMMARY.md",
-      "bytes": 4024,
-      "sha256": "6458e6400e817939cf04987b9d5c3c79de239acb14622b26064401eaa7a5ed80"
-    },
-    {
-      "name": "INSTALL-AND-REMOVE.md",
-      "bytes": 9434,
-      "sha256": "5df7ad9d0685eab76727af3c8b0fa14f0b6e7a4c00284bb440dd77a8124cf878"
-    },
-    {
-      "name": "LICENSE",
-      "bytes": 1092,
-      "sha256": "077688e10a39f62304a00072a67e495fe847beeef2b4d05a64cdea67bfde5fac"
-    },
-    {
-      "name": "LICENSE-INVENTORY.json",
-      "bytes": 9199,
-      "sha256": "7d39a30c3ac4560914d14d1f5c77743eb2893506d447f30b18194951bb5a515d"
-    },
-    {
-      "name": "RELEASE-NOTES.md",
-      "bytes": 1963,
-      "sha256": "37752babdc5b04ccb94ea9da34749a3c304b972a25b2564c947f089567aaedde"
-    },
-    {
-      "name": "RUNTIME-PROVENANCE.md",
-      "bytes": 1356,
-      "sha256": "e9a7cc4cb81d009eb9cde8010d395a3446a127b3fd9907269d65b3c1d4edae4e"
-    },
-    {
-      "name": "Runtime-Notices-C48.zip",
-      "bytes": 1032308,
-      "sha256": "213f504699dd3ecb192cd32611ddb39ce54e4f332aec23545c1f067517ad1dfd"
-    },
-    {
-      "name": "Runtime-Notices-C48.zip.sha256",
-      "bytes": 90,
-      "sha256": "e44fa05547a09390da4ef83273dce9655c299e3a09dac7ab91aa7307d9fc25dd"
-    },
-    {
-      "name": "Runtime-Sources-C48.zip",
-      "bytes": 777516172,
-      "sha256": "ac7d13fd83368e7498dbb86e9d79467b174b7d17b1d05321eba3b85a2761db37"
-    },
-    {
-      "name": "Runtime-Sources-C48.zip.sha256",
-      "bytes": 90,
-      "sha256": "d9ea5e1a1e5b4d46f2d4271dc8019cb53bffef969cdcdd1b263b50fd1bca2e7f"
-    },
-    {
-      "name": "SUPPORTED-EDITIONS-AND-LIMITATIONS.md",
-      "bytes": 3117,
-      "sha256": "0bb5f27c1898ff1529ff10bd10dccf39745a5a412031561b059c24a1b970e580"
-    },
-    {
-      "name": "Source.zip",
-      "bytes": 9640589,
-      "sha256": "eebea66950b2235d4cb3c08be4dc8b039b7ee3e26f5952d70ae63f63ceaf8150"
-    },
-    {
-      "name": "Source.zip.sha256",
-      "bytes": 77,
-      "sha256": "5174472ab64a975aaaace5340ef75b8dcfe77640cd0400662a8373e66956d5bc"
-    },
-    {
-      "name": "THIRD-PARTY.md",
-      "bytes": 2761,
-      "sha256": "ade734dad253ed8f65f675a05cab162349a5631713f9b364129e1c0d27902225"
-    },
-    {
-      "name": "WoW-SteamOS-Rust-Linux-x86_64",
-      "bytes": 42821992,
-      "sha256": "19508288b4ace65e230930c704609b23be6e176fe1fc9a837a693abc13e2f6ac"
-    },
-    {
-      "name": "WoW-SteamOS-Rust-Linux-x86_64.sha256",
-      "bytes": 96,
-      "sha256": "598bf7a9282e39fa368b0c4502ac371444f009143bb00e36fa6bf52788a8b4b5"
-    }
-  ],
-  "private_material": "Excluded: QA packets/drivers, raw device reports, logs, captures, settings, backups, handoffs and private addresses",
-  "source_merge_commit": "0ead653070e05aaf28d0eba61f1612a3155361d4",
-  "approved_pr_head": "75384a26fb83ea5f9e6dffa028f6d33e23603e6f",
-  "release_title": "Candidate 48: Find existing Battle.net and WoW installations (test version)",
-  "coverage_update": {
-    "date": "2026-11-08",
-    "scope": "Later existing-installation acceptance; source and released executable unchanged",
-    "fresh_setup": "Unrun, requires separate approval",
-    "artifact_record_scope": "The asset byte counts and hashes below describe the original published C48 release assets, which remain unchanged. Root documentation has later coverage updates; the proposed release-body edit requires review."
-  }
+  "checks": {
+    "offline": "268 library + 41 regression + 1 public refusal PASS",
+    "portable_handoff": "8 PASS",
+    "packaged_private_feed": "9 PASS; simulated network and Qt input, known synthetic-key variants for authenticated install",
+    "live_GitHub_transport": "NOT RUN",
+    "C49_Steam_Deck": "NOT RUN"
+  },
+  "release_manifest": "Root SHA256SUMS still describes the historical C48 release assets. A C49 asset manifest is not prepared until the final signed release freeze.",
+  "published_C48_baseline": {
+    "tag": "v0.2.0-alpha.10-candidate.48",
+    "source_merge_commit": "0ead653070e05aaf28d0eba61f1612a3155361d4",
+    "portable_sha256": "19508288b4ace65e230930c704609b23be6e176fe1fc9a837a693abc13e2f6ac",
+    "Source_zip_sha256": "eebea66950b2235d4cb3c08be4dc8b039b7ee3e26f5952d70ae63f63ceaf8150"
+  },
+  "private_material": "Excluded: test keys, private-feed drivers, QA packets, device records, logs, captures, settings, backups and handoffs",
+  "proposed_release_title": "Candidate 49: Optional installer updates (test version)"
 }

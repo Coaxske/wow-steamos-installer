@@ -1,24 +1,23 @@
-Candidate 48 was tested on a Steam Deck that already had Battle.net and WoW set up. A brand-new installation has not been tested with this version yet. Bazzite testing is in progress.
+Candidate 49 is a development test version. Earlier published Candidate 48 was tested on Steam Deck in Game Mode; the new updater has not been checked on Deck.
 
-Download **[WoW-SteamOS-Rust-Linux-x86_64](https://github.com/Coaxske/wow-steamos-installer/releases/download/v0.2.0-alpha.10-candidate.48/WoW-SteamOS-Rust-Linux-x86_64)**. It is the only file you need to run. The other files on this page contain instructions, checksums, licenses and source code. Then follow the [step-by-step install guide](https://github.com/Coaxske/wow-steamos-installer#download-and-install).
+Download **WoW-SteamOS-Rust-Linux-x86_64** once by hand when Candidate 49 is published. It is the only file you need to run. Candidate 48 does not include the updater. Follow the [step-by-step install guide](https://github.com/Coaxske/wow-steamos-installer#download-and-install). Candidate 49 is not published yet.
 
 ## Changes
 
-- Finds additional existing installations using verified locations from Steam shortcuts.
-- Adds **Choose existing folder** when nothing is found.
-- Keeps separate copies distinct and requires review before reuse.
-- Explains empty results and missing matching Steam shortcuts. Finding files alone does not establish that the game will reach Play.
-- Includes missing Battle.net button repair.
-- Excludes developer checklists, screen-capture, external mouse-control, window-reading and addon-manager download tools from the public executable.
+- Quietly checks this project's GitHub releases at most once every 24 hours, including test releases.
+- Offers Update now, Not now and View release page. Only Update now authorizes installing an update.
+- Includes a Home switch to turn checks off. Offline failures let the installer continue silently.
+- Pauses updates during setup, repair or removal and while any saved setup is unfinished.
+- Requires the exact executable's SHA-256 checksum and Ed25519 signature before use. Versions are compared numerically and never downgraded.
+- Keeps the old portable as a backup. If replacement or startup fails, it is retained or restored. If the new process's exit cannot be confirmed, recovery files are retained instead of attempting an unsafe rollback.
+- Keeps the existing single Battle.net button, installation, Proton environment, settings, controller layouts and access-folder behavior. Developer tools stay excluded from the public build.
 
 ## Checks and limits
 
-Candidate 48 was tested on a Steam Deck that already had Battle.net and World of Warcraft set up.
+Offline tests and simulated packaged checks ran on the Bazzite build machine. Private-feed cases covered signed update, cache aliases, failed-start rollback, checksum and signature failures, interrupted downloads, an unwritable folder, Not now, persisted opt-out and silent offline throttling. Test feed replies and Qt actions were simulated; the packaged file, signature and restart operations were real. Temporary fixture keys were used. This does not verify live GitHub transport or an actual Deck session.
 
-- **Game Mode:** Retail and Classic Era each started from the Battle.net button and reached the character screen. Battle.net closed itself while the game kept running. The trackpad worked as a mouse in menus, and quitting through the game's own Exit Game option returned to the same Battle.net button, ready to play again.
-- **Desktop Mode:** the installer found the existing installation without needing a folder to be chosen. Repair kept the existing Battle.net button, the Battle.net app, its Proton setup and the controller settings files. Open folders worked, and removing and re-creating the folder shortcuts left the checked game and addon files in place.
-- **Forever:** the tester saw Forever working, but the recorded test was interrupted, so Forever is still marked experimental.
+No production signing key is configured in this development copy, so automatic installation is refused. Key provisioning, final release files and Candidate 49's Deck checks remain pending. This version must not be published in that state.
 
-Not yet tested with this version: a brand-new installation, the Choose existing folder option on a Steam Deck (it was checked with simulated tests on Bazzite), full gameplay and performance. Bazzite testing is in progress. Error134 and WOW51900319, seen in earlier testing, are still unexplained.
+Published Candidate 48 has existing-installation Steam Deck Game Mode Retail and Classic Era results, Desktop discovery/Repair/folder checks, and a firsthand Forever observation with recorded interruption limits. Those results do not test Candidate 49's updater. Fresh installation was not part of that device check. Bazzite gameplay testing remains in progress.
 
-See [acceptance details](ACCEPTANCE-SUMMARY.md) for the exact test records and their limits.
+GitHub receives ordinary connection information when checking public releases. No game settings, account names or installer records are sent. See [security and privacy](https://github.com/Coaxske/wow-steamos-installer/blob/main/SECURITY.md) and [acceptance details](https://github.com/Coaxske/wow-steamos-installer/blob/main/ACCEPTANCE-SUMMARY.md).
