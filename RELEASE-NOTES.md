@@ -1,6 +1,6 @@
 Earlier versions were tested on Steam Deck. This version was checked on a Bazzite PC.
 
-Download **WoW-SteamOS-Rust-Linux-x86_64**. It is the only file you need to run. Other assets contain instructions, checksums, licenses and source code.
+Download **[WoW-SteamOS-Rust-Linux-x86_64](https://github.com/Coaxske/wow-steamos-installer/releases/download/v0.2.0-alpha.10-candidate.48/WoW-SteamOS-Rust-Linux-x86_64)**. It is the only file you need to run. The other files on this page contain instructions, checksums, licenses and source code. Then follow the [step-by-step install guide](https://github.com/Coaxske/wow-steamos-installer#download-and-install).
 
 ## Changes
 

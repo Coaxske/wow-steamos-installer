@@ -44,8 +44,8 @@
     },
     {
       "name": "RELEASE-NOTES.md",
-      "bytes": 1701,
-      "sha256": "57f87f4f5a0e7f4bc232712c9afbf815d93636f919ee92442eab979c469dc9c2"
+      "bytes": 1963,
+      "sha256": "37752babdc5b04ccb94ea9da34749a3c304b972a25b2564c947f089567aaedde"
     },
     {
       "name": "RUNTIME-PROVENANCE.md",
@@ -103,5 +103,8 @@
       "sha256": "598bf7a9282e39fa368b0c4502ac371444f009143bb00e36fa6bf52788a8b4b5"
     }
   ],
-  "private_material": "Excluded: QA packets/drivers, raw device reports, logs, captures, settings, backups, handoffs and private addresses"
+  "private_material": "Excluded: QA packets/drivers, raw device reports, logs, captures, settings, backups, handoffs and private addresses",
+  "source_merge_commit": "0ead653070e05aaf28d0eba61f1612a3155361d4",
+  "approved_pr_head": "75384a26fb83ea5f9e6dffa028f6d33e23603e6f",
+  "release_title": "Candidate 48: Find existing Battle.net and WoW installations (test version)"
 }
