@@ -32,7 +32,7 @@ On Steam Deck, return to Gaming Mode. Open **Battle.net** under Non-Steam in you
 
 Quit through WoW's own **Exit Game** menu. Steam's Exit game stops the whole Battle.net game session.
 
-If the mouse pointer or clicking does not work in Battle.net, open Gaming Mode pointer setup in the installer for step-by-step help. In short: in Steam’s controller settings for the Battle.net button, set Right Trackpad Behavior to Mouse and Right Trackpad Click to Left Mouse Click. If your controls already work, leave them unchanged.
+If the mouse pointer or clicking does not work in Battle.net, open **Gaming Mode pointer setup** in the installer for step-by-step help. In short: in Steam's controller settings for the Battle.net button, set Right Trackpad Behavior to Mouse and Right Trackpad Click to Left Mouse Click. If your controls already work, leave them unchanged.
 
 ## Addons
 
