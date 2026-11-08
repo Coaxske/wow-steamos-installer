@@ -2,25 +2,26 @@
   "schema": 1,
   "status": "C49 development, NOT released or frozen",
   "version": "0.2.0-alpha.10-candidate.49",
-  "production_public_key_configured": false,
-  "source_base_commit": "b765dec460e75b5402fb36a2b94fea9fb971c6ab",
+  "production_public_key_configured": true,
+  "source_base_commit": "acce22f5f67ca1ef61381af69cb3b85cdf3c9ca2",
   "development_snapshot": {
     "build_mode": "public",
     "developer_tools": false,
-    "portable_executable_sha256": "e1af53fef3e073105380333f504dd51359d64b071bb85eed99d4b2d7c19cf201",
-    "source_archive_sha256": "498a13b7e1301996d234d2ca28f49c0adccf55e9e105136ea9f82c5ee166bd68",
-    "source_fingerprint": "a3e87368c47ef73d6e0e1c20ba3dbfba70f40c759aca53dc1b7b9114b8191524",
-    "native_payload_sha256": "7ff620db640cc10f42631ea7daec6e80afd4e2115e841fd5b08b50737095bbe9",
+    "portable_executable_sha256": "d17151020ccce00d7fd2e384b33e7ec7c437549552795079a50bf2084a71fd5d",
+    "source_archive_sha256": "1c03e2443d4ae8f8802ad418e443d968836037bc3ec6a6811846a214528b8e7f",
+    "source_fingerprint": "7f137a4546a3101b799e923927d4335e9bde993cf76c48d18d5feb7e0d721775",
+    "native_payload_sha256": "bb3e5d6994b65e96927160e9912c8c447f340955aa7ec65c43c648abd596e219",
     "final_release": false
   },
   "checks": {
-    "offline": "277 library +41 regression +1 public refusal PASS",
+    "offline": "278 library +41 regression +1 public refusal PASS",
     "portable_handoff": "9 PASS",
-    "packaged_private_feed": "15 PASS; simulated network/Qt/disposable saved state, synthetic keys, actual packaged file/signature/restart paths; A process-only realtime offset",
+    "packaged_private_feed": "16 PASS; simulated network/Qt/disposable saved state, separate synthetic keys, actual packaged file/signature/restart paths; includes actual public portable wrong-key refusal",
     "live_GitHub_transport": "NOT RUN",
     "C49_Steam_Deck": "NOT RUN",
     "strict_clippy": "PASS public and developer modes",
-    "native_builds": "PASS public and developer modes"
+    "native_builds": "PASS public and developer modes",
+    "public_verifier": "Intended public key embedded; test public key absent; developer tools disabled"
   },
   "release_manifest": "Root SHA256SUMS still describes the historical C48 release assets. A C49 asset manifest is not prepared until the final signed release freeze.",
   "published_C48_baseline": {
@@ -37,5 +38,7 @@
     "C": "Fresh persisted preference readback and restored checkbox on failed save",
     "D": "Idle unfinished checks allowed; automatic install refused; active locks block check/install",
     "E": "Deferred"
-  }
+  },
+  "production_public_key_ed25519_hex": "e6007a9ad0bfa1f9cdf1a87fb900156aa697224b800c55fef9630e34d77e06f8",
+  "production_signed_release_testing": "NOT RUN; separate reviewed stage"
 }

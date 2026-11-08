@@ -20,8 +20,11 @@ pub const PORTABLE: &str = "WoW-SteamOS-Rust-Linux-x86_64";
 const DAY: u64 = 86400;
 const MAX_BINARY: u64 = 512 * 1024 * 1024;
 const MAX_STATE: u64 = 128 * 1024;
-// Production provisioning remains a separate reviewed change. No test key fallback.
-const PRODUCTION_KEY: Option<[u8; 32]> = None;
+// Public verifier only. The signing key is kept outside the project. No test key fallback.
+const PRODUCTION_KEY: Option<[u8; 32]> = Some([
+    0xe6, 0x00, 0x7a, 0x9a, 0xd0, 0xbf, 0xa1, 0xf9, 0xcd, 0xf1, 0xa8, 0x7f, 0xb9, 0x00, 0x15, 0x6a,
+    0xa6, 0x97, 0x22, 0x4b, 0x80, 0x0c, 0x55, 0xfe, 0xf9, 0x63, 0x0e, 0x34, 0xd7, 0x7e, 0x06, 0xf8,
+]);
 // One atomic winner: cancellation or prepared restart.
 static CANCEL: AtomicU8 = AtomicU8::new(0);
 fn cancel_state(state: &AtomicU8) -> bool {
@@ -247,42 +250,44 @@ pub fn dispatch(data: &Path, request: &Value) -> Result<Value> {
             drop(_guard);
             Ok(status(data, &s))
         }
-        "updater_install" => {
-            let failure = |message: String| {
-                Ok(
-                    json!({"restart_required":false,"manual_required":true,"message":message,"release_page":RELEASE_PAGE}),
-                )
-            };
-            if request["confirmed"] != true {
-                return failure("Choose Update now before installing an update".into());
-            }
-            if !s.enabled {
-                return failure(
-                    "Update checks are disabled. Download manually from the release page".into(),
-                );
-            }
-            let _guard = match idle_lock(data) {
-                Ok(x) => x,
-                Err(e) => return failure(e),
-            };
-            let candidate = match s.candidate.as_ref() {
-                Some(c) if request["token"].as_str() == Some(c.token.as_str()) => c,
-                _ => {
-                    return failure(
-                        "The update choice expired. Check again or use the release page".into(),
-                    )
-                }
-            };
-            if !candidate.automatic_assets_available {
-                return failure("This release is missing usable installer, checksum or signature files. Use the release page".into());
-            }
-            let Some(key) = PRODUCTION_KEY else {
-                return failure("Signed automatic updates are not configured in this build. Use the release page".into());
-            };
-            match stage(data,candidate,key){Ok(_)=>Ok(json!({"restart_required":true,"version":candidate.version})),Err(e)=>failure(format!("Automatic update could not be prepared: {e}. Your current portable has not been replaced"))}
-        }
+        "updater_install" => install(data, &s, request, PRODUCTION_KEY),
         _ => Err("Unknown update action".into()),
     }
+}
+fn install(data: &Path, s: &Settings, request: &Value, key: Option<[u8; 32]>) -> Result<Value> {
+    let failure = |message: String| {
+        Ok(
+            json!({"restart_required":false,"manual_required":true,"message":message,"release_page":RELEASE_PAGE}),
+        )
+    };
+    if request["confirmed"] != true {
+        return failure("Choose Update now before installing an update".into());
+    }
+    if !s.enabled {
+        return failure(
+            "Update checks are disabled. Download manually from the release page".into(),
+        );
+    }
+    let _guard = match idle_lock(data) {
+        Ok(x) => x,
+        Err(e) => return failure(e),
+    };
+    let candidate = match s.candidate.as_ref() {
+        Some(c) if request["token"].as_str() == Some(c.token.as_str()) => c,
+        _ => {
+            return failure("The update choice expired. Check again or use the release page".into())
+        }
+    };
+    if !candidate.automatic_assets_available {
+        return failure("This release is missing usable installer, checksum or signature files. Use the release page".into());
+    }
+    let Some(key) = key else {
+        return failure(
+            "Signed automatic updates are not configured in this build. Use the release page"
+                .into(),
+        );
+    };
+    match stage(data,candidate,key){Ok(_)=>Ok(json!({"restart_required":true,"version":candidate.version})),Err(e)=>failure(format!("Automatic update could not be prepared: {e}. Your current portable has not been replaced"))}
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Version {
@@ -928,6 +933,31 @@ mod tests {
         .is_err());
     }
     #[test]
+    fn configured_production_verifier_refuses_unsigned_and_fixture_signed_bytes() {
+        reset_cancel();
+        let key = PRODUCTION_KEY.expect("Production public verifier must be configured");
+        assert!(!VerifyingKey::from_bytes(&key).unwrap().is_weak());
+        let fixture = SigningKey::from_bytes(&[7; 32]);
+        assert_ne!(key, fixture.verifying_key().to_bytes());
+        let bytes = b"public-verifier refusal fixture, not executable";
+        let hash = fsutil::hash(bytes);
+        assert_eq!(
+            verify_payload(key, bytes, &hash, &[]).unwrap_err(),
+            "Invalid release signature length"
+        );
+        assert_eq!(
+            verify_payload(key, bytes, &hash, &[0; 64]).unwrap_err(),
+            "Portable signature does not verify"
+        );
+        assert_eq!(
+            verify_payload(key, bytes, &hash, &fixture.sign(bytes).to_bytes()).unwrap_err(),
+            "Portable signature does not verify"
+        );
+        let p = temp();
+        assert_eq!(status(&p, &Settings::default())["signing_configured"], true);
+        fs::remove_dir_all(p).unwrap();
+    }
+    #[test]
     fn duplicate_or_missing_checksum_is_not_a_match() {
         let line = format!("{}  {PORTABLE}\n", fsutil::hash(b"a"));
         assert!(checksum(line.as_bytes()).is_ok());
@@ -967,17 +997,17 @@ mod tests {
             },
         )
         .unwrap();
-        let result = dispatch(
+        let result = install(
             &p,
+            &load(&p).unwrap(),
             &json!({"action":"updater_install","confirmed":true,"token":candidate.token}),
+            None,
         )
         .unwrap();
-        if PRODUCTION_KEY.is_none() {
-            assert!(result["message"]
-                .as_str()
-                .unwrap()
-                .contains("not configured"));
-        }
+        assert_eq!(
+            result["message"],
+            "Signed automatic updates are not configured in this build. Use the release page"
+        );
         assert_eq!(result["manual_required"], true);
         assert_eq!(result["restart_required"], false);
         assert!(!p.join("update-request.json").exists());

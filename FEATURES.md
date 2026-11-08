@@ -16,5 +16,5 @@
 - Fresh installation was not part of the device check. Bazzite checks used a read-only scan and simulated interface tests before Apply; Bazzite gameplay testing remains in progress.
 - Exact build identities, earlier results and method limits are listed in ACCEPTANCE-SUMMARY.md.
 
-- Installer update checks, explicit Update now consent, checksum and signature verification, and backup/rollback passed offline and simulated private-feed checks. No production key is configured; updates fail closed until reviewed key provisioning. Idle unfinished setups permit release checks and manual downloads; automatic installation waits until they are finished or removed. Live GitHub transport and C49 Deck checks remain unrun.
+- Installer update checks, explicit Update now consent, checksum and signature verification, and backup/rollback passed offline and simulated private-feed checks. The production public verifier is configured; private checks use separate test keys. Idle unfinished setups permit release checks and manual downloads; automatic installation waits until they are finished or removed. Live GitHub transport and C49 Deck checks remain unrun.
 - Candidate 49 has no Steam Deck acceptance yet. The earlier existing-installation results above belong to published Candidate 48.

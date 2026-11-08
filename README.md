@@ -30,7 +30,7 @@ When a newer version is found, choose **Update now**, **Not now** or **View rele
 
 Before replacement, the updater checks both the published SHA-256 checksum and a digital signature for the exact installer file. After a successful update, the newest verified previous installer is kept. Older backups are removed only when the updater's own records and the files still match. The old installer is retained or restored if replacement or restart fails. If automatic restart or the new process's exit cannot be confirmed, recovery files may be retained for manual reopening. If an update cannot be verified, use **View release page** to download it by hand.
 
-This development copy has no production signing key configured. It refuses to install updates until the reviewed public key is included. Temporary signing keys are used only in private automated checks.
+The installer includes the production public key for verifying signed updates. The private signing key stays outside the project. Private automated checks use separate test keys. Live signed-update testing and Candidate 49 Steam Deck checks have not been run.
 
 The GitHub check requests this repository's public release list. It does not send game settings, account names or installer records. GitHub receives ordinary connection information, such as your IP address and request headers. The check identifies itself as WoW-SteamOS-Updater/1; it does not send this installer's version or device identifiers. See [security and privacy](SECURITY.md).
 
@@ -84,7 +84,7 @@ Candidate 48 was tested on a Steam Deck that already had Battle.net and World of
 
 Not yet tested with this version: a brand-new installation, the Choose existing folder option on a Steam Deck (it was checked with simulated tests on Bazzite), full gameplay and performance. Bazzite testing is in progress. Error134 and WOW51900319, seen in earlier testing, are still unexplained.
 
-See [acceptance details](ACCEPTANCE-SUMMARY.md) for the exact test records and their limits.
+See [acceptance details](ACCEPTANCE-SUMMARY.md) for the exact test records and their limits, and [supported editions and limits](SUPPORTED-EDITIONS-AND-LIMITATIONS.md) for what the installer covers.
 
 ## Help
 

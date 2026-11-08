@@ -1,6 +1,6 @@
 # Candidate 49 development acceptance
 
-Candidate 49 is not released. The production signing key is not configured. No Candidate 49 Steam Deck or game acceptance is claimed.
+Candidate 49 is not released. The production public verifier is configured; the private key is outside the project. No Candidate 49 Steam Deck or game acceptance is claimed.
 
 ## Automated development checks
 
@@ -8,7 +8,7 @@ These checks ran on the Bazzite build machine in an isolated container, using di
 
 | Check | Result and limits |
 | --- | --- |
-| Required formatting and offline tests | PASS: 277 library tests, 41 regression tests and one public-build refusal test. |
+| Required formatting and offline tests | PASS: 278 library tests, 41 regression tests and one public-build refusal test. |
 | Public native build | PASS: strict clippy in both public and developer modes, both native builds, source correspondence and offscreen native self-check. |
 | Portable handoff checks | PASS: nine serial checks, including READY/exit binding, retained recovery, cache-parent aliases and refusal of a final runtime symlink. |
 | Packaged private-feed update | PASS: simulated feed and synthetic compiled test key; actual checksum/signature, staging, atomic replacement, restart and prior-version backup. A second case used an aliased cache parent. |
@@ -22,22 +22,23 @@ These checks ran on the Bazzite build machine in an isolated container, using di
 | B: unconfirmed startup recovery | PASS in a private proof-collision fixture: rollback stayed blocked, the current and previous portable bytes remained, and the requested error-dialog arguments named the actual verified backup path with safe recovery steps and the canonical releases URL. This is simulated dialog capture, not physical display acceptance. |
 | C: failed Off save | PASS: a read-only fixture settings directory made the ordinary checkbox save fail. A fresh readback restored the visible persisted setting, showed a short error and left the notice undiscarded. A later ordinary Off save and reopening agreed on disabled checks. |
 | D: unfinished versus active work | PASS: a held operation lock blocked the check and installation, with no network request or daily-attempt consumption. Reopening the same idle unfinished fixture fetched metadata once, kept the release-page link, disabled Update now and returned the exact required backend refusal. A simulated saved-stage completion followed by normal init/status handlers refreshed readiness without another feed request. |
+| Configured public verifier | PASS: the intended production public key is present in the actual packaged native executable; the test verifier is absent. The actual public portable rejects the private feed's otherwise valid test-key signature and keeps its original bytes. Missing signatures, tampered bytes and wrong-key files remain refused. The production private key was not used in these checks. |
 | Actual C49 Steam Deck, games or physical input | NOT RUN. Earlier C48 results below remain labeled C48. |
-| Production signing and final release package | PENDING. No production private key has been generated. These development snapshots are not final release artifacts. |
+| Production signing and final release package | Public verifier configured. Live signed-release testing and final release approval are pending. No private key is included in the build or source. These development snapshots are not final release artifacts. |
 
-The positive update and rollback fixtures use copies with a known synthetic public key compiled in; the second version changes only that key and the test version where required. Their hashes differ from the public-mode development snapshot. Network replies and Qt actions were simulated privately. The two-update fixture advanced only its test processes' realtime clock; it did not edit saved throttle records or change the host clock. No private feed override, synthetic key, QA driver, log, capture, settings or backup is part of the public build.
+The positive update and rollback checks start from a copy of this candidate with a separate known test public key compiled in. The C50 and C51 targets are retained private fixtures from the earlier updater checks, with their original source and method limits. The actual public candidate is separately checked for rejection of those test-key signatures. Their hashes differ from the public-mode development snapshot. Network replies and Qt actions were simulated privately. The two-update fixture advanced only its test processes' realtime clock; it did not edit saved throttle records or change the host clock. No private feed override, synthetic key, QA driver, log, capture, settings or backup is part of the public build.
 
 Daily checks and the release-page link remain available for idle unfinished saved setups, including older copies. Update now stays disabled and the backend refuses installation until the setup is finished or removed. Active operation locks block both checks and installation without consuming the daily attempt. Unverified child exit prevents automatic rollback; the backup and recovery records are retained for manual reopening. Normal display and sleep policy is unchanged.
 
 ## Public-mode development snapshot, not a release
 
-Portable SHA-256: **e1af53fef3e073105380333f504dd51359d64b071bb85eed99d4b2d7c19cf201**.
+Portable SHA-256: **d17151020ccce00d7fd2e384b33e7ec7c437549552795079a50bf2084a71fd5d**.
 
-Matching Source.zip SHA-256: **498a13b7e1301996d234d2ca28f49c0adccf55e9e105136ea9f82c5ee166bd68**.
+Matching Source.zip SHA-256: **1c03e2443d4ae8f8802ad418e443d968836037bc3ec6a6811846a214528b8e7f**.
 
-Source fingerprint: **a3e87368c47ef73d6e0e1c20ba3dbfba70f40c759aca53dc1b7b9114b8191524**.
+Source fingerprint: **7f137a4546a3101b799e923927d4335e9bde993cf76c48d18d5feb7e0d721775**.
 
-These identify the private unsigned development snapshot with no production key configured, not a final signed Candidate 49 release. A recovery-test fixture was corrected after CI exposed an inode-reuse assumption. The replacement is now created before the original is replaced. Production recovery code is unchanged, and the corrected full suite passes. Earlier private packaged results retain their original simulation limits.
+These identify the private development snapshot containing the production public verifier. It has not been signed with the production private key and is not a released Candidate 49 installer. A recovery-test fixture was corrected after CI exposed an inode-reuse assumption. The replacement is now created before the original is replaced. Production recovery code is unchanged, and the corrected full suite passes. Earlier private packaged results retain their original simulation limits.
 
 ---
 
