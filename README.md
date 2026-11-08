@@ -1,6 +1,6 @@
 # WoW SteamOS Installer
 
-Earlier versions were tested on Steam Deck. This version was checked on a Bazzite PC.
+Published Candidate 48 was tested on Steam Deck in Game Mode. Bazzite testing is in progress.
 
 This early test version installs Blizzard's Battle.net app, adds one Battle.net button to Steam, and makes game and AddOns folders easier to find.
 
@@ -58,13 +58,15 @@ Read the [install and removal guide](INSTALL-AND-REMOVE.md) for backup locations
 
 ## What was checked
 
-Candidate 48 was checked on Bazzite with a read-only scan and simulated interface tests. These checked the folder picker and review screens, stopping before Apply. Candidate 48 has not been run on a Steam Deck or through a new game session.
+Published Candidate 48 was tested on an existing Steam Deck setup. In Game Mode, Retail and Classic Era reached character screens. Passive observation recorded the main Battle.net process exiting while the same identified game kept running; Agent was tracked separately. The tester used the physical trackpad to move and click in menus, quit through WoW's own Exit Game, and returned to the same Battle.net button with Play available. Reopening that button switched from Retail to Classic Era; this was not a separate same-edition relaunch pair for each game.
 
-The Steam Deck results come from earlier versions. Retail and Classic Era reached character screens, Battle.net closed while WoW stayed open, and normal quitting returned to the same Battle.net button. Earlier pointer and menu checks also passed.
+In Desktop Mode, automatic discovery found the working installation, so the existing-folder picker was not needed. The reviewed repair kept the existing Battle.net button, launcher, Proton environment and controller files. Open folders reached the expected installation and AddOns links. Link-only removal and recreation preserved the checked targets and contents. These were bounded comparisons, not a full comparison of every game file.
 
-Forever works on Steam Deck as of Candidate 44. It remains experimental because recorded checks only reached character selection or creation, and client 1.60.1.70862 has no separate recorded test.
+The tester also personally observed Forever working correctly. An initial recorded run showed the main launcher exiting while the same Forever process stayed alive. A later session was interrupted and used a different game process. The firsthand observation and recorded points are separate; they do not establish one uninterrupted instrumented Forever cycle. Forever remains experimental, and full gameplay and performance are not established.
 
-Full gameplay and performance are not established. Earlier Error134 and WOW51900319 remain separate unexplained historical results.
+Optional fresh setup was not run and awaits separate approval. The existing-folder picker was checked with simulated interface tests on Bazzite, not exercised on the actual Deck. Bazzite gameplay testing remains in progress.
+
+Earlier Error134 and WOW51900319 remain separate unexplained historical results. No cause or repair is claimed from these later successes.
 
 See [acceptance details](ACCEPTANCE-SUMMARY.md) and [supported editions and limitations](SUPPORTED-EDITIONS-AND-LIMITATIONS.md).
 
