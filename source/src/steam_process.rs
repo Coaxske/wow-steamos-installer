@@ -120,6 +120,7 @@ pub fn current_user_running() -> Result<bool> {
         inspect(|name| read_relative(&dir, name), uid)
     }))
 }
+#[cfg(any(test, feature = "developer-tools"))]
 pub(crate) fn diagnostic_snapshot() -> serde_json::Value {
     let uid = unsafe { libc::geteuid() };
     let mut processes = vec![];

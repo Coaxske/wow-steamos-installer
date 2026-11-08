@@ -1,14 +1,15 @@
-# Candidate 44 core scope
+# Candidate 48 features and limits
 
-- Exactly one installer-managed Battle.net Steam tile per selected copy; choose installed editions inside Battle.net.
-- Retail and Classic Era core selections; Forever experimental with inherited character-screen coverage and changed 1.60.1.70862 file untested.
-- Existing installation, prefix, Proton, game associations, close-after-Play preference and controller layout reused.
-- Fresh/rerun/repair and reviewed older-edition/C42 upgrades preserve unrelated shortcuts, custom layouts, artwork and installed data.
-- Required guided automatic exit choice, explicit installation-wide consent, verified original backup/current typed-setting check; no silent reapply.
-- Desktop access folder ~/World of Warcraft links to actual detected Battle.net/game/AddOns directories, including indexed or explicitly selected external drives.
-- Normal completion Open folders/refresh actions; link-only removal verifies installer ownership and preserves targets.
-- Occupied names, unavailable drives, ambiguous/missing directories and replaced links are preserved/reported without guessed paths.
-- Manual per-tile pointer guide; automatic pointer/display wake/inhibition unavailable.
-- Existing reviewed full owned removal and outside-target Interface/WTF backup/restoration retained as a separate destructive choice.
-- No addon manager, automatic edition routing, extra edition tiles, private QA tools or device records in the release.
-- Steam Deck Game Mode evidence inherited from C43; C44 folder feature automated-verified. Bazzite testing in progress.
+- One installer-managed Battle.net button per selected installation. Choose Retail, Classic Era or experimental Forever inside Battle.net.
+- Guided setup, missing-button repair, reviewed reuse of an existing setup, and removal with separately verified settings backups.
+- Existing launcher, prefix, Proton, settings, game files and controller layouts stay in place when reusing a setup.
+- Scoped discovery checks verified locations from Steam shortcuts. Separate copies need separate review.
+- Choose existing folder is available when no installation is found. Cancel keeps choices; empty results explain how to try again.
+- Existing-folder reuse needs a matching Steam shortcut and working Proton choice. Finding files alone does not authorize adoption or establish Play readiness.
+- Required, backed-up Close after Play choice applies to that installation in both Desktop and Gaming Mode.
+- World of Warcraft in the Home folder links to detected installation and AddOns folders. Reruns reuse verified links; link removal preserves targets.
+- Manual pointer and click guide for the Battle.net button. Working custom or shared controls are preserved.
+- The public executable excludes the developer checklist, capture, external mouse control, window reading and addon-manager downloader. Separate private builds can include developer tools.
+- No automatic edition routing, extra edition buttons, addon installation or addon updates.
+- Candidate 48 was checked on Bazzite by a read-only scan and simulated interface tests before Apply. No Candidate 48 Steam Deck, game or physical-controller test is claimed.
+- Earlier Steam Deck results and their limits are listed in ACCEPTANCE-SUMMARY.md. Forever works as of Candidate 44; client 1.60.1.70862 has no separate recorded test.

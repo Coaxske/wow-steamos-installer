@@ -35,3 +35,10 @@ AGENTS.md
 # Computer clutter
 .DS_Store
 Thumbs.db
+
+# Separate public and private developer build outputs
+/source/build-public/
+/source/build-developer/
+/source/dist-public/
+/source/dist-developer/
+/private/

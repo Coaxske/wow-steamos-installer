@@ -10,6 +10,10 @@
 6. Complete the normal Required: close Battle.net after Play step. Inspect its current-status message. For a change, explicitly approve this installation-wide behavior in BOTH Desktop and Game Mode, review and Apply. A verified private original-settings copy precedes the write. If already enabled, use the no-write confirmation. Leaving settings unchanged preserves them but setup stays incomplete unless current Close after Play is verified. Missing/unreadable/changed preferences require review; reruns never silently reapply a saved choice.
 7. Review the sole Battle.net tile and finish core setup. In Game Mode open it, choose an installed edition inside ordinary Battle.net and press Play. Main Battle.net should exit completely while that same WoW stays alive. Quit using WoW's own Exit Game menu and wait for Steam's same Battle.net tile with green Play. Reopen it to choose another edition. Steam's Exit game stops the whole tile and is not a substitute for launcher-only exit.
 
+## Find an existing installation
+
+If the completed scan finds nothing, choose **Choose existing folder** next to fresh setup. Select the existing folder and review the recognized files. Cancel preserves your choices. Empty folders offer another try. Reuse needs a matching Battle.net Steam shortcut and working Proton choice; discovery alone does not prove Play readiness. Nothing is adopted until you approve its review.
+
 ## Games and addon folders in Desktop Mode
 
 After setup, choose **Open folders** on the normal completion screen, or open **~/World of Warcraft** in the Desktop Mode file manager. Links point to the actual detected Battle.net installation, each installed WoW client and its existing Interface/AddOns directory. Use **Retail AddOns**, **Classic Era AddOns** or **Forever AddOns** for the matching edition.
@@ -20,7 +24,7 @@ Games and addons remain in place. Other-drive installations are discovered throu
 
 Rerun/repair reuses correct installer-owned links without duplicates. Multiple detected copies get distinct stable labels. An occupied user filename, an unowned existing World of Warcraft directory, or a changed link is preserved and reported; it is never silently adopted or overwritten. Do not remove an existing personal folder merely to satisfy setup.
 
-For just the access links, choose **Remove access links only — keep games and addons** on the removal page and confirm it. Only unchanged verified installer-owned links are unlinked; installation/addon targets stay intact. The empty access directory/private ownership record may remain for safe reuse. This is separate from full game/environment removal below.
+For just the access links, choose **Remove access links only : keep games and addons** on the removal page and confirm it. Only unchanged verified installer-owned links are unlinked; installation/addon targets stay intact. The empty access directory/private ownership record may remain for safe reuse. This is separate from full game/environment removal below.
 
 ## Pointer and controller
 

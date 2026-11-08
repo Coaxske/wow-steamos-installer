@@ -16,6 +16,7 @@ name = "syn"
 version = "2.0.48"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
 include = [
+    "/benches/**",
     "/Cargo.toml",
     "/LICENSE-APACHE",
     "/LICENSE-MIT",
@@ -36,8 +37,6 @@ categories = [
 ]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/dtolnay/syn"
-autotests = false
-autobenches = false
 
 [package.metadata.docs.rs]
 all-features = true
@@ -57,7 +56,23 @@ features = [
     "extra-traits",
 ]
 
+[lib]
+doc-scrape-examples = false
 
+[[bench]]
+name = "rust"
+harness = false
+required-features = [
+    "full",
+    "parsing",
+]
+
+[[bench]]
+name = "file"
+required-features = [
+    "full",
+    "parsing",
+]
 
 [dependencies.proc-macro2]
 version = "1.0.75"
@@ -96,6 +111,9 @@ features = ["blocking"]
 [dev-dependencies.rustversion]
 version = "1"
 
+[dev-dependencies.syn-test-suite]
+version = "0"
+
 [dev-dependencies.tar]
 version = "0.4.16"
 
@@ -124,79 +142,6 @@ proc-macro = [
     "proc-macro2/proc-macro",
     "quote/proc-macro",
 ]
+test = ["syn-test-suite/all-features"]
 visit = []
 visit-mut = []
-[[test]]
-name="regression"
-required-features = ["parsing", "full", "extra-traits"]
-[[test]]
-name="test_asyncness"
-required-features = ["full", "derive"]
-[[test]]
-name="test_attribute"
-required-features = ["full", "derive"]
-[[test]]
-name="test_derive_input"
-required-features = ["full", "extra-traits", "derive"]
-[[test]]
-name="test_expr"
-required-features = ["full", "extra-traits", "derive"]
-[[test]]
-name="test_generics"
-required-features = ["full", "extra-traits", "derive"]
-[[test]]
-name="test_grouping"
-required-features = ["full", "derive"]
-[[test]]
-name="test_ident"
-required-features = ["parsing"]
-[[test]]
-name="test_item"
-required-features = ["full", "derive"]
-[[test]]
-name="test_iterators"
-required-features = ["full", "derive"]
-[[test]]
-name="test_lit"
-required-features = ["full", "extra-traits", "derive"]
-[[test]]
-name="test_meta"
-required-features = ["full", "extra-traits", "derive"]
-[[test]]
-name="test_parse_buffer"
-required-features = ["parsing"]
-[[test]]
-name="test_parse_stream"
-required-features = ["parsing"]
-[[test]]
-name="test_path"
-required-features = ["full", "derive"]
-[[test]]
-name="test_pat"
-required-features = ["full", "extra-traits", "derive"]
-[[test]]
-name="test_receiver"
-required-features = ["full", "derive"]
-[[test]]
-name="test_shebang"
-required-features = ["full", "derive"]
-[[test]]
-name="test_should_parse"
-required-features = ["parsing", "full"]
-[[test]]
-name="test_size"
-required-features = ["full"]
-[[test]]
-name="test_stmt"
-required-features = ["full", "derive"]
-[[test]]
-name="test_token_trees"
-required-features = ["full", "derive"]
-[[test]]
-name="test_ty"
-required-features = ["full", "extra-traits", "derive"]
-[[test]]
-name="test_visibility"
-required-features = ["full", "extra-traits", "derive"]
-[[test]]
-name="zzz_stable"

@@ -215,6 +215,7 @@ fn send_proton_request(mut command:Command)->Result<()> {
     Ok(())
 }
 
+#[cfg(any(test, feature = "developer-tools"))]
 fn native_gear_available() -> bool {
     use std::os::unix::fs::PermissionsExt;
     std::env::var_os("PATH")
@@ -228,6 +229,7 @@ fn native_gear_available() -> bool {
         .unwrap_or(false)
 }
 // Only Gear Lever/Flatpak helpers use this deadline; never Steam or a game.
+#[cfg(any(test, feature = "developer-tools"))]
 fn gear_command(ctx: &Context, args: &[&std::ffi::OsStr], seconds: u64) -> Result<Vec<u8>> {
     use std::os::unix::fs::OpenOptionsExt;
     let output = ctx.data.join(format!(".gear-output-{}", fsutil::unique()));
@@ -274,6 +276,7 @@ fn gear_command(ctx: &Context, args: &[&std::ffi::OsStr], seconds: u64) -> Resul
     let _ = fs::remove_file(output);
     result
 }
+#[cfg(any(test, feature = "developer-tools"))]
 fn gear_list(ctx: &Context) -> Result<Json> {
     let args: Vec<_> = ["run", "it.mijorus.gearlever", "--list-installed", "--json"]
         .iter()
@@ -286,10 +289,12 @@ fn gear_list(ctx: &Context) -> Result<Json> {
     }
     Ok(value)
 }
+#[cfg(any(test, feature = "developer-tools"))]
 fn gear_is_curseforge(row: &Json) -> bool {
     let name = row["name"].as_str().unwrap_or("").to_ascii_lowercase();
     name == "curseforge" || (name.starts_with("curseforge (") && name.ends_with(')'))
 }
+#[cfg(any(test, feature = "developer-tools"))]
 fn gear_desktop(ctx: &Context) -> Result<PathBuf> {
     let list = gear_list(ctx)?;
     let apps: Vec<_> = list["installed"]
@@ -309,6 +314,7 @@ fn gear_desktop(ctx: &Context) -> Result<PathBuf> {
     gear_desktop_path(&ctx.home, id)
 }
 // Permit aliases of the home directory, never links below it or linked desktop files.
+#[cfg(any(test, feature = "developer-tools"))]
 fn gear_desktop_path(home: &Path, id: &str) -> Result<PathBuf> {
     use std::os::unix::fs::MetadataExt;
     if !id.ends_with(".desktop") || id == ".desktop" || id.contains('/') || id.contains('\\') || id.chars().any(char::is_control) {
@@ -333,6 +339,7 @@ fn gear_desktop_path(home: &Path, id: &str) -> Result<PathBuf> {
     Ok(path)
 }
 
+#[cfg(any(test, feature = "developer-tools"))]
 fn prepare_gear(ctx: &Context, req: &Json) -> Result<Json> {
     if let Some(id) = req.get("id").and_then(Json::as_str) { ctx.install(id)?; }
     if req["confirm"] != true {

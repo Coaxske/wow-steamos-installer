@@ -1,5 +1,7 @@
 pub mod addons;
 pub mod catalog;
+mod developer_tools;
+#[cfg(any(test, feature = "developer-tools"))]
 pub mod device_tests;
 pub mod discovery;
 pub mod engine;
@@ -101,6 +103,7 @@ pub extern "C" fn wow_steam_state() -> i32 {
 
 /// Sanitized opt-in controller handoff metadata; no command lines or account data.
 #[no_mangle]
+#[cfg(any(test, feature = "developer-tools"))]
 pub extern "C" fn wow_steam_snapshot() -> *mut std::os::raw::c_char {
     let value = std::panic::catch_unwind(steam_process::diagnostic_snapshot)
         .unwrap_or_else(|_| serde_json::json!({"snapshot_error":true}));
@@ -119,6 +122,7 @@ pub extern "C" fn wow_source() -> *const c_char {
 /// # Safety
 /// `request` must remain a valid NUL-terminated UTF-8 string for this call.
 #[no_mangle]
+#[cfg(any(test, feature = "developer-tools"))]
 pub unsafe extern "C" fn wow_controller_validate(request: *const c_char) -> i32 {
     std::panic::catch_unwind(|| {
         if request.is_null() {
@@ -143,6 +147,7 @@ pub unsafe extern "C" fn wow_controller_validate(request: *const c_char) -> i32 
 /// # Safety
 /// `request` must be null or point to a valid NUL-terminated UTF-8 string for this call.
 #[no_mangle]
+#[cfg(any(test, feature = "developer-tools"))]
 pub unsafe extern "C" fn wow_addon_registration_validate(request: *const c_char) -> i32 {
     std::panic::catch_unwind(|| {
         if request.is_null() {
@@ -165,6 +170,7 @@ pub unsafe extern "C" fn wow_addon_registration_validate(request: *const c_char)
 /// # Safety
 /// `request` must be null or point to a valid NUL-terminated UTF-8 string for this call.
 #[no_mangle]
+#[cfg(any(test, feature = "developer-tools"))]
 pub unsafe extern "C" fn wow_addon_lifecycle_validate(request: *const c_char) -> i32 {
     std::panic::catch_unwind(|| {
         if request.is_null() {
@@ -180,4 +186,9 @@ pub unsafe extern "C" fn wow_addon_lifecycle_validate(request: *const c_char) ->
     })
     .map(i32::from)
     .unwrap_or(0)
+}
+
+#[no_mangle]
+pub extern "C" fn wow_developer_tools() -> i32 {
+    i32::from(cfg!(feature = "developer-tools"))
 }

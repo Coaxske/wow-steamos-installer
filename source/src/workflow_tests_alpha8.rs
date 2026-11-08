@@ -301,12 +301,22 @@ fn alpha8_download_checks_are_bounded() {
         "http://downloader.battle.net/a",
         "https://battle.net.evil.test/a",
         "https://battle.net@evil.test/a",
+        "https://evil.test?.battle.net",
+        "https://evil.test#.blizzard.com",
+        "https://user@evil.test?x=.battle.net",
+        "https://evil.test%2F.battle.net/a",
+        "https://evil.test\\.battle.net/a",
+        "https://downloader.battle.net:8443/a",
+        "https://evil.test .battle.net/a",
+        "https:///a",
     ] {
-        assert!(!download_host(url));
+        assert!(!download_host(url), "{url}");
     }
     assert!(download_host(
         "https://downloader.battle.net/download/file.exe"
     ));
+    assert!(download_host("https://downloader.battle.net?os=win"));
+    assert!(download_host("https://dl.blizzard.com/file.exe?token=1#part"));
     assert!(valid_installer(&test_installer()));
     assert!(!valid_installer(b"MZ"));
     let mut bad = test_installer();

@@ -1,7 +1,11 @@
-# Runtime provenance — Candidate 44
+# Candidate 48 runtime provenance
 
-Linux x86_64 portable, built with Debian 12 Bookworm/glibc 2.36 and Qt 6.4.2, with SDL 2.30.0. Host graphics drivers and glibc remain system-provided. No FUSE or Python runtime is required.
+The Linux x86_64 portable uses Debian 12 Bookworm build inputs, glibc 2.36, Qt 6.4.2 and upstream SDL 2.30.0. Host graphics drivers and glibc remain system-provided. No FUSE or Python runtime is required.
 
-The 860 runtime files match C43 except the application payload. All 83 distribution runtime-source groups, 83 DSC descriptions/198 referenced source archives for 138 distribution components plus upstream SDL retain verified unchanged archive hashes. LICENSE-INVENTORY.json maps 139 components to notices. Runtime-Notices-C44.zip has 171 members and retains original legal texts; its historical README says Candidate 40, a legal-bundle label rather than current executable identity. Runtime-Sources-C44.zip is byte-identical to the verified earlier runtime source archive.
+The public mode omits developer capture, external-input, window-reading, checklist and addon-manager download execution. GStreamer capture plugins, the OCR model and their exclusive library closure are not packaged. Ordinary Qt/SDL navigation and their required transitive platform libraries remain.
 
-Matching installer/vendored Rust/SDL inputs are in Source.zip. The source fingerprint and native/portable identities are verified during packaging. C43 actual Steam Deck Game Mode Era/Retail evidence is carried forward by unchanged launch/controller code; C44 folder checks are automated disposable checks. Forever works on Steam Deck as of C44. Earlier recorded checks were bounded to character selection/creation; there is no separate recorded test of client 1.60.1.70862. Bazzite testing in progress. Private device records, QA code, logs, captures, settings, backups and transfer bundles are excluded.
+The final LICENSE-INVENTORY.json identifies actual bundled library-to-notice mappings. Runtime notices and corresponding source are checked against that closure. Upstream copyright and license attributions are retained. These are software attribution, not device or user records.
+
+Source.zip is the matching installer source, including vendored Rust inputs and the optional private developer build switch. Legacy standalone QA drivers and their adapter are excluded from this source snapshot and kept privately. Public assets exclude device reports, settings, logs, captures, private QA packets, backups and transfer URLs.
+
+C48's acceptance is limited to the Bazzite read-only scan and simulated packaged interface checks before Apply. Earlier Steam Deck evidence is described separately in ACCEPTANCE-SUMMARY.md.

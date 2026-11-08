@@ -298,7 +298,7 @@ pub fn edition(path: &Path) -> &'static str {
     }
 }
 
-/*pub fn clone_rust() {
+pub fn clone_rust() {
     let needs_clone = match fs::read_to_string("tests/rust/COMMIT") {
         Err(_) => true,
         Ok(contents) => contents.trim() != REVISION,
@@ -341,9 +341,9 @@ pub fn edition(path: &Path) -> &'static str {
     if !missing.is_empty() {
         panic!("excluded test file does not exist:{}\n", missing);
     }
-}*/
+}
 
-/*fn download_and_unpack() -> Result<()> {
+fn download_and_unpack() -> Result<()> {
     let url = format!(
         "https://github.com/rust-lang/rust/archive/{}.tar.gz",
         REVISION
@@ -372,4 +372,4 @@ pub fn edition(path: &Path) -> &'static str {
 
     fs::write("tests/rust/COMMIT", REVISION)?;
     Ok(())
-}*/
+}

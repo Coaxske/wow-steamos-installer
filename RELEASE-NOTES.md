@@ -1,15 +1,24 @@
-# Candidate 44 — Battle.net and easy addon access
+Earlier versions were tested on Steam Deck. This version was checked on a Bazzite PC.
 
-**Tested on Steam Deck in Game Mode. Bazzite testing in progress.**
+Download **WoW-SteamOS-Rust-Linux-x86_64**. It is the only file you need to run. Other assets contain instructions, checksums, licenses and source code.
 
-Exactly one installer-managed Steam tile, **Battle.net**, opens the ordinary edition/account chooser. Select Retail, Classic Era or experimental Forever there and press Play. Required guided Close after Play setup verifies a backed-up installation-wide preference so the main launcher exits while WoW continues; quit through WoW's own menu to return to the same tile. Installer edition choices still control setup.
+## Changes
 
-New in C44: **~/World of Warcraft** provides clearly named filesystem links to detected game installations and each actual installed edition's AddOns directory, including installations on indexed/explicitly selected external drives. **Open folders** is on normal completion. Correct links are reused; occupied names/unavailable drives are preserved and reported. Link-only removal preserves targets/addons. See INSTALL-AND-REMOVE.md for extracting an addon and the separate full-removal backup scope.
+- Finds additional existing installations using verified locations from Steam shortcuts.
+- Adds **Choose existing folder** when nothing is found.
+- Keeps separate copies distinct and requires review before reuse.
+- Explains empty results and missing matching Steam shortcuts. Finding files alone does not establish that the game will reach Play.
+- Includes missing Battle.net button repair.
+- Excludes developer checklists, screen-capture, external mouse-control, window-reading and addon-manager download tools from the public executable.
 
-Actual C43 Steam Deck Game Mode acceptance passed Era and Retail automatic main-launcher exit while the same correct game survived, normal quits and the same Battle.net ready tile. Era pointer/menu input passed with the existing generic Battle.net layout. Launch, Proton, controller and preference behavior is unchanged in C44; these are carried-forward C43 device results, not new C44 game sessions.
+## Checks and limits
 
-C44's new folder feature passed automated verification through the final packaged production engine with disposable synthetic setups: setup/rerun/repair, frozen-C43 upgrade, sample addon routing for all three editions, no duplicate links, external/disconnected drives, occupied/changed user entries and owned unlink/removal. Open folders dispatch was checked with a harmless command stub, not a live file-manager session.
+Candidate 48's actual Bazzite scan only read installation files. Packaged interface checks used automated simulated clicks and the normal folder picker, stopping before Apply. No new Candidate 48 Steam Deck, game, controller or installation-Apply test is claimed.
 
-**Forever works on Steam Deck as of C44.** Earlier recorded checks were bounded to character selection/creation; there is no separate recorded test of client 1.60.1.70862. No new test, character/world entry or full-gameplay claim is added by this documentation correction. Historical Era Error134 and WOW51900319 remain recorded without a proven cause/fix. Agent/window/brightness/passive-observation limits remain in ACCEPTANCE-SUMMARY.md.
+The Steam Deck results come from earlier versions. Retail and Classic Era reached character screens, Battle.net closed while the same WoW process stayed open, and normal quitting returned to the same Battle.net button.
 
-Separate WoW/edition tiles, automatic edition routing, automatic pointer setup and addon-manager integration are deferred. Existing installations, addons, layouts, preferences and normal display/sleep policy are preserved.
+Forever works on Steam Deck as of Candidate 44. It remains experimental because earlier recorded checks reached character selection or creation, and client 1.60.1.70862 has no separate recorded test.
+
+Full gameplay and performance are not established. Historical Error134 and WOW51900319 remain separate unexplained results.
+
+See ACCEPTANCE-SUMMARY.md for exact build identities and evidence limits.

@@ -26,13 +26,12 @@ ApplicationWindow {
     palette.highlightedText: "#ffffff"
     property string page: "home"
     property var history: []
-    property int registrationGeneration: 0
-    property var registrationReview: ({})
-    property var registrationEvidence: ({})
-    function clearRegistration(){registrationGeneration++;registrationReview={};registrationEvidence={};if(registrationConsent)registrationConsent.checked=false;if(registrationAuth)registrationAuth.checked=false}
-    property var addonHandoff: []
     property var session: ({state:{installations:[],addon_pending:false},catalog:[],home:"",data:""})
     property var scan: ({steam:[],games:[],launchers:[],warnings:[],steam_running:false})
+    property bool scanComplete: false
+    property string folderSearchPath: ""
+    property bool folderSearchPending: false
+    property bool folderSearchRequested: false
     property var plan: ({summary:[],removal:[],destructive:false})
     property var catalog: []
     property var tiles: []
@@ -77,8 +76,6 @@ ApplicationWindow {
     property var legacyItems: []
     property var legacySelected: []
     property bool reinstallMode: false
-    property bool liveMode: false
-    property int testedInput: 0
     property bool downloadsChecked: false
     property bool checkingDownloads: false
     property var missingDownloads: (current.editions||[]).filter(function(id){return !games.some(function(g){return g.id===id||(id==="forever"&&g.id==="classic_beta"&&foreverBeta.checked)})})
@@ -102,7 +99,6 @@ ApplicationWindow {
     property string setupStep: Guide.step(current,launcherExitStatus,singleTileReady)
     property var gameTiles: tiles.filter(function(t){return t.shared&&t.name==="Battle.net"})
     property var legacyProductTiles: tiles.filter(function(t){return t.game&&!t.shared})
-    property bool allGamesTested: gameTiles.length>0 && gameTiles.every(function(t){return (session.state.tests||[]).indexOf(selectedId+":"+(t.shared?"single-battlenet-c43":t.name))>=0})
     property string requestedProton: reinstallMode&&current.proton?current.proton:(selectedProton||"proton_11")
     property string effectiveProton: selectedProton?(steamInfo.protons.some(function(p){return p.name===selectedProton})?selectedProton:""):Guide.defaultProton(steamInfo.protons)
     property bool protonWaiting: false
@@ -119,7 +115,7 @@ ApplicationWindow {
     }
     Timer{interval:3000;repeat:true;running:page==="setup"&&protonWaiting&&!backend.busy&&protonPolls<100;onTriggered:{protonPolls++;checkProton();if(protonPolls===100){protonWaiting=false;notice="Automatic checking paused. Your choices are kept. Finish the Steam download, then choose Check again."}}}
     function next(){
-        liveMode=false;
+
         if(session.pending_cleanup||session.pending_transaction||session.pending_restore){openMaintenance("recover");return}
         if(current.id){openGames();return}
         if(selectionRequired){
@@ -145,13 +141,14 @@ ApplicationWindow {
     property bool repairFlowActive: false
     property int repairGeneration: 0
     property string repairReviewScopeKey: ""
-    onSelectedIdChanged: {folderInfo=({available:false,path:"",links:[],messages:[]});folderRefreshAttempted=false;launcherExitStatus=({ready:false,configured:false,state:"unavailable"});singleTileReady=false;sharedTileChoice=0;sharedTileChoices=[];if(exitConsent)exitConsent.checked=false;clearRegistration();clearControllerFlow();if(repairFlowActive&&repairCheckId!==selectedId)abandonRepair()}
+    onSelectedIdChanged: {folderInfo=({available:false,path:"",links:[],messages:[]});folderRefreshAttempted=false;launcherExitStatus=({ready:false,configured:false,state:"unavailable"});singleTileReady=false;sharedTileChoice=0;sharedTileChoices=[];if(exitConsent)exitConsent.checked=false;clearControllerFlow();if(repairFlowActive&&repairCheckId!==selectedId)abandonRepair()}
     function abandonRepair(){
         repairGeneration++;repairFlowActive=false;repairCheckPending=false;repairCheckId="";
         clearRepairConsent();repairReviewScopeKey="";sharedTileChoice=0;partialClients.checked=false;reviewConsent.checked=false;
     }
-    function cancelOperation(){clearRegistration();if(page==="pointerSteps")clearControllerFlow();abandonRepair();backend.cancel();notice="Cancellation requested. A started Steam transaction must reach a safe checkpoint."}
-    function returnHome(){clearRegistration();clearControllerFlow();abandonRepair();history=[];page="home"}
+    function clearFolderSearch(){folderSearchPending=false;folderSearchRequested=false;folderSearchPath=""}
+    function cancelOperation(){clearFolderSearch();if(page==="pointerSteps")clearControllerFlow();abandonRepair();backend.cancel();notice="Cancellation requested. A started Steam transaction must reach a safe checkpoint."}
+    function returnHome(){clearControllerFlow();abandonRepair();history=[];page="home"}
     property bool repairCheckPending: false
     property string repairCheckId: ""
     property string repairConsentKey: ""
@@ -172,10 +169,8 @@ ApplicationWindow {
         call("review_repair",{id:selectedId,_repair_generation:repairGeneration,allow_missing:missingDownloads.length>0&&repairConsentKey===repairScopeKey,installed_only_scope:{id:selectedId,selected:(current.editions||[]).slice().sort(),missing:missingDownloads.slice().sort()},confirm_forever_beta:foreverBeta.checked,shared_tile_appid:sharedTileChoice||null})
     }
     function languageCode(){return languageChoice.currentValue||"enUS"}
-    function routeAfterScan(){var destination=afterScan;afterScan="";if(selectionRequired&&!selectedId){go("home");return}if(destination==="games"&&selectedId)openGames();else if(destination){go(destination);if(destination==="addons"&&selectedId)call("shortcuts",{id:selectedId})}}
+    function routeAfterScan(){var destination=afterScan;afterScan="";if(selectionRequired&&!selectedId){go("home");return}if(destination==="games"&&selectedId)openGames();else if(destination){go(destination);}}
     function focusPage(){
-        if(page==="live"){liveCenter.focusFirst();return}
-        if(page==="testing"){testCenter.focusFirst();return}
         var root=contentScroll.contentItem.contentItem;
         function seek(item){
             if(!item.visible||!item.enabled)return null;
@@ -208,29 +203,24 @@ ApplicationWindow {
     }
     property int selectedSteam: 0
     property var steamInfo: scan.steam.length ? scan.steam[Math.min(selectedSteam,scan.steam.length-1)] : ({users:[],protons:[],path:""})
-    function go(next) { if(page==="addons"&&next!=="addons")clearRegistration(); if(repairFlowActive&&["repairOptions","sharedTileUpgrade","review"].indexOf(next)<0)abandonRepair();if(page!==next){history=history.concat([page]);page=next;contentScroll.contentItem.contentY=0;if(next==="addons"&&selectedId){addonHandoff=[];call("shortcuts",{id:selectedId})}} }
+    function go(next) { if(next==="addons"){next="games";notice="Addon-manager integration is deferred. Existing addons and managers are preserved."} if(repairFlowActive&&["repairOptions","sharedTileUpgrade","review"].indexOf(next)<0)abandonRepair();if(page!==next){history=history.concat([page]);page=next;contentScroll.contentItem.contentY=0;} }
     function back() {
-        clearRegistration();
+
         if(page==="pointerSteps")clearControllerFlow();
         abandonRepair();
         if(maintenanceDialog.visible){maintenanceDialog.close();return}
         if(folderDialog.visible){folderDialog.close();return}
-        if(appImageDialog.visible){appImageDialog.close();return}
-        if(backend.busy){backend.cancel();notice="Cancellation requested. If a transaction has started, setup finishes or pauses at a recoverable checkpoint.";return}
-        if(page==="live"){liveCenter.running=false;if(liveCenter.photo){liveCenter.photo=false;return}}
-        if(page==="testing"&&testCenter.photo){testCenter.photo=false;return}
-        if(page==="testing"&&testCenter.asking){testCenter.asking=false;return}
+        if(backend.busy){clearFolderSearch();backend.cancel();notice="Cancellation requested. If a transaction has started, setup finishes or pauses at a recoverable checkpoint.";return}
         if(history.length){var h=history.slice();page=h.pop();history=h}else{page="home"}
     }
     function call(action,args) {
         args=args||{};
-        if(action.indexOf("addon_registration_")===0)args._registration_generation=registrationGeneration;
         if(action!=="review_setup" && Object.prototype.hasOwnProperty.call(args,"id") && (!args.id || !selectedId || args.id!==selectedId || !current.id)) {errorText="Choose the intended installation explicitly before continuing.";return}
         if(["apply","guided_apply"].indexOf(action)>=0 && ["setup","adopt"].indexOf(plan.kind)<0){
             if(!selectedId || !plan.installation || selectedId!==plan.installation.id){errorText="The installation selection changed. Scan and review the intended copy again.";return}
             args.id=selectedId;
         }
-        errorText="";testCenter.failure="";operation=action;backend.request(action,args)
+        errorText="";operation=action;backend.request(action,args)
     }
     function chooseFolder(purpose) {folderPurpose=purpose;folderDialog.open()}
     function rememberEditionDraft() {
@@ -251,22 +241,12 @@ ApplicationWindow {
         selectedId=Guide.selection(all,previous,session.state.current,selectionInitialized,session.unavailable_installations||[]);
         selectionInitialized=true;
         if(!selectedId&&all.length>0)selectionRequired=true;
-        if(previous && !selectedId){selectionRequired=true;tiles=[];games=[];addonHandoff=[];plan=({summary:[],removal:[],destructive:false});deletionConsent.checked=false;reviewConsent.checked=false;history=[];page="home";notice="The previous installation is no longer available. Choose the intended installation before making changes."}
+        if(previous && !selectedId){selectionRequired=true;tiles=[];games=[];plan=({summary:[],removal:[],destructive:false});deletionConsent.checked=false;reviewConsent.checked=false;history=[];page="home";notice="The previous installation is no longer available. Choose the intended installation before making changes."}
         if(!locationField.text)locationField.text=value.home||""
     }
     function openGames() {if(!selectedId){go("found");return}if(setupStep==="addons")go("addons");call("shortcuts",{id:selectedId})}
-    function setupArguments(){return {id:selectedId,cleanup:liveCleanup.checked,reinstall:liveReinstall.checked,keep_settings:keepSettings.checked,language:languageCode(),steam:steamInfo.path,user:effectiveProfile,proton:effectiveProton,location:locationField.text,editions:editions,launcher_tile:wantLauncherTile,addon_manager:"none"}}
-    function reviewSetup(){if(!editions.length){errorText="Choose at least one edition.";return}if(!reinstallMode&&!effectiveProton){errorText="Finish installing the selected Proton in Steam, then choose Check again.";return}rememberEditionDraft();call(liveMode?"live_prepare":reinstallMode?"review_reinstall":"review_setup",setupArguments())}
-    function seedC12Checks(){
-        if(!backend.demo)return false;
-        previewScenario("complete");var i=session.state.installations[0];i.addon_manager="curseforge";i.editions=["era"];
-        session={home:"/home/player",state:{installations:[i],current:"preview",tests:[],addon_pending:false},catalog:catalog};page="help";return true;
-    }
-    function checkAddonHandoff() {
-        previewScenario("installed");page="addons";
-        addonHandoff=[{name:"WoW Classic Era",path:"/fixture/Program Files (x86)/World of Warcraft",mode:"guided"}];
-        return addonHandoff.length===1 && addonHandoff[0].path.indexOf("Program Files (x86)")>=0;
-    }
+    function setupArguments(){return {id:selectedId,cleanup:false,reinstall:false,keep_settings:keepSettings.checked,language:languageCode(),steam:steamInfo.path,user:effectiveProfile,proton:effectiveProton,location:locationField.text,editions:editions,launcher_tile:wantLauncherTile,addon_manager:"none"}}
+    function reviewSetup(){if(!editions.length){errorText="Choose at least one edition.";return}if(!reinstallMode&&!effectiveProton){errorText="Finish installing the selected Proton in Steam, then choose Check again.";return}rememberEditionDraft();call(reinstallMode?"review_reinstall":"review_setup",setupArguments())}
     function checkSelectionSafety() {
         var a={id:"removed",root:"/fixture/removed",editions:[],stage:"test_games"};
         var b={id:"working",root:"/fixture/working",editions:[],stage:"test_games"};
@@ -309,12 +289,10 @@ ApplicationWindow {
         scan={steam:[{path:"/home/player/.local/share/Steam",users:["Preview profile"],protons:[{name:"proton_11",label:"Proton 11"}]}],games:[],launchers:[],warnings:[],steam_running:false}
         plan={token:"preview",kind:"setup",summary:["Create a separate Battle.net environment in your selected game folder.","Use your selected installed Proton version.","Download Blizzard’s installer over HTTPS and add its Steam tile.","Keep existing games and shortcuts in place."],removal:[],destructive:false}
     }
-    Component.onCompleted: {if(backend.demo){previewSeed();testCenter.seedPreview();liveCenter.seed();Qt.callLater(focusPage)}else call("scan")}
+    Component.onCompleted: {if(backend.demo){previewSeed();Qt.callLater(focusPage)}else call("scan")}
     onPageChanged: {if(page==="launcherBehavior")exitConsent.checked=false;if(repairFlowActive&&["home","games","repairOptions","sharedTileUpgrade","review"].indexOf(page)<0)abandonRepair();Qt.callLater(focusPage)}
     function revealFocusedControl(){
         var item=win.activeFocusItem
-        if(page==="live"){liveCenter.reveal(item);return}
-        if(page==="testing"){testCenter.reveal(item);return}
         var flick=contentScroll.contentItem
         if(!item||!flick||!flick.contentItem)return
         var ancestor=item;var inside=false
@@ -334,25 +312,28 @@ ApplicationWindow {
         target: backend
         function onBackRequested(){win.back()}
         function onCompleted(action,response){
-            if(response.registration_generation!==undefined&&response.registration_generation!==registrationGeneration)return;
             if(response.controller_generation!==undefined&&response.controller_generation!==controllerGeneration)return;
             if(response.repair_generation!==undefined&&(!repairFlowActive||response.repair_generation!==repairGeneration))return;
             if(action==="review_repair"&&response.repair_generation!==undefined&&repairReviewScopeKey!==repairScopeKey){abandonRepair();errorText="Installed or missing editions changed. Choose repair again.";return}
-            if(!response.ok){if(action==="addon_registration_result")return;if(action==="addon_registration_apply"){registrationConsent.checked=false;call("addon_registration_result",{id:selectedId,token:registrationReview.token})}if(action==="proton_install"||action==="proton_status")protonWaiting=false;if(action.indexOf("live_")===0){liveCenter.running=false;liveCenter.failure=response.error||"Test paused.";return}if(action.indexOf("device_")===0){testCenter.photo=false;testCenter.failure=response.error||"The check could not finish. Try again.";testCenter.advanceAfterSave=false;return}repairCheckPending=false;checkingDownloads=false;errorText=response.error||"The operation did not complete.";if(["apply","guided_apply","guided_existing","reopen_steam","recover","review_clean","review_reinstall","review_repair","restore_settings","launch","select_installation","link_game","shortcuts","review_launcher","review_addon","prepare_gear"].indexOf(action)>=0)backend.request("init",{});return}
+            if(!response.ok){if(action==="add_root"||action==="scan")clearFolderSearch();if(action==="proton_install"||action==="proton_status")protonWaiting=false;repairCheckPending=false;checkingDownloads=false;errorText=response.error||"The operation did not complete.";if(["apply","guided_apply","guided_existing","reopen_steam","recover","review_clean","review_reinstall","review_repair","restore_settings","launch","select_installation","link_game","shortcuts","review_launcher"].indexOf(action)>=0)backend.request("init",{});return}
             var d=response.data
-            if(action.indexOf("live_")===0){liveCenter.receive(action,d);go("live");return}
-            if(action.indexOf("device_")===0){testCenter.receive(action,d);return}
-            if(action==="scan"){scan=d.scan;if(selectedSteam>=scan.steam.length)selectedSteam=0;refreshSession(d.session);routeAfterScan();Qt.callLater(focusPage)}
+            if(action==="scan"){
+                scan=d.scan;scanComplete=true;if(selectedSteam>=scan.steam.length)selectedSteam=0;refreshSession(d.session);
+                if(folderSearchPending){
+                    var searched=folderSearchPath;folderSearchPending=false;folderSearchPath="";afterScan="";
+                    var within=function(path){return path===searched||path.indexOf(searched+"/")===0};
+                    var found=scan.launchers.some(function(l){return within(l.path)})||scan.games.some(function(g){return within(g.path)});
+                    notice=found?"Existing files found. Choose the installation to review; nothing has been adopted.":"No Battle.net or WoW installation was found in the chosen folder. Choose another folder, or connect the drive and try again.";
+                    go("found");
+                }else routeAfterScan();
+                Qt.callLater(focusPage)
+            }
             else if(action==="init")refreshSession(d)
-            else if(action==="addon_registration_result"){registrationEvidence=d;notice=d.message}
-            else if(action==="addon_registration_review"){registrationEvidence={};if(d.id!==selectedId){clearRegistration();return}registrationReview=d;registrationConsent.checked=false;notice=d.message}
-            else if(action==="addon_registration_apply"){clearRegistration();registrationEvidence=d;notice=d.message}
-            else if(action==="prepare_gear"){appImagePath.text=d.desktop;notice=d.message;call("review_addon",{id:selectedId,manager:"curseforge"})}
             else if(action==="proton_install"||action==="proton_status"){receiveProton(d)}
             else if(action==="reopen_steam"){notice=d.message;call("init")}
             else if(action==="shortcuts"){
                 if(!d.installation||d.installation.id!==selectedId)return;
-                tiles=d.shortcuts;games=d.games;addonHandoff=d.addon_handoff||[];sharedTileChoices=d.shared_tile_choices||[];launcherExitStatus=d.launcher_exit_status||({ready:false,configured:false,state:"unavailable"});singleTileReady=d.single_tile_ready===true;folderInfo=d.folders||({available:false,path:"",links:[],messages:[]});
+                tiles=d.shortcuts;games=d.games;sharedTileChoices=d.shared_tile_choices||[];launcherExitStatus=d.launcher_exit_status||({ready:false,configured:false,state:"unavailable"});singleTileReady=d.single_tile_ready===true;folderInfo=d.folders||({available:false,path:"",links:[],messages:[]});
                 if(setupStep==="complete"&&!repairCheckPending&&!checkingDownloads&&!folderRefreshAttempted&&folderInfo.state==="not_created"){folderRefreshAttempted=true;call("refresh_folders",{id:selectedId})}
                 if(response.pointer_refresh)return;
                 if(repairCheckPending){repairCheckPending=false;if(repairCheckId!==selectedId){clearRepairConsent();errorText="Installation changed. Choose it and review repair again.";return}finishRepairCheck();return}
@@ -371,18 +352,17 @@ ApplicationWindow {
             else if(action.indexOf("review_")===0||action==="set_product"){if(action==="review_repair")clearRepairConsent();plan=d;reviewDetails=false;deletionConsent.checked=false;reviewConsent.checked=false;go("review")}
             else if(action==="diagnostics"){diagnosticText=d.text;go("diagnostics")}
             else if(action==="legacy_candidates"){legacyItems=d.items;legacySelected=[];go("legacy")}
-            else if(action==="download_addon"){appImagePath.text=d.path;notice=d.message}
             else if(action==="settings_backups"){settingsBackups=d.backups;settingsBackupRoot=d.location||"";go("restore")}
             else {
-                notice=d.steam_message|| (action==="launch"?(d.message||"Launch requested. Check Steam and confirm the window opens."):action==="mark_tested"?"Game checked.":"")
+                notice=d.steam_message|| (action==="launch"?(d.message||"Launch requested. Check Steam and confirm the window opens."):"")
                 if((action==="apply"||action==="guided_apply")||action==="guided_existing"||action==="recover"||action==="undo"||action==="cancel_cleanup"||action==="abandon_cleanup"||action==="reset_state"){
                     if((action==="apply"||action==="guided_apply")&&plan.kind==="setup"){freshEditionDraft=[]}foreverBeta.checked=false;downloadsChecked=false;partialClients.checked=false;history=[];if((action==="apply"||action==="guided_apply")&&["setup","reinstall","adopt"].indexOf(plan.kind)>=0&&d.id){selectedId=d.id;selectionRequired=false;}afterScan=(action==="apply"||action==="guided_apply")?Guide.afterApply(plan.kind):"home";call("scan")
                 }
-                else if(action==="add_root")call("scan")
+                else if(action==="add_root"){if(folderSearchRequested){folderSearchRequested=false;folderSearchPath=d.path;folderSearchPending=true;}call("scan")}
                 else if(action==="link_game")openGames()
                 else if(action==="addon_done"){afterScan="home";call("scan")}
                 else if(action==="restore_settings"||action==="skip_restore"){afterScan="games";call("scan")}
-                else if(action==="mark_tested"||action==="select_installation")call("init")
+                else if(action==="select_installation")call("init")
             }
         }
     }
@@ -391,17 +371,10 @@ ApplicationWindow {
         options: FolderDialog.DontUseNativeDialog
         onVisibleChanged: if(visible)Qt.callLater(function(){backend.styleFolderDialog(win)})
         title:folderPurpose==="location"?"Choose an existing parent folder for the new copy":"Choose the folder to search"
-        onAccepted:{var p=backend.localPath(selectedFolder);if(folderPurpose==="location")locationField.text=p;else if(folderPurpose==="link")call("link_game",{id:selectedId,path:p});else call("add_root",{path:p})}
-    }
-    FileDialog {
-        id:appImageDialog
-        options: FileDialog.DontUseNativeDialog
-        title:"Choose the publisher's Linux AppImage"
-        nameFilters:["Linux AppImages (*.AppImage)"]
-        onAccepted:appImagePath.text=backend.localPath(selectedFile)
+        onAccepted:{var p=backend.localPath(selectedFolder);if(folderPurpose==="location")locationField.text=p;else if(folderPurpose==="link")call("link_game",{id:selectedId,path:p});else{folderSearchRequested=true;call("add_root",{path:p})}}
     }
     header: Rectangle {
-        height:(page==="live"&&liveCenter.photo)||(page==="testing"&&testCenter.photo)?0:62;visible:height>0;color:"#18212c"
+        height:62;visible:height>0;color:"#18212c"
         RowLayout{anchors.fill:parent;anchors.margins:18
             Label{text:"WoW SteamOS Installer";color:"#f1f5fb";font.pixelSize:22;font.bold:true}
             Item{Layout.fillWidth:true}
@@ -410,31 +383,18 @@ ApplicationWindow {
     }
     footer: Rectangle {
         id:footerBar;objectName:"footerBar"
-        height:(page==="live"&&liveCenter.photo)||(page==="testing"&&testCenter.photo)?0:82;visible:height>0;color:"#152135"
+        height:82;visible:height>0;color:"#152135"
         RowLayout {
             anchors.fill:parent;anchors.margins:16;spacing:12
-            ActionButton{id:backButton;objectName:"backButton";text:folderDialog.visible||appImageDialog.visible?"Cancel selection":page==="home"?"Close setup":"Back";onClicked:{if(page==="home"&&!backend.busy&&!folderDialog.visible&&!appImageDialog.visible)win.close();else win.back()}}
+            ActionButton{id:backButton;objectName:"backButton";text:folderDialog.visible?"Cancel selection":page==="home"?"Close setup":"Back";onClicked:{if(page==="home"&&!backend.busy&&!folderDialog.visible)win.close();else win.back()}}
             InfoText{Layout.fillWidth:true;text:backend.busy?"Please wait…":"D-pad: move    A: select    B: back";font.pixelSize:13}
             BusyIndicator{running:backend.busy;visible:running;implicitHeight:32;implicitWidth:32}
             ActionButton{visible:backend.busy;text:"Cancel";objectName:"operationCancel";onClicked:cancelOperation()}
             ActionButton{objectName:"footerHome";visible:!backend.busy&&page!=="home";text:"Home";onClicked:returnHome()}
         }
     }
-    LiveTests {
-        id:liveCenter;objectName:"liveCenter";anchors.fill:parent;visible:page==="live";busy:backend.busy
-        onRequest:function(action,args){call(action,args)}
-        onConfigure:{liveMode=true;beginFreshSetup()}
-        onLeave:{liveMode=false;history=[];page="home";call("scan")}
-        onCopy:function(text){backend.copyText(text)}
-    }
-    TestCenter {
-        id:testCenter;objectName:"testCenter";anchors.fill:parent;visible:page==="testing";busy:backend.busy
-        onRequest:function(action,args){if(action==="device_run")args.id=selectedId;call(action,args)}
-        onLeave:{history=[];page="home"}
-        onCopy:function(text){backend.copyText(text)}
-    }
     RowLayout {
-        visible:page!=="testing"&&page!=="live";anchors.fill:parent;spacing:0
+        anchors.fill:parent;spacing:0
         ColumnLayout {
             Layout.fillWidth:true;Layout.fillHeight:true;spacing:0
             Rectangle {
@@ -462,8 +422,13 @@ ApplicationWindow {
                         InfoText{visible:!backend.busy&&scan.games.length>0;Layout.fillWidth:true;text:"Found: "+scan.games.map(function(g){return g.name}).join(", ")}
                         ComboBox{id:currentChoice;objectName:"installationChoice";visible:availableInstallations.length>0;Layout.fillWidth:true;model:availableInstallations;textRole:"root";displayText:currentIndex<0?"Choose an installation":currentText;currentIndex:availableInstallations.findIndex(function(i){return i.id===selectedId});onActivated:{selectedId=model[currentIndex].id;selectionRequired=false;foreverBeta.checked=false;call("select_installation",{id:selectedId})}}
                         ActionButton{objectName:"homeContinue";text:session.pending_cleanup||session.pending_transaction||session.pending_restore?"Continue unfinished change":current.id?(setupStep==="complete"?"Open games":"Continue setup"):scan.launchers.length?"Use existing installation":"Install";primary:true;Layout.fillWidth:true;enabled:!backend.busy&&!session.state_error;onClicked:next()}
-                        ActionButton{visible:!!current.id&&setupStep!=="launcher"&&setupStep!=="download";Layout.fillWidth:true;objectName:"homeRepair";text:"Repair";enabled:!backend.busy;onClicked:prepareReview()}
-                        ActionButton{visible:false;Layout.fillWidth:true;text:"Manage addons";enabled:!backend.busy;onClicked:go("addons")}
+                        ColumnLayout{
+                            visible:scanComplete&&!backend.busy&&!current.id&&!session.state_error&&!session.pending_cleanup&&!session.pending_transaction&&!session.pending_restore&&scan.launchers.length===0&&scan.games.length===0
+                            Layout.fillWidth:true;spacing:8
+                            InfoText{objectName:"existingFolderQuestion";Layout.fillWidth:true;text:"Already have Battle.net or WoW installed?"}
+                            ActionButton{objectName:"homeChooseExistingFolder";text:"Choose existing folder";Layout.fillWidth:true;enabled:!backend.busy;onClicked:chooseFolder("search")}
+                        }
+                        ActionButton{visible:!!current.id&&setupStep!=="launcher"&&setupStep!=="download";Layout.fillWidth:true;objectName:"homeRepair";text:"Repair Battle.net tile";enabled:!backend.busy;onClicked:prepareReview()}
                         ActionButton{visible:!!current.id;text:"Remove";Layout.fillWidth:true;enabled:!backend.busy;onClicked:go("remove")}
                         ActionButton{objectName:"homeAdvanced";text:"Advanced";Layout.fillWidth:true;enabled:!backend.busy;onClicked:go("help")}
                         ActionButton{visible:!!session.pending_cleanup;Layout.fillWidth:true;text:"Cancel removal before changes start";enabled:!backend.busy;onClicked:call("cancel_cleanup")}
@@ -485,19 +450,19 @@ ApplicationWindow {
                         InfoText{Layout.fillWidth:true;text:scan.launchers.length>1?"More than one Battle.net installation was found. Choose the one you use.":"These are the games and Battle.net installations we found."}
                         Repeater{model:scan.warnings;InfoText{required property string modelData;Layout.fillWidth:true;text:modelData;color:"#efc387"}}
                         Repeater{model:scan.launchers;ColumnLayout{required property var modelData;required property int index;Layout.fillWidth:true
-                            ActionButton{text:"Use installation "+(index+1);Layout.fillWidth:true;enabled:!backend.busy;onClicked:call("adoption_candidates",{prefix:modelData.prefix})}
+                            ActionButton{objectName:"foundUseInstallation_"+index;text:"Use installation "+(index+1);Layout.fillWidth:true;enabled:!backend.busy;onClicked:call("adoption_candidates",{prefix:modelData.prefix})}
                             InfoText{Layout.fillWidth:true;text:modelData.prefix;font.pixelSize:13}
                         }}
                         Repeater{model:scan.games;InfoText{required property var modelData;Layout.fillWidth:true;text:modelData.name}}
                         InfoText{visible:scan.launchers.length===0;Layout.fillWidth:true;text:"No Battle.net installation found. If your games are on another drive, connect it and search that folder."}
-                        ActionButton{text:"Search another folder";Layout.fillWidth:true;enabled:!backend.busy;onClicked:chooseFolder("search")}
+                        ActionButton{objectName:"foundChooseFolder";text:"Choose another folder";Layout.fillWidth:true;enabled:!backend.busy;onClicked:chooseFolder("search")}
                         ActionButton{text:"Check again";Layout.fillWidth:true;enabled:!backend.busy;onClicked:call("scan")}
-                        ActionButton{text:"Install a separate copy";Layout.fillWidth:true;enabled:!backend.busy;onClicked:{liveMode=false;beginFreshSetup()}}
+                        ActionButton{text:"Install a separate copy";Layout.fillWidth:true;enabled:!backend.busy;onClicked:{beginFreshSetup()}}
 
                     }
                     ColumnLayout {
                         visible:page==="setup";Layout.fillWidth:true;Layout.margins:24;spacing:16
-                        Label{text:liveMode?"Choose games for the test":reinstallMode?"Reinstall World of Warcraft":"Choose your games";font.pixelSize:28;font.bold:true;color:"#f2f6fc"}
+                        Label{text:reinstallMode?"Reinstall World of Warcraft":"Choose your games";font.pixelSize:28;font.bold:true;color:"#f2f6fc"}
                         InfoText{Layout.fillWidth:true;text:reinstallMode?"The next screen will show exactly what will be removed. You’ll need to download these games again.":"Supported core release: Retail and Classic Era. Choose at least one. Availability depends on your Battle.net account. Experimental choices are not covered by core acceptance."}
                         Repeater{model:["retail","era"].map(function(id){return catalog.find(function(e){return e.id===id})}).filter(function(e){return !!e});InstallerCheckBox{required property var modelData;Layout.fillWidth:true;objectName:"edition_"+modelData.id;text:modelData.id==="retail"?"World of Warcraft (Retail)":modelData.name;checked:editions.indexOf(modelData.id)>=0;onToggled:toggleEdition(modelData.id,checked)}}
                         InstallerCheckBox{id:otherEditions;objectName:"moreEditions";text:"Experimental editions and test clients — outside the supported core release";Layout.fillWidth:true}
@@ -526,9 +491,7 @@ ApplicationWindow {
                             RowLayout{Layout.fillWidth:true;TextField{id:locationField;objectName:"installLocation";Layout.fillWidth:true;placeholderText:"Choose a folder";selectByMouse:true}ActionButton{objectName:"locationBrowse";text:"Browse";onClicked:chooseFolder("location")}}
                             InfoText{Layout.fillWidth:true;text:"A new folder will be created here. Existing installations stay in place.";font.pixelSize:14}
                         }
-                        InstallerCheckBox{id:liveReinstall;visible:liveMode;text:"Also test reinstall and settings restore (downloads games twice)";Layout.fillWidth:true}
-                        InstallerCheckBox{id:liveCleanup;visible:liveMode;text:"Remove the test copy when the run finishes";Layout.fillWidth:true}
-                        ActionButton{objectName:"setupReview";text:liveMode?"Review test run":reinstallMode?"Review reinstall":"Continue";primary:true;Layout.fillWidth:true;enabled:!backend.busy&&scan.steam.length>0&&(reinstallMode||effectiveProfile!=="")&&editions.length>0&&(reinstallMode||effectiveProton!=="");onClicked:reviewSetup()}
+                        ActionButton{objectName:"setupReview";text:reinstallMode?"Review reinstall":"Continue";primary:true;Layout.fillWidth:true;enabled:!backend.busy&&scan.steam.length>0&&(reinstallMode||effectiveProfile!=="")&&editions.length>0&&(reinstallMode||effectiveProton!=="");onClicked:reviewSetup()}
 
                     }
                     ColumnLayout {
@@ -539,13 +502,13 @@ ApplicationWindow {
                         InfoText{objectName:"reviewChoices";visible:!!plan.choices;Layout.fillWidth:true;text:plan.choices?(plan.kind==="repair"?"Installed editions using the single Battle.net tile: ":["clean","clean_owned"].indexOf(plan.kind)>=0?"Original setup selection (all editions inside the listed removal folders are removed): ":"Games: ")+(plan.choices.editions||[]).map(editionName).join(", ")+"\nAddon manager: "+addonName(plan.choices.addon_manager)+"\nBattle.net tile: "+(plan.choices.launcher_tile?"yes":"no"):""}
                         Repeater{model:plan.destructive||["legacy","product"].indexOf(plan.kind)>=0?plan.summary:[];InfoText{required property string modelData;Layout.fillWidth:true;text:modelData}}
                         Repeater{model:plan.removal;InfoText{required property string modelData;Layout.fillWidth:true;text:modelData;color:"#ffc4cc"}}
-                        Repeater{model:plan.kind==="repair"&&!reviewDetails?(plan.summary||[]).filter(function(s){return s.indexOf("Remove duplicate shortcut:")===0||s.indexOf("Shared ")===0||s.indexOf("Before applying, create")===0}):[];InfoText{required property string modelData;Layout.fillWidth:true;text:modelData}}
+                        Repeater{model:plan.kind==="repair"&&!reviewDetails?(plan.summary||[]).filter(function(s){return s.indexOf("Remove duplicate shortcut:")===0||s.indexOf("Shared ")===0||s.indexOf("Before applying, create")===0||s.indexOf("Restore missing Battle.net tile:")===0}):[];InfoText{required property string modelData;Layout.fillWidth:true;text:modelData}}
                         InstallerCheckBox{visible:!plan.destructive&&["legacy","product"].indexOf(plan.kind)<0;text:"Show details";checked:reviewDetails;onToggled:reviewDetails=checked}
                         Repeater{model:reviewDetails&&!plan.destructive?plan.summary:[];InfoText{required property string modelData;Layout.fillWidth:true;text:modelData}}
                         InfoText{Layout.fillWidth:true;text:"Keep Steam open while choosing options. Setup will close it only for the reviewed changes, finish that work automatically, then reopen Steam before asking you to continue. Close games and Battle.net yourself first. Steam will never be force-closed. Built-in desktop controls may pause during this automatic interval; no further input is required until Steam restoration is attempted.";color:"#efc387"}
-                        InstallerCheckBox{id:reviewConsent;Layout.fillWidth:true;text:"I’m ready. Close and reopen Steam when needed."}
+                        InstallerCheckBox{id:reviewConsent;objectName:"reviewSteamConsent";Layout.fillWidth:true;text:"I’m ready. Close and reopen Steam when needed."}
                         InstallerCheckBox{id:deletionConsent;visible:plan.destructive;Layout.fillWidth:true;text:"Delete the listed folders. I understand the games must be downloaded again.";contentItem:Text{text:deletionConsent.text;color:"#ffc4cc";font.pixelSize:15;wrapMode:Text.WordWrap;leftPadding:deletionConsent.indicator.width+deletionConsent.spacing}}
-                        ActionButton{text:plan.kind==="reinstall"?"Remove and reinstall":plan.destructive?"Remove selected items":"Continue";primary:!plan.destructive;danger:plan.destructive;Layout.fillWidth:true;enabled:!backend.busy&&reviewConsent.checked&&(!plan.destructive||deletionConsent.checked);onClicked:call("guided_apply",{manage_steam:true,token:plan.token,confirmation:plan.destructive&&deletionConsent.checked?"REMOVE THIS COPY":""})}
+                        ActionButton{objectName:"reviewApply";text:plan.kind==="reinstall"?"Remove and reinstall":plan.destructive?"Remove selected items":"Continue";primary:!plan.destructive;danger:plan.destructive;Layout.fillWidth:true;enabled:!backend.busy&&reviewConsent.checked&&(!plan.destructive||deletionConsent.checked);onClicked:call("guided_apply",{manage_steam:true,token:plan.token,confirmation:plan.destructive&&deletionConsent.checked?"REMOVE THIS COPY":""})}
 
                     }
                     ColumnLayout {
@@ -600,12 +563,10 @@ ApplicationWindow {
                         ActionButton{objectName:"gamesPointerGuide";text:"Gaming Mode pointer setup";Layout.fillWidth:true;enabled:!!selectedId&&!backend.busy;onClicked:openPointerHelp()}
                         Repeater{model:setupStep==="test"||setupStep==="complete"?gameTiles:[];RowLayout{required property var modelData;Layout.fillWidth:true
                             ActionButton{Layout.fillWidth:true;text:"Open "+modelData.name;enabled:!backend.busy;onClicked:call("launch",{id:selectedId,appid:modelData.appid})}
-                            ActionButton{visible:advanced;text:(session.state.tests||[]).indexOf(selectedId+":"+(modelData.shared?"single-battlenet-c43":modelData.name))>=0?"Battle.net tile checked":"Battle.net tile works";enabled:!backend.busy&&(session.state.tests||[]).indexOf(selectedId+":"+(modelData.shared?"single-battlenet-c43":modelData.name))<0;onClicked:call("mark_tested",{id:selectedId,name:modelData.shared?"single-battlenet-c43":modelData.name})}
                         }}
                         ActionButton{objectName:"prepareSingleTile";visible:setupStep==="shortcuts";text:"Review the single Battle.net tile";primary:true;Layout.fillWidth:true;enabled:!backend.busy;onClicked:prepareReview()}
                         ActionButton{visible:setupStep==="test";Layout.fillWidth:true;text:"Finish core setup";primary:true;enabled:!backend.busy&&singleTileReady&&launcherExitStatus.ready===true;onClicked:call("addon_done",{id:selectedId})}
-                        
-                        ActionButton{visible:false;Layout.fillWidth:true;text:"Manage addons";onClicked:go("addons")}
+
                         ColumnLayout{visible:setupStep==="test"||setupStep==="complete";Layout.fillWidth:true;spacing:8
                             Label{text:"Your games and AddOns folders";font.pixelSize:22;color:"#f2f6fc"}
                             InfoText{objectName:"foldersLocation";Layout.fillWidth:true;text:folderInfo.path||"~/World of Warcraft"}
@@ -657,68 +618,27 @@ ApplicationWindow {
                         InfoText{Layout.fillWidth:true;text:"Choose the Steam shortcuts to use. Matching shortcuts are selected when there’s only one clear group. Your game files and current compatibility tool will be kept."}
                         InfoText{Layout.fillWidth:true;text:adoption.prefix;font.pixelSize:13}
                         Repeater{model:adoption.candidates;InstallerCheckBox{required property var modelData;Layout.fillWidth:true;text:modelData.name+" · profile "+modelData.user+" · "+(modelData.proton||"Proton not explicitly set");checked:selectedAdoption.some(function(x){return x.appid===modelData.appid&&x.user===modelData.user&&x.steam===modelData.steam});onToggled:{var a=selectedAdoption.slice();if(checked){a=a.filter(function(x){return x.user===modelData.user&&x.steam===modelData.steam&&x.proton===modelData.proton});a.push(modelData)}else a=a.filter(function(x){return x.appid!==modelData.appid||x.user!==modelData.user||x.steam!==modelData.steam});selectedAdoption=a}}}
-                        InfoText{visible:adoption.candidates.length===0;Layout.fillWidth:true;text:"No matching Battle.net Steam shortcut was found. Add Battle.net through Steam and choose its working Proton version first, or create a separate new copy.";color:"#efc387"}
-                        ActionButton{text:"Continue";primary:true;enabled:!backend.busy&&selectedAdoption.length>0;onClicked:{var s=selectedAdoption[0];call("review_adopt",{prefix:adoption.prefix,steam:s.steam,user:s.user,appid:s.appid,selected:selectedAdoption.map(function(x){return x.appid})})}}
-                    }
-                    ColumnLayout {
-                        visible:page==="addons";Layout.fillWidth:true;Layout.margins:26;spacing:14
-                        Label{text:"Set up an addon manager";font.pixelSize:29;font.bold:true;color:"#f2f6fc"}
-                        InfoText{Layout.fillWidth:true;text:"Experimental optional features, outside Retail/Classic Era core acceptance. You can skip addons and finish core setup. Choose an addon manager. CurseForge setup reuses your managed copy, or downloads its official Linux AppImage and integrates it through Gear Lever."}
-                        ComboBox{id:managerChoice;Layout.fillWidth:true;model:[{name:"CurseForge",id:"curseforge"},{name:"WowUp with CurseForge",id:"wowup_cf"},{name:"WowUp with Wago",id:"wowup_wago"}];textRole:"name";valueRole:"id";currentIndex:Math.max(0,model.findIndex(function(m){return m.id===current.addon_manager}))}
-                        InstallerCheckBox{id:addonAdvanced;text:"Advanced: choose a local AppImage or download link";visible:managerChoice.currentValue==="curseforge"}
-                        TextField{id:addonUrl;visible:addonAdvanced.checked&&managerChoice.currentValue==="curseforge";Layout.fillWidth:true;placeholderText:"Official Linux AppImage download link (optional)"}
-                        ActionButton{objectName:"addonDownload";visible:managerChoice.currentValue!=="curseforge"||addonAdvanced.checked;text:"Download selected manager";enabled:!backend.busy&&(managerChoice.currentValue!=="curseforge"||addonUrl.text.length>0);onClicked:call("download_addon",{manager:managerChoice.currentValue,url:addonUrl.text})}
-                        InfoText{visible:managerChoice.currentValue==="curseforge";Layout.fillWidth:true;text:"Set up downloads the official Linux AppImage only when needed, installs Gear Lever if missing, then reviews its native Steam tile. Your existing managed copy and settings are reused. If Gear Lever needs approval, finish in your software store and retry. Updates stay separate in Gear Lever and may need your action.";font.pixelSize:14}
-                        ActionButton{visible:managerChoice.currentValue!=="curseforge"||addonAdvanced.checked;text:managerChoice.currentValue==="curseforge"?"Open the official download page":"Open the manager’s website";onClicked:backend.openPublisher(managerChoice.currentValue)}
-                        RowLayout{visible:managerChoice.currentValue!=="curseforge"||addonAdvanced.checked;Layout.fillWidth:true;TextField{id:appImagePath;objectName:"appImagePath";Layout.fillWidth:true;placeholderText:"Choose an existing Linux AppImage";selectByMouse:true}ActionButton{objectName:"appImageBrowse";text:"Browse";onClicked:appImageDialog.open()}}
-                        ActionButton{objectName:"addonSetup";text:managerChoice.currentValue==="curseforge"?"Set up CurseForge and review Steam tile":"Add manager to Steam";primary:true;enabled:!!selectedId&&(managerChoice.currentValue==="curseforge"||appImagePath.text.length>0)&&!backend.busy;onClicked:managerChoice.currentValue==="curseforge"?call("prepare_gear",{id:selectedId,confirm:true,path:addonAdvanced.checked?appImagePath.text:""}):call("review_addon",{id:selectedId,path:appImagePath.text,manager:managerChoice.currentValue})}
-                        Label{visible:managerChoice.currentValue==="curseforge";text:"Connect your WoW folder";font.pixelSize:23;color:"#f2f6fc"}
-                        InfoText{visible:managerChoice.currentValue==="curseforge";Layout.fillWidth:true;text:"Guided connection: if CurseForge does not find WoW, copy the detected folder below. In CurseForge open World of Warcraft → Locate Game → Manually add a game. Paste the folder into the folder picker's Name or Location field, then choose Open. Check that the intended Classic or Retail client appears. This does not register the game automatically."}
-                        InfoText{visible:managerChoice.currentValue==="curseforge"&&!addonHandoff.length;Layout.fillWidth:true;text:"No verified installed game folder is available for this selection. Finish the download in Battle.net, then refresh here."}
-                        ActionButton{objectName:"reviewGameRegistration";visible:managerChoice.currentValue==="curseforge";Layout.fillWidth:true;text:"Connect detected games automatically";enabled:!!selectedId&&addonHandoff.length>0&&!backend.busy;onClicked:call("addon_registration_review",{id:selectedId})}
-                        ColumnLayout{visible:!!registrationReview.token;Layout.fillWidth:true
-                            InfoText{Layout.fillWidth:true;text:registrationReview.message||""}
-                            Repeater{model:registrationReview.targets||[];InfoText{required property var modelData;Layout.fillWidth:true;text:editionName(modelData.edition)+"\n"+modelData.client}}
-                            InstallerCheckBox{id:registrationConsent;objectName:"registrationConsent";text:"Allow screen/input and public-folder clipboard access, plus normal CurseForge close/reopen to verify these paths"}
-                            InstallerCheckBox{id:registrationAuth;text:"I have finished a previously requested private sign-in (only if paused)"}
-                            ActionButton{objectName:"applyGameRegistration";text:"Connect and verify games";primary:true;Layout.fillWidth:true;enabled:!!registrationReview.token&&registrationReview.id===selectedId&&registrationConsent.checked&&!backend.busy;onClicked:call("addon_registration_apply",{id:selectedId,token:registrationReview.token,confirm:true,auth_complete:registrationAuth.checked})}
-                        }
-                        ColumnLayout{visible:registrationEvidence.results!==undefined;Layout.fillWidth:true
-                            InfoText{Layout.fillWidth:true;text:registrationEvidence.message||""}
-                            Repeater{model:registrationEvidence.results||[];InfoText{required property var modelData;Layout.fillWidth:true;text:editionName(modelData.edition)+": "+(modelData.path_verified?"path verified":"path unverified")+"; "+(modelData.persistence_verified?"reopen persistence verified":"reopen persistence unverified")+"\n"+(modelData.verified_path||"")}}
-                            InfoText{Layout.fillWidth:true;text:!registrationEvidence.initial_selection_observed?"Original selection has not been observed; restoration unverified.":registrationEvidence.initial_selection_required?(registrationEvidence.initial_selection_restored?"Original selection restored.":"Original selection is not verified restored."):"No initial selection to restore."}
-                        }
-                        ActionButton{visible:managerChoice.currentValue==="curseforge";text:"Refresh detected folders";enabled:!!selectedId&&!backend.busy;onClicked:{addonHandoff=[];call("shortcuts",{id:selectedId})}}
-                        Repeater{model:managerChoice.currentValue==="curseforge"?addonHandoff:[];ColumnLayout{required property var modelData;Layout.fillWidth:true;InfoText{Layout.fillWidth:true;text:modelData.name+"\n"+modelData.path}ActionButton{objectName:"copyAddonFolder";text:"Copy detected WoW folder";onClicked:{backend.copyText(modelData.path);notice="WoW folder copied. In CurseForge choose Locate Game → Manually add a game and paste it into the folder picker."}}}}
-                        Repeater{model:tiles.filter(function(t){return t.addon});ActionButton{required property var modelData;text:"Open "+modelData.name;Layout.fillWidth:true;enabled:!backend.busy;onClicked:call("launch",{id:selectedId,appid:modelData.appid})}}
-                        ActionButton{objectName:"addonPointerGuide";text:"Gaming Mode pointer setup";Layout.fillWidth:true;enabled:!!selectedId&&!backend.busy;onClicked:openPointerHelp()}
-                        InfoText{Layout.fillWidth:true;text:"Open the manager and check that it lists your games before finishing. You can skip this if you don’t use addons."}
-                        Flow{Layout.fillWidth:true;spacing:10
-                            ActionButton{text:"Finish setup";enabled:!!selectedId&&!backend.busy&&(["complete","addons","test"].indexOf(setupStep)>=0);onClicked:call("addon_done",{id:selectedId})}
-                            ActionButton{text:"Skip addons and finish";enabled:!!selectedId&&!backend.busy&&(["complete","addons","test"].indexOf(setupStep)>=0);onClicked:call("addon_done",{id:selectedId})}
-                        }
+                        InfoText{objectName:"adoptNoShortcut";visible:adoption.candidates.length===0;Layout.fillWidth:true;text:"No matching Battle.net Steam shortcut was found. Add Battle.net through Steam and choose its working Proton version first, or create a separate new copy.";color:"#efc387"}
+                        ActionButton{objectName:"adoptContinue";text:"Continue";primary:true;enabled:!backend.busy&&selectedAdoption.length>0;onClicked:{var s=selectedAdoption[0];call("review_adopt",{prefix:adoption.prefix,steam:s.steam,user:s.user,appid:s.appid,selected:selectedAdoption.map(function(x){return x.appid})})}}
                     }
                     ColumnLayout {
                         visible:page==="help";Layout.fillWidth:true;Layout.margins:26;spacing:14
                         Label{text:"Help & advanced options";font.pixelSize:28;font.bold:true;color:"#f2f6fc"}
                         ActionButton{text:"Find installed games";Layout.fillWidth:true;enabled:!backend.busy;onClicked:go("found")}
                         ActionButton{text:"Scan again";Layout.fillWidth:true;enabled:!backend.busy;onClicked:call("scan")}
-                        ActionButton{visible:false;text:"Run an installation test";Layout.fillWidth:true;enabled:!backend.busy;onClicked:{go("live");call("live_result")}}
-                        ActionButton{text:"Test this build";Layout.fillWidth:true;enabled:!backend.busy;onClicked:{go("testing");call("device_result")}}
                         Label{text:"Controller input";font.pixelSize:20;color:"#8ce1d5"}
                         InfoText{Layout.fillWidth:true;text:"Keep Steam open for built-in desktop controls. Setup closes it only for automatic guarded work and reopens it before asking you to continue. Direct SDL navigation depends on accessible devices and is not a guaranteed closed-Steam fallback. Deck HIDAPI takeover stays off to preserve trackpad mouse mode. If controls are unavailable, restore Steam first."}
                         Switch{text:"Direct controller navigation (mouse stays available)";checked:backend.directInput;onToggled:backend.directInput=checked}
                         InfoText{Layout.fillWidth:true;text:backend.controllerStatus}
                         ActionButton{text:"Reopen Steam desktop controls";enabled:!backend.busy;onClicked:call("reopen_steam")}
                         InfoText{Layout.fillWidth:true;text:"Deck trackpad and virtual keyboard behavior outside this app is managed by Steam. If its keyboard shrinks, dismiss/reopen it or use KDE Connect. The Gaming Mode pointer guide explains manual per-tile changes in Steam. This installer does not edit controller layouts or change system input permissions."}
-                        ActionButton{objectName:"controllerTestButton";text:"Test button: "+testedInput+" presses";onClicked:testedInput++}
                         InfoText{Layout.fillWidth:true;text:"KDE Connect is an optional phone keyboard. Setup does not change controller permissions or approve system prompts.";font.pixelSize:14}
                         Label{text:"Start over with a fresh copy";font.pixelSize:20;color:"#8ce1d5"}
                         InfoText{Layout.fillWidth:true;text:"Removing a copy is separate from repairing shortcuts or keeping it while adding another. Reviewed conventional folders in owned or exclusively used native Steam environments can be removed. Shared or unusual environments are blocked."}
                         InstallerCheckBox{id:keepSettings;text:"Keep addon and game settings";checked:false}
                         ActionButton{text:"Review removal of selected copy";danger:true;enabled:!!current.id&&!backend.busy;onClicked:call("review_clean",{id:selectedId,keep_settings:keepSettings.checked})}
-                        ActionButton{text:"Review reinstall of selected copy";enabled:!!current.id&&!backend.busy;onClicked:{liveMode=false;beginReinstallSetup()}}
-                        ActionButton{text:"Install another copy — keep current";onClicked:{liveMode=false;beginFreshSetup()}}
+                        ActionButton{text:"Review reinstall of selected copy";enabled:!!current.id&&!backend.busy;onClicked:{beginReinstallSetup()}}
+                        ActionButton{text:"Install another copy — keep current";onClicked:{beginFreshSetup()}}
                         ActionButton{text:"Review old or duplicate Steam tiles";enabled:!!current.id&&!backend.busy;onClicked:call("legacy_candidates",{id:selectedId})}
                         Flow{Layout.fillWidth:true;spacing:10
                             ActionButton{text:"Restore preserved settings";enabled:!!selectedId&&!backend.busy;onClicked:call("settings_backups")}

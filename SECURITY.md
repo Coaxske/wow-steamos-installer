@@ -2,33 +2,33 @@
 
 ## Your account
 
-The installer **never asks for your Blizzard password or authenticator codes.** You sign in only inside Blizzard's own Battle.net app.
+The installer never asks for your Blizzard password or authenticator codes. Sign in only inside Blizzard's Battle.net app.
 
-## What the installer connects to
+## Connections and download checks
 
-- It downloads the official Battle.net installer directly from Blizzard over a secure (HTTPS) connection. It checks redirect addresses and checks that the file is a Windows program before using it. Candidate 44 has a known limitation in its redirect check. It does not check Blizzard's digital signature on that file.
-- When you ask, it opens official download pages in your web browser.
-- Proton and other Steam tools are downloaded by Steam itself, not by the installer.
-- The installer has no tracking and does not send information about you anywhere.
+- The official Battle.net installer is downloaded over HTTPS. Download addresses and redirect destinations must match the permitted Blizzard host rules, including their hostname boundary. The file must look like a Windows program.
+- This is not verification of Blizzard's digital signature. Keep the usual care when running downloaded software.
+- Steam downloads Proton and required Steam runtimes. The installer may open official help or download pages when requested.
+- There is no tracking or automatic upload of your records.
 
-## What the installer changes on your Steam Deck
+## Local changes
 
-- It adds one **Battle.net** button to your Steam library.
-- With your approval, it turns on Battle.net's **close after Play** setting. Your original Battle.net settings are backed up first.
-- It creates a **World of Warcraft** folder in your Home folder with shortcuts to your game and AddOns folders.
-- It keeps its records and backups in its own data folder, normally `~/.local/share/wow-steamos-rust`.
-- While it is open, it unpacks itself into `~/.cache/wow-steamos-runtime` and cleans that up when it closes.
+With your review and approval, setup adds one Battle.net button, configures Close after Play for the selected installation, and creates Home-folder links to detected game and AddOns folders.
 
-Nothing is deleted without a review screen and your confirmation. Before deleting, the installer checks that each folder is still the one you reviewed, and it refuses to follow shortcuts that point somewhere else.
+Records and backups normally stay in the installer's own local data folder. They can contain account details and local folder names. Keep them private.
 
-## Testing tools in this version
+Removal has a separate review and confirmation. The installer checks ownership and the folders reviewed before making changes. Link-only removal preserves the linked games and addons.
 
-This test version contains tools the developer uses for automated testing, including tools that can take screenshots, move the mouse, and read the list of open windows. The Help & advanced options page also has a Test this build checklist. Some developer tools are available from command-line options. Normal setup does not need them. They will be removed from public downloads in the next version.
+## Public build
 
-## Keep these files private
+The public executable excludes the developer checklist, screen-capture, external mouse-control, window-reading and addon-manager download tools. Their source is available behind an explicit build switch for private developer builds. Basic installer preview and self-check options remain; they do not control other applications.
 
-The installer's backups, Steam configuration files and Battle.net settings files can contain account details and folder names from your computer. **Do not post them** in an Issue or anywhere public. If you need help, describe what happened and copy only the error message.
+Normal controller navigation and manual pointer instructions remain available. Setup does not approve OS permissions or change display and sleep policy.
 
-## Reporting a security problem
+## Keep private material private
 
-Please report security problems privately. On this project's page, open the **Security** tab and choose **Report a vulnerability**. Do not post security details in a public Issue.
+Do not upload Steam or Battle.net settings, tokens, passwords, logs, captures, device records or backup folders. Describe the problem and share only a nonsecret error message.
+
+## Report a security problem
+
+On the project's GitHub page, open Security and choose Report a vulnerability. Please report security issues privately rather than in a public Issue.

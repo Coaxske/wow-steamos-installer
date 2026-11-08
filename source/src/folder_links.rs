@@ -56,7 +56,7 @@ fn c(s: &std::ffi::OsStr) -> Result<CString> {
     CString::new(s.as_bytes()).map_err(|_| "Invalid folder path".into())
 }
 fn name(s: &str) -> Result<CString> {
-    if s.is_empty() || s == "." || s == ".." || s.contains('/') || s.as_bytes().len() > 240 {
+    if s.is_empty() || s == "." || s == ".." || s.contains('/') || s.len() > 240 {
         return Err("Invalid folder link name".into());
     }
     CString::new(s).map_err(|_| "Invalid folder link name".into())

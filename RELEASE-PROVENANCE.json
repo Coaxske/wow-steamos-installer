@@ -1,31 +1,36 @@
 {
-  "schema": 1,
-  "release": "v0.2.0-alpha.10-candidate.44",
-  "version": "0.2.0-alpha.10-candidate.44",
-  "portable_sha256": "5d839fa43b23a626509f1caea4c084271178de34775a3b29bdfb37ea88e2844c",
-  "native_payload_sha256": "439def8c4341b3b891f698b69d418ef4b8951a4f63cfc85158b382376c6e3dc1",
-  "matching_source_zip_sha256": "3492cbce40c0ee421b61ab97fc7c4ebe092c0f11e6759e26277ba0a0089aa830",
-  "source_fingerprint": "daf7bdc9fd427efaff4a766e48227109d7f0951867853da7f06d1df327e569ba",
-  "source_files": 903,
-  "folder": "~/World of Warcraft",
-  "Steam_tiles": [
+  "schema": 2,
+  "release": "v0.2.0-alpha.10-candidate.48",
+  "version": "0.2.0-alpha.10-candidate.48",
+  "build_mode": "public",
+  "developer_tools": false,
+  "portable_sha256": "19508288b4ace65e230930c704609b23be6e176fe1fc9a837a693abc13e2f6ac",
+  "native_payload_sha256": "2f54be65d37c65754b049cfae0b8f760289d63fd5cb079fc1d211a06f926a263",
+  "matching_source_zip_sha256": "eebea66950b2235d4cb3c08be4dc8b039b7ee3e26f5952d70ae63f63ceaf8150",
+  "source_fingerprint": "2ab87185e310d415cca876cb72af059c06563596866dc2ec8356ad3a7e026017",
+  "source_files": 894,
+  "runtime_files": 768,
+  "license_inventory_mappings": 87,
+  "steam_tiles": [
     "Battle.net"
   ],
+  "access_folder": "~/World of Warcraft",
   "platforms": {
-    "Steam_Deck": "Tested on Steam Deck in Game Mode: C43 Era/Retail and generic Battle.net pointer; C44 automated folder-only verification",
-    "Bazzite": "testing in progress"
+    "Bazzite": "C48 read-only scan and simulated packaged interface checks before Apply; game testing in progress",
+    "Steam_Deck": "C48 not tested; historical C43 Era/Retail and earlier Forever evidence only"
   },
-  "accepted_limit": "Historical recorded-test limit: no separate recorded test of client1.60.1.70862; earlier checks bounded to character selection/creation",
-  "public_assets": [
+  "Forever_limit": "Works on Steam Deck as of C44; earlier character-screen checks; client 1.60.1.70862 has no separate recorded test",
+  "runtime_source_coverage": "Unchanged verified 83-group source archive is a coverage superset; public runtime uses 48 distribution groups plus pinned SDL supplied in Source.zip",
+  "assets_excluding_self_and_manifest": [
     {
       "name": "ACCEPTANCE-SUMMARY.md",
-      "bytes": 4048,
-      "sha256": "bbe80f58aedb77f0e42ab6174d47fb668f1d7599e35088ed0d3fcda1a1f4308a"
+      "bytes": 4024,
+      "sha256": "6458e6400e817939cf04987b9d5c3c79de239acb14622b26064401eaa7a5ed80"
     },
     {
       "name": "INSTALL-AND-REMOVE.md",
-      "bytes": 9013,
-      "sha256": "a9ff8e848d53a9193ad6c2785717035fa327a205f2e441f96103b681cf3f4590"
+      "bytes": 9434,
+      "sha256": "5df7ad9d0685eab76727af3c8b0fa14f0b6e7a4c00284bb440dd77a8124cf878"
     },
     {
       "name": "LICENSE",
@@ -34,76 +39,69 @@
     },
     {
       "name": "LICENSE-INVENTORY.json",
-      "bytes": 14673,
-      "sha256": "e5f9353f14971cdaac2b1d455536047479ef0b995e627130ddd91597bc6cd925"
+      "bytes": 9199,
+      "sha256": "7d39a30c3ac4560914d14d1f5c77743eb2893506d447f30b18194951bb5a515d"
     },
     {
       "name": "RELEASE-NOTES.md",
-      "bytes": 2530,
-      "sha256": "3db11ca9a2b527ca330c7584ab3b1d91988c36bd4929025b95458651a11948cc"
+      "bytes": 1701,
+      "sha256": "57f87f4f5a0e7f4bc232712c9afbf815d93636f919ee92442eab979c469dc9c2"
     },
     {
       "name": "RUNTIME-PROVENANCE.md",
-      "bytes": 1409,
-      "sha256": "f340fbd812d0919a35d5e08fded040f205512f6a1261a9ada2e7be20394e6058"
+      "bytes": 1356,
+      "sha256": "e9a7cc4cb81d009eb9cde8010d395a3446a127b3fd9907269d65b3c1d4edae4e"
     },
     {
-      "name": "Runtime-Notices-C44.zip",
-      "bytes": 1167602,
-      "sha256": "1886dd593442e46d5ac985e0d7d81b4d8a02b96bd04abd04fb3ff10e2c5d1924"
+      "name": "Runtime-Notices-C48.zip",
+      "bytes": 1032308,
+      "sha256": "213f504699dd3ecb192cd32611ddb39ce54e4f332aec23545c1f067517ad1dfd"
     },
     {
-      "name": "Runtime-Notices-C44.zip.sha256",
+      "name": "Runtime-Notices-C48.zip.sha256",
       "bytes": 90,
-      "sha256": "ae2e6bf242ee84fc1fdf3fa7edba2bfe602dfdb04e554520712dfd3b9c348165"
+      "sha256": "e44fa05547a09390da4ef83273dce9655c299e3a09dac7ab91aa7307d9fc25dd"
     },
     {
-      "name": "Runtime-Sources-C44.zip",
+      "name": "Runtime-Sources-C48.zip",
       "bytes": 777516172,
       "sha256": "ac7d13fd83368e7498dbb86e9d79467b174b7d17b1d05321eba3b85a2761db37"
     },
     {
-      "name": "Runtime-Sources-C44.zip.sha256",
+      "name": "Runtime-Sources-C48.zip.sha256",
       "bytes": 90,
-      "sha256": "b4803ca4bc7375fc7d2cf4b3c0b9bd1b178b0a2ff979973c448f8bdb6a5cc1d0"
-    },
-    {
-      "name": "SHA256SUMS",
-      "bytes": 1429,
-      "sha256": "19a594ca97bb3c7672c64fb30bf6702f65c7e2e292e67564b296978859bfea7f"
+      "sha256": "d9ea5e1a1e5b4d46f2d4271dc8019cb53bffef969cdcdd1b263b50fd1bca2e7f"
     },
     {
       "name": "SUPPORTED-EDITIONS-AND-LIMITATIONS.md",
-      "bytes": 2818,
-      "sha256": "058e8016d98d15544c911a9df71466ccfc3156485f8c2276e5513bc2c54b5444"
+      "bytes": 3117,
+      "sha256": "0bb5f27c1898ff1529ff10bd10dccf39745a5a412031561b059c24a1b970e580"
     },
     {
       "name": "Source.zip",
-      "bytes": 9613461,
-      "sha256": "3492cbce40c0ee421b61ab97fc7c4ebe092c0f11e6759e26277ba0a0089aa830"
+      "bytes": 9640589,
+      "sha256": "eebea66950b2235d4cb3c08be4dc8b039b7ee3e26f5952d70ae63f63ceaf8150"
     },
     {
       "name": "Source.zip.sha256",
       "bytes": 77,
-      "sha256": "4170a5879f7d4069df40c42a0e750231ea70dad552ad1a0d37b95ad94c087120"
+      "sha256": "5174472ab64a975aaaace5340ef75b8dcfe77640cd0400662a8373e66956d5bc"
     },
     {
       "name": "THIRD-PARTY.md",
-      "bytes": 3887,
-      "sha256": "0db89392c039a5fcb3ae6312aa955807dd65ae508e598c32d6ab8a30a5fd5b8a"
+      "bytes": 2761,
+      "sha256": "ade734dad253ed8f65f675a05cab162349a5631713f9b364129e1c0d27902225"
     },
     {
       "name": "WoW-SteamOS-Rust-Linux-x86_64",
-      "bytes": 58956136,
-      "sha256": "5d839fa43b23a626509f1caea4c084271178de34775a3b29bdfb37ea88e2844c"
+      "bytes": 42821992,
+      "sha256": "19508288b4ace65e230930c704609b23be6e176fe1fc9a837a693abc13e2f6ac"
     },
     {
       "name": "WoW-SteamOS-Rust-Linux-x86_64.sha256",
       "bytes": 96,
-      "sha256": "fd0e99444e0013faa4910def9fb5d2d6b843f674e145ecc16a8b158c489d5c85"
+      "sha256": "598bf7a9282e39fa368b0c4502ac371444f009143bb00e36fa6bf52788a8b4b5"
     }
   ],
-  "private_material": "Excluded: QA tools/packets, raw reports/logs/captures, device settings/backups/handoffs/real symlink targets",
-  "Forever_compatibility": "Forever works on Steam Deck as of C44.",
-  "documentation_correction": "2026-11-07: current compatibility wording corrected; no new test; frozen executable, matching Source.zip, runtime/source/notices/license bytes and original release tag unchanged"
+  "private_material": "Excluded: QA packets/drivers, raw device reports, logs, captures, settings, backups, handoffs and private addresses"
 }

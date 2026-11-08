@@ -24,7 +24,7 @@ function planText(kind) {
     var texts = {
         setup: "Install Battle.net and add it to Steam. Your existing games will stay in place.",
         launcher: "Update the Steam shortcut to open the installed Battle.net app.",
-        repair: "Create or reuse exactly one Battle.net tile. Choose the edition inside Battle.net and press Play. Game files stay in place.",
+        repair: "Restore or repair the single Battle.net Steam tile using this existing installation. Keep its saved controls and Proton environment. Games stay in place; this repair does not download them again.",
         adopt: "Use this Battle.net installation and its Steam shortcuts. Keep the existing Proton choice and game files.",
         addon: "Add the addon manager to Steam so you can open it from your library.",
         exit: "Review this installation’s Battle.net behavior. Close after Play is required to finish this release setup and affects BOTH Desktop and Gaming Mode; Keep current leaves vendor preferences untouched and setup incomplete unless the setting is already enabled. Close Battle.net and WoW normally before continuing.",

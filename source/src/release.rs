@@ -18,6 +18,16 @@ pub const AUTOMATED: &[&str] = &[
     "privacy_licenses",
 ];
 pub fn evidence(hash: &str, v: &Value) -> Result<()> {
+    if cfg!(feature = "developer-tools")
+        || v["build_mode"] != "public"
+        || v["developer_tools"] != false
+        || v["automated"]["public_tool_boundary"] != "passed"
+    {
+        return Err(
+            "Public acceptance requires the public build and verified developer-tool exclusion."
+                .into(),
+        );
+    }
     if v["schema"] != 3 || v["version"] != env!("CARGO_PKG_VERSION") || v["archive_sha256"] != hash
     {
         return Err("Evidence must identify this exact release executable and version.".into());
@@ -71,7 +81,7 @@ pub fn hash_file(path: &Path) -> Result<String> {
 }
 pub fn manifest(binary: &Path) -> Result<Value> {
     Ok(
-        serde_json::json!({"schema":1,"version":env!("CARGO_PKG_VERSION"),"source_sha256":SOURCE,"binary_sha256":hash_file(binary)?,"architecture":std::env::consts::ARCH,"device_testing":"pending"}),
+        serde_json::json!({"schema":1,"version":env!("CARGO_PKG_VERSION"),"source_sha256":SOURCE,"binary_sha256":hash_file(binary)?,"architecture":std::env::consts::ARCH,"device_testing":"pending","developer_tools":cfg!(feature="developer-tools"),"build_mode":if cfg!(feature="developer-tools"){"developer"}else{"public"}}),
     )
 }
 pub fn check_manifest(binary: &Path, v: &Value) -> Result<()> {
@@ -89,7 +99,8 @@ mod tests {
     use super::*;
     fn record() -> Value {
         serde_json::json!({"schema":3,"version":env!("CARGO_PKG_VERSION"),"archive_sha256":"fixture",
- "automated":AUTOMATED.iter().map(|k|((*k).into(),serde_json::json!("passed"))).collect::<serde_json::Map<String,Value>>(),
+ "build_mode":"public","developer_tools":false,
+ "automated":AUTOMATED.iter().copied().chain(["public_tool_boundary"]).map(|k|((k).into(),serde_json::json!("passed"))).collect::<serde_json::Map<String,Value>>(),
  "inherited_C43":{"portable_sha256":"36b8541321e80ec6bd681d83e419a6b19eb5f7b2f954c4a33ebbd5ef3f41e41b","manual_archive_sha256":"63de7b41a06986b5b2e337b4e0fc6357c84a4036c9f002234d9bbe8e5e1854f8","Era_Retail_Game_Mode":"passed_with_recorded_limits","Era_pointer":"passed_existing_generic_layout"},
  "launch_controller_diff":"unchanged_except_folder_hooks",
  "Forever":{"current_version":"1.60.1.70862","current_tested":false,"accepted_historical_limit":true},
@@ -97,8 +108,23 @@ mod tests {
     }
     #[test]
     fn exact_executable_and_inherited_device_evidence() {
-        assert!(evidence("fixture", &record()).is_ok());
+        assert_eq!(
+            evidence("fixture", &record()).is_ok(),
+            !cfg!(feature = "developer-tools")
+        );
         assert!(evidence("changed", &record()).is_err());
+    }
+    #[test]
+    fn developer_artifact_or_missing_tool_boundary_refuses() {
+        let mut v = record();
+        v["developer_tools"] = serde_json::json!(true);
+        assert!(evidence("fixture", &v).is_err());
+        v = record();
+        v["build_mode"] = serde_json::json!("developer");
+        assert!(evidence("fixture", &v).is_err());
+        v = record();
+        v["automated"]["public_tool_boundary"] = serde_json::json!("pending");
+        assert!(evidence("fixture", &v).is_err());
     }
     #[test]
     fn missing_folder_gate_refuses() {

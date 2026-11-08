@@ -374,8 +374,20 @@ fn review_repair(ctx: &Context, req: &Json) -> Result<Json> {
             _ => None,
         })
         .collect();
+    let candidates = shared_tile_candidates(&root, &i, &games)?;
+    let restored_identity = if candidates.is_empty() {
+        missing_shared_tile_identity(&root, &i)?
+    } else {
+        None
+    };
+    let keeper = shared_tile_keeper(&candidates, req)?.or(restored_identity);
     let cfgbytes = fsutil::read(&i.steam.join("config/config.vdf"))?;
     let mut actual = BTreeSet::new();
+    if let Some(id) = restored_identity {
+        if let Some(tool) = steam::proton_for(&cfgbytes, id)? {
+            actual.insert(tool);
+        }
+    }
     for (_, v) in entries {
         if let Value::Object(e) = v {
             if steam::owned(e, &i.id) && vdf::string(e, "exe") != Some("\"/usr/bin/env\"") {
@@ -407,8 +419,9 @@ fn review_repair(ctx: &Context, req: &Json) -> Result<Json> {
         summary.push(format!("Remove confirmed uninstalled {} shortcut {} and its stale binding; preserve all game files, settings, controller layouts and shared Proton.",r.edition,r.appid));
     }
     let mut ids = vec![];
-    let candidates = shared_tile_candidates(&root, &i, &games)?;
-    let keeper = shared_tile_keeper(&candidates, req)?;
+    if let Some(id) = restored_identity {
+        summary.push(format!("Restore missing Battle.net tile: keep its saved ID {id}, controller association, original launcher and Proton environment. Games, settings and access links stay in place; no download is needed."));
+    }
     i.launcher_tile = true;
     let mut shared = steam::entry(
         "Battle.net",
@@ -513,7 +526,15 @@ fn download_host(url: &str) -> bool {
     let Some(rest) = url.strip_prefix("https://") else {
         return false;
     };
-    let host = rest.split('/').next().unwrap_or("");
+    // The server name ends at the first '/', '?' or '#'. Refuse user names,
+    // ports, escapes and spaces so a redirect cannot disguise another server.
+    let host = rest.split(['/', '?', '#']).next().unwrap_or("");
+    if host.is_empty()
+        || host.contains(['@', ':', '%', '\\'])
+        || host.chars().any(|c| c.is_control() || c.is_whitespace())
+    {
+        return false;
+    }
     [
         "downloader.battle.net",
         "battle.net",
@@ -674,15 +695,21 @@ fn adoption_candidates(ctx: &Context, req: &Json) -> Result<Json> {
             for (_, v) in vdf::object(&root, "shortcuts").unwrap() {
                 if let Value::Object(e) = v {
                     let exe = vdf::string(e, "exe").unwrap_or("").trim_matches('"');
-                    let target = Path::new(exe);
+                    let Ok(target) = Path::new(exe).canonicalize() else {
+                        continue;
+                    };
+                    let options = vdf::string(e, "LaunchOptions").unwrap_or("");
+                    let explicit_prefix =
+                        steam::compat_prefix(options).and_then(|p| p.canonicalize().ok());
+                    if (options.contains("STEAM_COMPAT_DATA_PATH") && explicit_prefix.is_none())
+                        || explicit_prefix.as_ref().is_some_and(|p| p != &prefix)
+                    {
+                        continue;
+                    }
                     let direct = scan.games.iter().find(|g| {
                         g.executable == target
                             && (g.prefix.as_ref() == Some(&prefix)
-                                || steam::compat_prefix(
-                                    vdf::string(e, "LaunchOptions").unwrap_or(""),
-                                )
-                                .as_ref()
-                                    == Some(&prefix))
+                                || explicit_prefix.as_ref() == Some(&prefix))
                     });
                     let route = vdf::string(e, "LaunchOptions").and_then(steam::product);
                     let options = vdf::string(e, "LaunchOptions").unwrap_or("");
@@ -700,7 +727,7 @@ fn adoption_candidates(ctx: &Context, req: &Json) -> Result<Json> {
                         .iter()
                         .filter(|g| g.prefix.as_ref() == Some(&prefix) && g.id == "classic_beta")
                         .collect();
-                    let routed = if steam::launcher_alias(target, &launcher.path) {
+                    let routed = if steam::launcher_alias(&target, &launcher.path) {
                         if matching.len() == 1 {
                             Some(matching[0])
                         } else if matching.is_empty()
@@ -715,7 +742,7 @@ fn adoption_candidates(ctx: &Context, req: &Json) -> Result<Json> {
                         None
                     };
                     let associated = direct.or(routed);
-                    if steam::launcher_alias(target, &launcher.path) || direct.is_some() {
+                    if steam::launcher_alias(&target, &launcher.path) || direct.is_some() {
                         if let Some(id) = vdf::number(e, "appid") {
                             let p = steam::proton_for(&config, id)?;
                             out.push(json!({"steam":s.path,"user":user,"appid":id,"name":vdf::string(e,"appname"),"proton":p,"product":route.or_else(||steam::selected_product(options)),"game":associated.map(|g|g.executable.clone()),"edition":associated.map(|g|if routed.is_some(){route_edition.unwrap().id.to_string()}else{g.id.clone()})}));
@@ -1243,6 +1270,7 @@ fn apply(ctx: &Context, req: &Json) -> Result<Json> {
         json!({"message":if p.kind=="setup"{"Setup saved. Start Steam and open Battle.net."}else if p.kind=="adopt"{"Existing setup adopted. Check games, then review shortcut repair."}else if p.kind=="exit"{"Battle.net behavior choice saved for this installation. Continue setup; existing game files and shortcuts are unchanged."}else{"Shortcuts ready — test your games."},"kind":p.kind,"id":p.installation.id}),
     )
 }
+#[cfg(any(test, feature = "developer-tools"))]
 fn review_addon(ctx: &Context, req: &Json) -> Result<Json> {
     let mut i = ctx.install(field(req, "id")?)?;
     if req["manager"] == "curseforge" {
@@ -1424,6 +1452,7 @@ fn link_game(ctx: &mut Context, req: &Json) -> Result<Json> {
     ctx.save()?;
     Ok(json!({"message":"Folder linked to the selected setup. Return to Check downloaded games."}))
 }
+#[cfg(any(test, feature = "developer-tools"))]
 pub(crate) fn device_games(
     home: &Path,
     data: &Path,
@@ -1784,10 +1813,12 @@ fn dispatch_inner(req: Json) -> Result<Json> {
     if action == "demo" {
         return Ok(json!({"version":VERSION,"catalog":catalog::EDITIONS,"demo":true}));
     }
+    #[cfg(any(test, feature = "developer-tools"))]
     if ["device_run", "device_result", "device_mark"].contains(&action) {
         return crate::device_tests::dispatch(&req);
     }
     let mut ctx = Context::open()?;
+    #[cfg(any(test, feature = "developer-tools"))]
     if action == "addon_lifecycle_cancel" {
         return addon_lifecycle_cancel(&ctx, &req);
     }
@@ -1841,16 +1872,25 @@ fn dispatch_inner(req: Json) -> Result<Json> {
         return Err("An interrupted change needs recovery first. Choose Continue unfinished change; setup can close and reopen Steam for recovery.".into());
     }
     match action {
+        #[cfg(any(test, feature = "developer-tools"))]
         "live_prepare" | "live_result" | "live_step" | "live_retry_launch" | "live_stop" => {
             live_tests::dispatch(&mut ctx, &req)
         }
+        #[cfg(any(test, feature = "developer-tools"))]
         "addon_lifecycle_review" => addon_lifecycle_review(&ctx, &req),
+        #[cfg(any(test, feature = "developer-tools"))]
         "addon_lifecycle_apply" => addon_lifecycle_apply(&ctx, &req),
+        #[cfg(any(test, feature = "developer-tools"))]
         "addon_lifecycle_result" => addon_lifecycle_result(&ctx, &req),
+        #[cfg(any(test, feature = "developer-tools"))]
         "addon_registration_result" => addon_registration_result(&ctx, &req),
+        #[cfg(any(test, feature = "developer-tools"))]
         "addon_registration_review" => addon_registration_review(&ctx, &req),
+        #[cfg(any(test, feature = "developer-tools"))]
         "addon_registration_apply" => addon_registration_apply(&ctx, &req),
+        #[cfg(any(test, feature = "developer-tools"))]
         "controller_review" => controller_review(&ctx, &req),
+        #[cfg(any(test, feature = "developer-tools"))]
         "controller_apply" => controller_apply(&ctx, &req),
         "controller_status" => Ok(
             json!({"available":false,"message":CONTROLLER_AUTOMATION_UNAVAILABLE,"pending":ctx.data.join("controller-job.json").exists(),"result":if ctx.data.join("controller-result.json").exists(){fsutil::load::<Json>(&ctx.data.join("controller-result.json"))?}else{Json::Null},"historical_only":true}),
@@ -1872,10 +1912,10 @@ fn dispatch_inner(req: Json) -> Result<Json> {
                 return Err("Choose a folder".into());
             }
             if !ctx.state.extra_roots.contains(&p) {
-                ctx.state.extra_roots.push(p);
+                ctx.state.extra_roots.push(p.clone());
             }
             ctx.save()?;
-            Ok(json!({"message":"Search location saved. Scan again to see results."}))
+            Ok(json!({"path":p,"message":"Search location saved. Scan again to see results."}))
         }
         "review_setup" => review_setup(&ctx, &req),
         "review_repair" => review_repair(&ctx, &req),
@@ -1885,7 +1925,9 @@ fn dispatch_inner(req: Json) -> Result<Json> {
         "review_exit" => review_exit(&ctx, &req),
         "legacy_candidates" => legacy_candidates(&ctx, &req),
         "review_legacy" => review_legacy(&ctx, &req),
+        #[cfg(any(test, feature = "developer-tools"))]
         "review_addon" => review_addon(&ctx, &req),
+        #[cfg(any(test, feature = "developer-tools"))]
         "download_addon" => {
             let p =
                 crate::addons::download(&ctx.data, field(&req, "manager")?, req["url"].as_str())?;
@@ -1898,6 +1940,7 @@ fn dispatch_inner(req: Json) -> Result<Json> {
         "apply" => apply(&ctx, &req),
         "guided_apply" => guided_apply(&ctx, &req),
         "reopen_steam" => reopen_steam(&ctx),
+        #[cfg(any(test, feature = "developer-tools"))]
         "prepare_gear" => prepare_gear(&ctx, &req),
         "proton_install" => proton_install(&ctx, &req),
         "proton_status" => proton_status(&ctx, &req),
@@ -2022,6 +2065,7 @@ fn dispatch_inner(req: Json) -> Result<Json> {
             ctx.persist(state)?;
             Ok(json!({"message":"Settings restoration skipped; the backup remains available."}))
         }
+        #[cfg(any(test, feature = "developer-tools"))]
         "mark_tested" => {
             let i = ctx.install(field(&req, "id")?)?;
             let name = field(&req, "name")?;
@@ -2064,9 +2108,15 @@ fn dispatch_inner(req: Json) -> Result<Json> {
 
 include!("operations.rs");
 include!("guided.rs");
+#[cfg(any(test, feature = "developer-tools"))]
 include!("controller_setup.rs");
+#[cfg(not(any(test, feature = "developer-tools")))]
+const CONTROLLER_AUTOMATION_UNAVAILABLE: &str =
+    "Automatic pointer configuration is unavailable in this version. Use Gaming Mode pointer setup for manual instructions.";
+#[cfg(any(test, feature = "developer-tools"))]
 include!("addon_registration.rs");
 include!("preservation.rs");
+#[cfg(any(test, feature = "developer-tools"))]
 #[path = "live_tests.rs"]
 mod live_tests;
 
@@ -2085,6 +2135,7 @@ fn event(action: &str, outcome: &str) {
     let _ = fsutil::json(&path, &events);
 }
 pub fn dispatch(req: Json) -> Result<Json> {
+    crate::developer_tools::check_action(req["action"].as_str().unwrap_or(""))?;
     let action = req["action"].as_str().unwrap_or("");
     let action = if [
         "apply",
@@ -2536,6 +2587,8 @@ mod workflow_tests {
     include!("workflow_tests_candidate40.rs");
     include!("workflow_tests_candidate42.rs");
     include!("workflow_tests_candidate44.rs");
+    include!("workflow_tests_candidate45.rs");
+    include!("workflow_tests_candidate47.rs");
     include!("workflow_tests_candidate30.rs");
     include!("workflow_tests_candidate35.rs");
 }
