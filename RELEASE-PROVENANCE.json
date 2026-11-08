@@ -7,16 +7,16 @@
   "development_snapshot": {
     "build_mode": "public",
     "developer_tools": false,
-    "portable_executable_sha256": "63ff25c45735e1de8058ea8340bf63b189410e555ffcad220e1f04f9d9fc698f",
-    "source_archive_sha256": "ae14cccb6bb59193ad89db9fc680c8ae82933898522ef08fc83e41321db335fc",
-    "source_fingerprint": "9118b2e7ff41f509a55b6a84f140f06db0b8ce3488ebf1e0ef0d0eb2d1d4bc50",
-    "native_payload_sha256": "b084a85d5e5d52670b2545c6abcfd9199a53b4be3f23d4a15749cb0f7952e7c8",
+    "portable_executable_sha256": "9adb4fa6a5f3c060a0928c1544d646370f95a03a1b09a30f62ab4846a2728812",
+    "source_archive_sha256": "319df6ae209383f31b0d318c0e9ed1fd4b3312c6b3a7ff1eb55d4c26a0ddac2a",
+    "source_fingerprint": "7c13cc4730794c0989c0affd32634b9887885c9c2953e937dfd599fbf2e9e77d",
+    "native_payload_sha256": "afd8fb4685b225104d173bb2656b6afe6b1a2d0a0537fdaaffb8011c9a2546cc",
     "final_release": false
   },
   "checks": {
-    "offline": "268 library + 41 regression + 1 public refusal PASS",
+    "offline": "270 library + 41 regression + 1 public refusal PASS",
     "portable_handoff": "8 PASS",
-    "packaged_private_feed": "9 PASS; simulated network and Qt input, known synthetic-key variants for authenticated install",
+    "packaged_private_feed": "11 PASS; simulated network and Qt input, known synthetic-key variants for authenticated install; missing verification files retain manual notice with zero asset download",
     "live_GitHub_transport": "NOT RUN",
     "C49_Steam_Deck": "NOT RUN"
   },

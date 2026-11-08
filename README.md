@@ -24,7 +24,7 @@ Candidate 48 users must download Candidate 49 once by hand to get the updater. C
 
 The installer can quietly check this project's GitHub releases at most once every 24 hours. The home screen's **Check for installer updates once a day** switch turns these checks off. Offline or failed checks let setup continue. Checks and replacement are paused during setup, repair or removal. An unfinished saved setup also pauses updates until it is completed or resolved through normal recovery.
 
-When a newer version is found, choose **Update now**, **Not now** or **View release page**. Only **Update now** downloads and installs it. Not now leaves the current installer usable. Updates include test releases and never select an older version.
+When a newer version is found, choose **Update now**, **Not now** or **View release page**. Only **Update now** downloads and installs it. Not now leaves the current installer usable. Updates include test releases and never select an older version. If a newer release lacks usable verification files, the notice still appears with the release page; automatic installation stays unavailable.
 
 Before replacement, the updater checks both the published SHA-256 checksum and a digital signature for the exact installer file. The old installer is retained or restored if replacement or restart fails. If automatic restart or the new process's exit cannot be confirmed, recovery files may be retained for manual reopening. If an update cannot be verified, use **View release page** to download it by hand.
 

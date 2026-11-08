@@ -63,6 +63,8 @@ struct Candidate {
     page: String,
     token: String,
     size: u64,
+    #[serde(default)]
+    automatic_assets_available: bool,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -238,9 +240,6 @@ pub fn dispatch(data: &Path, request: &Value) -> Result<Value> {
                     "Update checks are disabled. Download manually from the release page".into(),
                 );
             }
-            let Some(key) = PRODUCTION_KEY else {
-                return failure("Signed automatic updates are not configured in this build. Use the release page".into());
-            };
             let candidate = match s.candidate.as_ref() {
                 Some(c) if request["token"].as_str() == Some(c.token.as_str()) => c,
                 _ => {
@@ -248,6 +247,12 @@ pub fn dispatch(data: &Path, request: &Value) -> Result<Value> {
                         "The update choice expired. Check again or use the release page".into(),
                     )
                 }
+            };
+            if !candidate.automatic_assets_available {
+                return failure("This release is missing usable installer, checksum or signature files. Use the release page".into());
+            }
+            let Some(key) = PRODUCTION_KEY else {
+                return failure("Signed automatic updates are not configured in this build. Use the release page".into());
             };
             let _guard = match idle_lock(data) {
                 Ok(x) => x,
@@ -358,7 +363,7 @@ fn validate_candidate(c: &Candidate) -> Result<()> {
         || c.page != page(&c.tag)
         || c.token.len() != 32
         || !c.token.bytes().all(|b| b.is_ascii_hexdigit())
-        || c.size == 0
+        || (c.automatic_assets_available && c.size == 0)
         || c.size > MAX_BINARY
     {
         return Err("Saved release choice is invalid".into());
@@ -389,9 +394,9 @@ fn select_release(bytes: &[u8], current: &str) -> Result<Option<Candidate>> {
         {
             continue;
         }
-        let Some(assets) = r["assets"].as_array() else {
-            continue;
-        };
+        // A newer recognized release still deserves a notice and manual page
+        // when its automatic-update assets are absent or unusable.
+        let assets = r["assets"].as_array().cloned().unwrap_or_default();
         let mut size = None;
         let mut valid = true;
         for name in [
@@ -422,15 +427,19 @@ fn select_release(bytes: &[u8], current: &str) -> Result<Option<Candidate>> {
                 break;
             }
         }
-        if !valid || size.unwrap_or(0) == 0 || size.unwrap_or(u64::MAX) > MAX_BINARY {
-            continue;
-        }
+        let automatic_assets_available =
+            valid && size.unwrap_or(0) > 0 && size.unwrap_or(u64::MAX) <= MAX_BINARY;
         let c = Candidate {
             version: tag[1..].into(),
             tag: tag.into(),
             page: page(tag),
             token: fsutil::unique(),
-            size: size.unwrap(),
+            size: if automatic_assets_available {
+                size.unwrap()
+            } else {
+                0
+            },
+            automatic_assets_available,
         };
         validate_candidate(&c)?;
         if best.as_ref().map(|(old, _)| v > *old).unwrap_or(true) {
@@ -645,6 +654,11 @@ fn cleanup_owned(path: &Path, owner: Option<&fs::Metadata>, expected_hash: Optio
 fn stage(data: &Path, candidate: &Candidate, key: [u8; 32]) -> Result<()> {
     cancelled()?;
     validate_candidate(candidate)?;
+    if !candidate.automatic_assets_available {
+        return Err(
+            "Required automatic-update files are missing or unusable; use the release page".into(),
+        );
+    }
     if Version::parse(&candidate.version)? <= Version::parse(env!("CARGO_PKG_VERSION"))? {
         return Err("Updates cannot downgrade this version".into());
     }
@@ -766,28 +780,89 @@ mod tests {
         json!({"draft":draft,"prerelease":true,"tag_name":tag,"html_url":page(tag),"assets":[{"name":PORTABLE,"browser_download_url":asset(tag,PORTABLE),"size":10,"state":"uploaded"},{"name":"SHA256SUMS","browser_download_url":asset(tag,"SHA256SUMS"),"size":100,"state":"uploaded"},{"name":format!("{PORTABLE}.sig"),"browser_download_url":asset(tag,&format!("{PORTABLE}.sig")),"size":64,"state":"uploaded"}]})
     }
     #[test]
-    fn drafts_foreign_duplicate_and_old_releases_are_ignored() {
+    fn drafts_foreign_pages_and_old_releases_are_ignored() {
         let mut foreign = release("v0.2.0-alpha.10-candidate.999", false);
-        foreign["assets"][0]["browser_download_url"] =
-            json!("https://github.com/other/repo/releases/download/x/file");
-        let mut dup = release("v0.2.0-alpha.10-candidate.998", false);
-        let a = dup["assets"][0].clone();
-        dup["assets"].as_array_mut().unwrap().push(a);
+        foreign["html_url"] = json!("https://github.com/other/repo/releases/tag/x");
         let bytes = serde_json::to_vec(&vec![
             release("v0.2.0-alpha.10-candidate.1000", true),
             foreign,
-            dup,
             release("v0.2.0-alpha.9-candidate.9999", false),
             release("v0.2.0-alpha.10-candidate.50", false),
         ])
         .unwrap();
-        assert_eq!(
-            select_release(&bytes, "0.2.0-alpha.10-candidate.49")
+        let candidate = select_release(&bytes, "0.2.0-alpha.10-candidate.49")
+            .unwrap()
+            .unwrap();
+        assert_eq!(candidate.version, "0.2.0-alpha.10-candidate.50");
+        assert!(candidate.automatic_assets_available);
+    }
+    #[test]
+    fn newest_release_without_usable_assets_still_has_manual_notice() {
+        let good = release("v0.2.0-alpha.10-candidate.50", false);
+        for defect in ["signature", "checksum", "host", "duplicate", "all"] {
+            let mut newer = release("v0.2.0-alpha.10-candidate.51", false);
+            match defect {
+                "signature" => {
+                    newer["assets"].as_array_mut().unwrap().remove(2);
+                }
+                "checksum" => {
+                    newer["assets"].as_array_mut().unwrap().remove(1);
+                }
+                "host" => {
+                    newer["assets"][0]["browser_download_url"] =
+                        json!("https://github.com/other/repo/releases/download/x/file")
+                }
+                "duplicate" => {
+                    let entry = newer["assets"][0].clone();
+                    newer["assets"].as_array_mut().unwrap().push(entry);
+                }
+                _ => newer["assets"] = Value::Null,
+            }
+            let bytes = serde_json::to_vec(&vec![good.clone(), newer]).unwrap();
+            let candidate = select_release(&bytes, "0.2.0-alpha.10-candidate.49")
                 .unwrap()
+                .unwrap();
+            assert_eq!(candidate.version, "0.2.0-alpha.10-candidate.51");
+            assert_eq!(candidate.page, page("v0.2.0-alpha.10-candidate.51"));
+            assert!(!candidate.automatic_assets_available);
+            assert_eq!(candidate.size, 0);
+            validate_candidate(&candidate).unwrap();
+            let p = temp();
+            let error = stage(&p, &candidate, [0; 32]).unwrap_err();
+            assert!(error.contains("Required automatic-update files"));
+            assert_eq!(fs::read_dir(&p).unwrap().count(), 0);
+            save(
+                &p,
+                &Settings {
+                    candidate: Some(candidate.clone()),
+                    ..Settings::default()
+                },
+            )
+            .unwrap();
+            let refused = dispatch(
+                &p,
+                &json!({"action":"updater_install","confirmed":true,"token":candidate.token}),
+            )
+            .unwrap();
+            assert_eq!(refused["manual_required"], true);
+            assert!(refused["message"]
+                .as_str()
                 .unwrap()
-                .version,
-            "0.2.0-alpha.10-candidate.50"
-        );
+                .contains("missing usable"));
+            assert!(!p.join("update-request.json").exists());
+            fs::remove_dir_all(p).unwrap();
+        }
+    }
+    #[test]
+    fn older_cached_candidate_defaults_to_manual_only() {
+        let c: Candidate = serde_json::from_value(json!({
+            "version":"0.2.0-alpha.10-candidate.50",
+            "tag":"v0.2.0-alpha.10-candidate.50",
+            "page":page("v0.2.0-alpha.10-candidate.50"),
+            "token":"a".repeat(32),"size":100
+        }))
+        .unwrap();
+        assert!(!c.automatic_assets_available);
     }
     #[test]
     fn checksum_and_signature_cover_the_exact_bytes() {
@@ -862,11 +937,30 @@ mod tests {
     #[test]
     fn unset_key_refuses_install_without_network_or_portable_env() {
         let p = temp();
-        let result = dispatch(
+        let bytes =
+            serde_json::to_vec(&vec![release("v0.2.0-alpha.10-candidate.50", false)]).unwrap();
+        let candidate = select_release(&bytes, env!("CARGO_PKG_VERSION"))
+            .unwrap()
+            .unwrap();
+        save(
             &p,
-            &json!({"action":"updater_install","confirmed":true,"token":"unused"}),
+            &Settings {
+                candidate: Some(candidate.clone()),
+                ..Settings::default()
+            },
         )
         .unwrap();
+        let result = dispatch(
+            &p,
+            &json!({"action":"updater_install","confirmed":true,"token":candidate.token}),
+        )
+        .unwrap();
+        if PRODUCTION_KEY.is_none() {
+            assert!(result["message"]
+                .as_str()
+                .unwrap()
+                .contains("not configured"));
+        }
         assert_eq!(result["manual_required"], true);
         assert_eq!(result["restart_required"], false);
         assert!(!p.join("update-request.json").exists());
@@ -973,6 +1067,7 @@ mod tests {
                     page: page(&format!("v{version}")),
                     token: "a".repeat(32),
                     size: 100,
+                    automatic_assets_available: true,
                 }),
             };
             save(&p, &state).unwrap();

@@ -5,7 +5,7 @@ Download **WoW-SteamOS-Rust-Linux-x86_64** once by hand when Candidate 49 is pub
 ## Changes
 
 - Quietly checks this project's GitHub releases at most once every 24 hours, including test releases.
-- Offers Update now, Not now and View release page. Only Update now authorizes installing an update.
+- Offers Update now, Not now and View release page. Only Update now authorizes installing an update. If required verification files are missing, the newer-release notice and page remain available but automatic installation is disabled.
 - Includes a Home switch to turn checks off. Offline failures let the installer continue silently.
 - Pauses updates during setup, repair or removal and while any saved setup is unfinished.
 - Requires the exact executable's SHA-256 checksum and Ed25519 signature before use. Versions are compared numerically and never downgraded.
@@ -14,7 +14,7 @@ Download **WoW-SteamOS-Rust-Linux-x86_64** once by hand when Candidate 49 is pub
 
 ## Checks and limits
 
-Offline tests and simulated packaged checks ran on the Bazzite build machine. Private-feed cases covered signed update, cache aliases, failed-start rollback, checksum and signature failures, interrupted downloads, an unwritable folder, Not now, persisted opt-out and silent offline throttling. Test feed replies and Qt actions were simulated; the packaged file, signature and restart operations were real. Temporary fixture keys were used. This does not verify live GitHub transport or an actual Deck session.
+Offline tests and simulated packaged checks ran on the Bazzite build machine. Private-feed cases covered signed update, cache aliases, failed-start rollback, checksum and signature failures, interrupted downloads, an unwritable folder, missing-signature and missing-checksum notices without any asset download, Not now, persisted opt-out and silent offline throttling. Test feed replies and Qt actions were simulated; the packaged file, signature and restart operations were real. Temporary fixture keys were used. This does not verify live GitHub transport or an actual Deck session.
 
 No production signing key is configured in this development copy, so automatic installation is refused. Key provisioning, final release files and Candidate 49's Deck checks remain pending. This version must not be published in that state.
 

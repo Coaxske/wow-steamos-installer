@@ -441,7 +441,8 @@ ApplicationWindow {
                             visible: !!updateInfo.candidate && !updateDismissed
                             Layout.fillWidth: true; spacing: 8
                             InfoText { Layout.fillWidth:true; text:"A newer version is available" }
-                            ActionButton { objectName:"updateNow"; text:"Update now"; primary:true; Layout.fillWidth:true; enabled:!backend.busy&&!backend.updateBusy; onClicked:backend.requestUpdate("updater_install",{token:updateInfo.candidate.token,confirmed:true}) }
+                            InfoText { Layout.fillWidth:true; visible:!!updateInfo.candidate&&(updateInfo.candidate.automatic_assets_available!==true||updateInfo.signing_configured!==true); text:"Automatic installation is unavailable for this release. Use View release page to download it by hand." }
+                            ActionButton { objectName:"updateNow"; text:"Update now"; primary:true; Layout.fillWidth:true; enabled:!backend.busy&&!backend.updateBusy&&!!updateInfo.candidate&&updateInfo.candidate.automatic_assets_available===true&&updateInfo.signing_configured===true; onClicked:backend.requestUpdate("updater_install",{token:updateInfo.candidate.token,confirmed:true}) }
                             ActionButton { objectName:"updateNotNow"; text:"Not now"; Layout.fillWidth:true; enabled:!backend.busy&&!backend.updateBusy; onClicked:updateDismissed=true }
                             ActionButton { objectName:"updateReleasePage"; text:"View release page"; Layout.fillWidth:true; enabled:!backend.busy; onClicked:backend.openReleasePage(updateInfo.candidate ? updateInfo.candidate.page : "") }
                         }
