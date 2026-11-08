@@ -443,11 +443,52 @@ impl Session {
             thread::sleep(Duration::from_millis(25));
         }
     }
-    pub fn finish(&self) -> Result<(), String> {
+
+    fn verified_recovery_path(&self) -> Option<PathBuf> {
+        self.helper("updater_recovery_info").ok()?;
+        let bytes = private_bytes(&self.runtime.join("update-recovery-info"), 16384).ok()?;
+        let text = std::str::from_utf8(&bytes).ok()?;
+        if !text.ends_with('\n') || text.contains('\r') || text.contains('\0') {
+            return None;
+        }
+        let fields: Vec<_> = text[..text.len() - 1].split('\n').collect();
+        let binding = self.binding.as_ref()?;
+        if fields.len() != 6
+            || fields[0] != "WOW_UPDATE_RECOVERY_V1"
+            || fields[1] != self.nonce
+            || fields[3] != binding.sha256
+            || fields[4] != binding.version
+            || fields[5] != binding.source
+        {
+            return None;
+        }
+        let path = PathBuf::from(fields[2]);
+        let parent = self.pin.path.parent()?;
+        if ![
+            self.pin.path.clone(),
+            parent.join(format!(".wow-update-{}.backup", self.nonce)),
+            parent.join(format!(".wow-update-{}.new", self.nonce)),
+        ]
+        .contains(&path)
+        {
+            return None;
+        }
+        Some(path)
+    }
+    fn recovery_message(&self, reason: &str) -> String {
+        recovery_text(
+            reason,
+            &self.pin.path,
+            &self.runtime,
+            self.verified_recovery_path().as_deref(),
+        )
+    }
+    pub fn finish(&self) -> Result<bool, String> {
         write_private(
             &self.runtime.join("update-pending"),
             format!("WOW_UPDATE_PENDING_V1\n{}\n", self.nonce).as_bytes(),
-        )?;
+        )
+        .map_err(|e| self.recovery_message(&e))?;
         let committed = self.helper("updater_commit").and_then(|_| {
             Receipt::read(
                 &self.runtime.join("update-receipt"),
@@ -456,18 +497,37 @@ impl Session {
             )
         });
         if let Ok(new) = committed {
-            match self.restart(&new,false){Ok(())=>return Ok(()),Err(false)=>return Err("The new installer did not confirm startup and its exit could not be verified. The previous-version backup is retained; no rollback was attempted while the new process might still be active.".into()),Err(true)=>{}}
+            match self.restart(&new,false) {
+                Ok(()) => {
+                    // A healthy READY client is never rolled back because cleanup
+                    // cannot be proved. Retain the private evidence on refusal.
+                    if self.helper("updater_finalize").is_ok() {return Ok(true);}
+                    eprintln!("The new installer is ready. Older backup cleanup was deferred; recovery records were kept at: {}",self.runtime.display());
+                    return Ok(false);
+                }
+                Err(false) => return Err(self.recovery_message("The new installer did not confirm startup and its exit could not be verified. No rollback was attempted while it might still be active.")),
+                Err(true) => {}
+            }
         }
-        self.helper("updater_rollback")?;
+        self.helper("updater_rollback")
+            .map_err(|e| self.recovery_message(&e))?;
         let old = Receipt::read(
             &self.runtime.join("update-receipt"),
             "WOW_UPDATE_ROLLBACK_V1",
             &self.nonce,
-        )?;
+        )
+        .map_err(|e| self.recovery_message(&e))?;
         if self.binding.as_ref() != Some(&old) {
-            return Err("Restored installer identity did not match the original".into());
+            return Err(
+                self.recovery_message("Restored installer identity did not match the original")
+            );
         }
-        match self.restart(&old,true){Ok(())=>Ok(()),Err(_)=>Err("The previous installer was restored, but automatic reopening was not confirmed. Open the original portable again.".into())}
+        match self.restart(&old, true) {
+            Ok(()) => Ok(true),
+            Err(_) => Err(self.recovery_message(
+                "The previous installer was restored, but automatic reopening was not confirmed.",
+            )),
+        }
     }
 }
 pub struct Startup {
@@ -585,6 +645,22 @@ impl Startup {
         .is_ok()
     }
 }
+
+fn recovery_text(reason: &str, target: &Path, runtime: &Path, verified: Option<&Path>) -> String {
+    let mut message=format!("{reason}\n\nClose all installer windows before using a previous copy. If you cannot confirm they are closed, do not open another installer.\n\n");
+    if let Some(path) = verified {
+        if path == target {
+            message.push_str(&format!("The previous installer was verified at:\n{}\n\nAfter closing other installer windows, open that file again.\n",path.display()));
+        } else {
+            message.push_str(&format!("The previous installer backup was verified at:\n{}\n\nIn Desktop Mode, open that folder in the file manager. Press Ctrl+H to show hidden files. Copy the backup to a different name, keep the backup, mark the copy executable in Properties, and open the copy after all other installer windows are closed. Do not overwrite or delete your current installer.\n",path.display()));
+        }
+    } else {
+        message.push_str("A previous installer copy could not be verified. Do not rename or overwrite files based on a guessed backup name.\n");
+    }
+    message.push_str(&format!("\nRecovery records were kept at:\n{}\n\nYou can instead download the installer by hand from:\nhttps://github.com/Coaxske/wow-steamos-installer/releases",runtime.display()));
+    message
+}
+
 fn ready_matches(path: &Path, nonce: &str, expected: &Receipt) -> bool {
     private_bytes(path, 4096)
         .map(|b| {
@@ -764,5 +840,27 @@ mod tests {
         assert!(!is_update_exit(None));
         assert!(!is_update_exit(Some(1)));
         assert!(is_update_exit(Some(42)));
+    }
+    #[test]
+    fn recovery_message_names_verified_backup_and_safe_steps() {
+        let base = std::env::temp_dir().join("recovery fixture with spaces");
+        let target = base.join("portable");
+        let backup = base.join(".wow-update-fixture.backup");
+        let message = recovery_text(
+            "Startup could not be confirmed",
+            &target,
+            &base.join("runtime"),
+            Some(&backup),
+        );
+        assert!(message.contains(backup.to_str().unwrap()));
+        assert!(
+            message.find("Close all installer windows").unwrap()
+                < message.find("Copy the backup").unwrap()
+        );
+        assert!(message.contains("https://github.com/Coaxske/wow-steamos-installer/releases"));
+        assert!(message.contains("Do not overwrite or delete"));
+        let missing = recovery_text("Unknown", &target, &base.join("runtime"), None);
+        assert!(!missing.contains("backup was verified at"));
+        assert!(!missing.contains(backup.to_str().unwrap()));
     }
 }

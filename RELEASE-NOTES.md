@@ -1,23 +1,29 @@
-Candidate 49 is a development test version. Earlier published Candidate 48 was tested on Steam Deck in Game Mode; the new updater has not been checked on Deck.
+Candidate 49 is a development test version. This updater has not been tested on Steam Deck.
+
+Candidate 48 was tested on a Steam Deck that already had Battle.net and WoW set up. A brand-new installation has not been tested with this version yet. Bazzite testing is in progress.
 
 Download **WoW-SteamOS-Rust-Linux-x86_64** once by hand when Candidate 49 is published. It is the only file you need to run. Candidate 48 does not include the updater. Follow the [step-by-step install guide](https://github.com/Coaxske/wow-steamos-installer#download-and-install). Candidate 49 is not published yet.
 
 ## Changes
 
-- Quietly checks this project's GitHub releases at most once every 24 hours, including test releases.
-- Offers Update now, Not now and View release page. Only Update now authorizes installing an update. If required verification files are missing, the newer-release notice and page remain available but automatic installation is disabled.
-- Includes a Home switch to turn checks off. Offline failures let the installer continue silently.
-- Pauses updates during setup, repair or removal and while any saved setup is unfinished.
-- Requires the exact executable's SHA-256 checksum and Ed25519 signature before use. Versions are compared numerically and never downgraded.
-- Keeps the old portable as a backup. If replacement or startup fails, it is retained or restored. If the new process's exit cannot be confirmed, recovery files are retained instead of attempting an unsafe rollback.
-- Keeps the existing single Battle.net button, installation, Proton environment, settings, controller layouts and access-folder behavior. Developer tools stay excluded from the public build.
+- Quietly checks this project's releases at most once every 24 hours. Test releases are included.
+- Offers Update now, Not now and View release page. Only Update now authorizes installing an update.
+- Keeps newer-release notices visible when verification files are missing. Automatic installation stays unavailable.
+- Provides a Home switch to turn checks off. If saving the choice fails, the switch returns to the saved setting and shows a short error.
+- Lets idle unfinished setups check for releases and open the release page. Finish or remove that setup before Update now. Actively running setup, repair or removal blocks checks and installation.
+- Requires the exact executable's checksum and digital signature, compares versions numerically and never downgrades.
+- Keeps the newest verified previous installer after a successful update. Older completed backups and records are removed only when the updater's ownership records and the files still match. Unrelated files and unresolved recovery are preserved.
+- If startup cannot be confirmed and rollback is unsafe, shows the verified backup location when available, plain recovery steps and the releases-page link. It does not guess an unverified backup path.
+- Keeps the existing Battle.net button, games, Proton environment, settings, controller layouts and access folders. Developer tools stay excluded from the public build.
 
 ## Checks and limits
 
-Offline tests and simulated packaged checks ran on the Bazzite build machine. Private-feed cases covered signed update, cache aliases, failed-start rollback, checksum and signature failures, interrupted downloads, an unwritable folder, missing-signature and missing-checksum notices without any asset download, Not now, persisted opt-out and silent offline throttling. Test feed replies and Qt actions were simulated; the packaged file, signature and restart operations were real. Temporary fixture keys were used. This does not verify live GitHub transport or an actual Deck session.
+On the Bazzite build machine, 277 library tests, 41 regression tests, one public-build refusal test and nine portable-wrapper checks passed. Strict clippy and native compilation passed in both public and developer build modes.
 
-No production signing key is configured in this development copy, so automatic installation is refused. Key provisioning, final release files and Candidate 49's Deck checks remain pending. This version must not be published in that state.
+Fifteen private packaged scenarios passed, including two successive updates with the same Home and portable, an unrelated lookalike, unconfirmed startup, failed preference saving, idle unfinished setup and an active operation. Test feed replies and Qt actions were simulated. Cryptography, file replacement, restart and rollback operations used real packaged programs with known private-fixture keys. The two-update test advanced only its processes' realtime clock; it left the host clock and saved throttle records unchanged. Recovery dialog arguments were captured by a private substitute, not physically inspected on a device.
 
-Published Candidate 48 has existing-installation Steam Deck Game Mode Retail and Classic Era results, Desktop discovery/Repair/folder checks, and a firsthand Forever observation with recorded interruption limits. Those results do not test Candidate 49's updater. Fresh installation was not part of that device check. Bazzite gameplay testing remains in progress.
+The production signing key remains unconfigured, so automatic installation is refused in this development copy. Production signing, live signed-release testing and actual C49 Deck acceptance are separate pending stages. Optional stale partial-download cleanup is deferred.
 
-GitHub receives ordinary connection information when checking public releases. No game settings, account names or installer records are sent. See [security and privacy](https://github.com/Coaxske/wow-steamos-installer/blob/main/SECURITY.md) and [acceptance details](https://github.com/Coaxske/wow-steamos-installer/blob/main/ACCEPTANCE-SUMMARY.md).
+C48's existing-installation results remain separate evidence and do not test the C49 updater. Fresh installation, full gameplay and performance are not established. Earlier Error134 and WOW51900319 remain unexplained. Bazzite gameplay testing remains in progress.
+
+GitHub receives ordinary connection information during release checks. No game settings, account names or installer records are sent. See [security and privacy](SECURITY.md) and [acceptance details](ACCEPTANCE-SUMMARY.md).

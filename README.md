@@ -1,6 +1,8 @@
 # WoW SteamOS Installer
 
-Candidate 49 is in development. Published Candidate 48 was tested on Steam Deck in Game Mode; those results do not test the new updater.
+Candidate 48 was tested on a Steam Deck that already had Battle.net and WoW set up. A brand-new installation has not been tested with this version yet. Bazzite testing is in progress.
+
+Candidate 49 is in development. The Candidate 48 results below do not test its new updater.
 
 This early test version installs Blizzard's Battle.net app, adds one Battle.net button to Steam, and makes game and AddOns folders easier to find.
 
@@ -22,11 +24,11 @@ Setup asks you to approve Battle.net's Close after Play setting. Before changing
 
 Candidate 48 users must download Candidate 49 once by hand to get the updater. Candidate 49 is not published yet; the download above still points to published Candidate 48.
 
-The installer can quietly check this project's GitHub releases at most once every 24 hours. The home screen's **Check for installer updates once a day** switch turns these checks off. Offline or failed checks let setup continue. Checks and replacement are paused during setup, repair or removal. An unfinished saved setup also pauses updates until it is completed or resolved through normal recovery.
+The installer can quietly check this project's GitHub releases at most once every 24 hours. The home screen's **Check for installer updates once a day** switch turns these checks off. Offline or failed checks let setup continue. Checks and replacement are paused while setup, repair or removal is actively running. An unfinished saved setup can still check for releases, but you must finish or remove it before choosing Update now. View release page stays available.
 
 When a newer version is found, choose **Update now**, **Not now** or **View release page**. Only **Update now** downloads and installs it. Not now leaves the current installer usable. Updates include test releases and never select an older version. If a newer release lacks usable verification files, the notice still appears with the release page; automatic installation stays unavailable.
 
-Before replacement, the updater checks both the published SHA-256 checksum and a digital signature for the exact installer file. The old installer is retained or restored if replacement or restart fails. If automatic restart or the new process's exit cannot be confirmed, recovery files may be retained for manual reopening. If an update cannot be verified, use **View release page** to download it by hand.
+Before replacement, the updater checks both the published SHA-256 checksum and a digital signature for the exact installer file. After a successful update, the newest verified previous installer is kept. Older backups are removed only when the updater's own records and the files still match. The old installer is retained or restored if replacement or restart fails. If automatic restart or the new process's exit cannot be confirmed, recovery files may be retained for manual reopening. If an update cannot be verified, use **View release page** to download it by hand.
 
 This development copy has no production signing key configured. It refuses to install updates until the reviewed public key is included. Temporary signing keys are used only in private automated checks.
 
@@ -72,9 +74,9 @@ Read the [install and removal guide](INSTALL-AND-REMOVE.md) for backup locations
 
 ## What was checked
 
-Candidate 49 passed offline tests and simulated packaged updater checks on Bazzite, including signed replacement, failed-start rollback, checksum/signature failures, interrupted downloads, unwritable folders, Not now, opt-out and silent offline checks. The network responses and temporary signing keys were private test fixtures. This does not verify live GitHub transport, a production signing key or Steam Deck operation. No Candidate 49 game-session result is claimed. The following are published Candidate 48 existing-installation results carried forward with their limits.
+Candidate 49 uses offline and private simulated updater checks. See the acceptance details for this revision's results and limits. No Candidate 49 Steam Deck or game-session result is claimed.
 
-Published Candidate 48 was tested on an existing Steam Deck setup. In Game Mode, Retail and Classic Era reached character screens. Passive observation recorded the main Battle.net process exiting while the same identified game kept running; Agent was tracked separately. The tester used the physical trackpad to move and click in menus, quit through WoW's own Exit Game, and returned to the same Battle.net button with Play available. Reopening that button switched from Retail to Classic Era; this was not a separate same-edition relaunch pair for each game.
+Candidate 48 was tested on a Steam Deck that already had Battle.net and World of Warcraft set up.
 
 - **Game Mode:** Retail and Classic Era each started from the Battle.net button and reached the character screen. Battle.net closed itself while the game kept running. The trackpad worked as a mouse in menus, and quitting through the game's own Exit Game option returned to the same Battle.net button, ready to play again.
 - **Desktop Mode:** the installer found the existing installation without needing a folder to be chosen. Repair kept the existing Battle.net button, the Battle.net app, its Proton setup and the controller settings files. Open folders worked, and removing and re-creating the folder shortcuts left the checked game and addon files in place.
@@ -82,11 +84,7 @@ Published Candidate 48 was tested on an existing Steam Deck setup. In Game Mode,
 
 Not yet tested with this version: a brand-new installation, the Choose existing folder option on a Steam Deck (it was checked with simulated tests on Bazzite), full gameplay and performance. Bazzite testing is in progress. Error134 and WOW51900319, seen in earlier testing, are still unexplained.
 
-Fresh installation was not part of this device check. The existing-folder picker was checked with simulated interface tests on Bazzite, not exercised on the actual Deck. Bazzite gameplay testing remains in progress.
-
-Earlier Error134 and WOW51900319 remain separate unexplained historical results. No cause or repair is claimed from these later successes.
-
-See [acceptance details](ACCEPTANCE-SUMMARY.md) and [supported editions and limitations](SUPPORTED-EDITIONS-AND-LIMITATIONS.md).
+See [acceptance details](ACCEPTANCE-SUMMARY.md) for the exact test records and their limits.
 
 ## Help
 

@@ -8,9 +8,9 @@ These checks ran on the Bazzite build machine in an isolated container, using di
 
 | Check | Result and limits |
 | --- | --- |
-| Required formatting and offline tests | PASS: 270 library tests, 41 regression tests and one public-build refusal test. |
-| Public native build | PASS: strict clippy, Qt public-mode build, source correspondence and offscreen native self-check. |
-| Portable handoff checks | PASS: eight serial checks, including READY/exit binding, retained recovery, cache-parent aliases and refusal of a final runtime symlink. |
+| Required formatting and offline tests | PASS: 277 library tests, 41 regression tests and one public-build refusal test. |
+| Public native build | PASS: strict clippy in both public and developer modes, both native builds, source correspondence and offscreen native self-check. |
+| Portable handoff checks | PASS: nine serial checks, including READY/exit binding, retained recovery, cache-parent aliases and refusal of a final runtime symlink. |
 | Packaged private-feed update | PASS: simulated feed and synthetic compiled test key; actual checksum/signature, staging, atomic replacement, restart and prior-version backup. A second case used an aliased cache parent. |
 | Packaged failed-start rollback | PASS: controlled candidate exit before readiness restored the original executable and inode, then reopened it. No real service or game was stopped. |
 | Packaged refusal paths | PASS: incorrect checksum, incorrect signature, interrupted download and unwritable portable directory kept the original usable. |
@@ -18,20 +18,24 @@ These checks ran on the Bazzite build machine in an isolated container, using di
 | Packaged ordinary choices | PASS: Not now kept Home usable; opt-out persisted after reopening; offline failure remained silent and did not repeat within the day. |
 | URL and release policy | Offline checks cover numeric ordering, prereleases, drafts, no downgrade, daily throttling, opt-out, busy or unfinished workflows, repository URL boundaries and redirect/header rejection. No live GitHub transport test is claimed. |
 | New dependencies | Eighteen exact-version additions were checked against official archive metadata and complete per-file manifests. The original nineteen packages remain unchanged from the verified C48 baseline; their sparse inherited manifests are not a new complete upstream-file audit. Notices are included. |
+| A: newest previous-installer retention | PASS: two successive authenticated private updates used the same Home and target. The newest verified previous copy and record remained; the older completed pair was removed. An unrelated lookalike pair retained its bytes, inode and mode. Offline tests preserve changed-inode backups and reject missing or wrong-nonce readiness. |
+| B: unconfirmed startup recovery | PASS in a private proof-collision fixture: rollback stayed blocked, the current and previous portable bytes remained, and the requested error-dialog arguments named the actual verified backup path with safe recovery steps and the canonical releases URL. This is simulated dialog capture, not physical display acceptance. |
+| C: failed Off save | PASS: a read-only fixture settings directory made the ordinary checkbox save fail. A fresh readback restored the visible persisted setting, showed a short error and left the notice undiscarded. A later ordinary Off save and reopening agreed on disabled checks. |
+| D: unfinished versus active work | PASS: a held operation lock blocked the check and installation, with no network request or daily-attempt consumption. Reopening the same idle unfinished fixture fetched metadata once, kept the release-page link, disabled Update now and returned the exact required backend refusal. A simulated saved-stage completion followed by normal init/status handlers refreshed readiness without another feed request. |
 | Actual C49 Steam Deck, games or physical input | NOT RUN. Earlier C48 results below remain labeled C48. |
 | Production signing and final release package | PENDING. No production private key has been generated. These development snapshots are not final release artifacts. |
 
-The positive update and rollback fixtures use copies with a known synthetic public key compiled in; the second version changes only that key and the test version where required. Their hashes differ from the public-mode development snapshot. Network replies and Qt actions were simulated privately. No private feed override, synthetic key, QA driver, log, capture, settings or backup is part of the public build.
+The positive update and rollback fixtures use copies with a known synthetic public key compiled in; the second version changes only that key and the test version where required. Their hashes differ from the public-mode development snapshot. Network replies and Qt actions were simulated privately. The two-update fixture advanced only its test processes' realtime clock; it did not edit saved throttle records or change the host clock. No private feed override, synthetic key, QA driver, log, capture, settings or backup is part of the public build.
 
-Update checks are conservatively paused while any saved setup is unfinished, including an older inactive copy. Unverified child exit prevents automatic rollback; the backup and recovery records are retained for manual reopening. Normal display and sleep policy is unchanged.
+Daily checks and the release-page link remain available for idle unfinished saved setups, including older copies. Update now stays disabled and the backend refuses installation until the setup is finished or removed. Active operation locks block both checks and installation without consuming the daily attempt. Unverified child exit prevents automatic rollback; the backup and recovery records are retained for manual reopening. Normal display and sleep policy is unchanged.
 
 ## Public-mode development snapshot, not a release
 
-Portable SHA-256: **9adb4fa6a5f3c060a0928c1544d646370f95a03a1b09a30f62ab4846a2728812**.
+Portable SHA-256: **b269e14ca151ffac381c7c2543914bc08329a1f7893e50e937dd4eb1a9d43d0a**.
 
-Matching Source.zip SHA-256: **319df6ae209383f31b0d318c0e9ed1fd4b3312c6b3a7ff1eb55d4c26a0ddac2a**.
+Matching Source.zip SHA-256: **16b1d317557a2288f9a87c58583f2178cd1c5a82b4d7a19f060fae64183a459a**.
 
-Source fingerprint: **7c13cc4730794c0989c0affd32634b9887885c9c2953e937dfd599fbf2e9e77d**.
+Source fingerprint: **e540c3d99be055ff1f6c07f4542ef573cef6edcdaa7b0a382859bb9b788f6355**.
 
 These identify the private unsigned development snapshot with no production key configured, not a final signed Candidate 49 release.
 

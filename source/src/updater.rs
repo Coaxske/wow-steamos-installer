@@ -115,8 +115,16 @@ fn load(data: &Path) -> Result<Settings> {
 fn save(data: &Path, state: &Settings) -> Result<()> {
     fsutil::json(&data.join("updates.json"), state)
 }
-fn status(s: &Settings) -> Value {
-    json!({"enabled":s.enabled,"candidate":if s.enabled{s.candidate.as_ref()}else{None},"signing_configured":PRODUCTION_KEY.is_some(),"release_page":RELEASE_PAGE})
+const UNFINISHED_SETUP: &str = "Finish or remove your unfinished setup before updating. You can still download the new version from the release page.";
+fn status(data: &Path, s: &Settings) -> Value {
+    let readiness = fsutil::Lock::acquire(&data.join("operation.lock"))
+        .and_then(|_guard| workflow_readiness(data));
+    let (ready, message) = match readiness {
+        Ok(true) => (true, String::new()),
+        Ok(false) => (false, UNFINISHED_SETUP.to_string()),
+        Err(e) => (false, e),
+    };
+    json!({"enabled":s.enabled,"candidate":if s.enabled{s.candidate.as_ref()}else{None},"signing_configured":PRODUCTION_KEY.is_some(),"release_page":RELEASE_PAGE,"install_ready":ready,"install_blocked_message":message})
 }
 fn prepare_data(data: &Path) -> Result<()> {
     if !data.exists() {
@@ -132,7 +140,8 @@ fn prepare_data(data: &Path) -> Result<()> {
     }
     Ok(())
 }
-fn idle(data: &Path) -> Result<()> {
+fn workflow_readiness(data: &Path) -> Result<bool> {
+    let mut ready = true;
     for name in [
         "transaction.json",
         "cleanup.json",
@@ -142,9 +151,7 @@ fn idle(data: &Path) -> Result<()> {
         "update-request.json",
     ] {
         if data.join(name).try_exists().map_err(|e| e.to_string())? {
-            return Err(
-                "Finish the current setup, repair, removal or restart before updating".into(),
-            );
+            ready = false;
         }
     }
     let state = data.join("state.json");
@@ -160,10 +167,21 @@ fn idle(data: &Path) -> Result<()> {
                     || i["addon_pending"].as_bool().unwrap_or(false)
             })
         {
-            return Err("Finish the current setup before updating".into());
+            return Ok(false);
         }
     }
+    Ok(ready)
+}
+fn idle(data: &Path) -> Result<()> {
+    if !workflow_readiness(data)? {
+        return Err(UNFINISHED_SETUP.into());
+    }
     Ok(())
+}
+fn check_idle_lock(data: &Path) -> Result<fsutil::Lock> {
+    let lock = fsutil::Lock::acquire(&data.join("operation.lock"))?;
+    let _ = workflow_readiness(data)?;
+    Ok(lock)
 }
 fn idle_lock(data: &Path) -> Result<fsutil::Lock> {
     let lock = fsutil::Lock::acquire(&data.join("operation.lock"))?;
@@ -177,18 +195,20 @@ pub fn dispatch(data: &Path, request: &Value) -> Result<Value> {
         "updater_commit",
         "updater_rollback",
         "updater_ready",
+        "updater_finalize",
+        "updater_recovery_info",
     ]
     .contains(&action)
     {
         return wrapper::dispatch(data, request);
     }
     if action == "updater_status" {
-        return load(data).map(|s| status(&s));
+        return load(data).map(|s| status(data, &s));
     }
     prepare_data(data)?;
     let _update_lock = match fsutil::Lock::acquire(&data.join("updates.lock")) {
         Ok(lock) => lock,
-        Err(_) if action == "updater_check" => return Ok(status(&load(data)?)),
+        Err(_) if action == "updater_check" => return Ok(status(data, &load(data)?)),
         Err(e) => return Err(e),
     };
     let mut s = load(data)?;
@@ -201,30 +221,31 @@ pub fn dispatch(data: &Path, request: &Value) -> Result<Value> {
                 s.candidate = None;
             }
             save(data, &s)?;
-            Ok(status(&s))
+            Ok(status(data, &s))
         }
         "updater_check" => {
             if !s.enabled || !due(s.last_attempt, now()?) {
-                return Ok(status(&s));
+                return Ok(status(data, &s));
             }
-            let guard = match idle_lock(data) {
+            let guard = match check_idle_lock(data) {
                 Ok(x) => x,
-                Err(_) => return Ok(status(&s)),
+                Err(_) => return Ok(status(data, &s)),
             };
             s.last_attempt = Some(now()?);
             save(data, &s)?;
             drop(guard);
             let found = transport::releases(data)
                 .and_then(|bytes| select_release(&bytes, env!("CARGO_PKG_VERSION")));
-            let _guard = match idle_lock(data) {
+            let _guard = match check_idle_lock(data) {
                 Ok(x) => x,
-                Err(_) => return Ok(status(&s)),
+                Err(_) => return Ok(status(data, &s)),
             };
             if let Ok(candidate) = found {
                 s.candidate = candidate;
                 save(data, &s)?;
             }
-            Ok(status(&s))
+            drop(_guard);
+            Ok(status(data, &s))
         }
         "updater_install" => {
             let failure = |message: String| {
@@ -240,6 +261,10 @@ pub fn dispatch(data: &Path, request: &Value) -> Result<Value> {
                     "Update checks are disabled. Download manually from the release page".into(),
                 );
             }
+            let _guard = match idle_lock(data) {
+                Ok(x) => x,
+                Err(e) => return failure(e),
+            };
             let candidate = match s.candidate.as_ref() {
                 Some(c) if request["token"].as_str() == Some(c.token.as_str()) => c,
                 _ => {
@@ -253,10 +278,6 @@ pub fn dispatch(data: &Path, request: &Value) -> Result<Value> {
             }
             let Some(key) = PRODUCTION_KEY else {
                 return failure("Signed automatic updates are not configured in this build. Use the release page".into());
-            };
-            let _guard = match idle_lock(data) {
-                Ok(x) => x,
-                Err(e) => return failure(e),
             };
             match stage(data,candidate,key){Ok(_)=>Ok(json!({"restart_required":true,"version":candidate.version})),Err(e)=>failure(format!("Automatic update could not be prepared: {e}. Your current portable has not been replaced"))}
         }
@@ -924,14 +945,10 @@ mod tests {
         );
         assert!(load(&p).unwrap().last_attempt.is_none());
         dispatch(&p, &json!({"action":"updater_enabled","enabled":true})).unwrap();
-        fs::write(p.join("transaction.json"), b"{}").unwrap();
+        let active = fsutil::Lock::acquire(&p.join("operation.lock")).unwrap();
         dispatch(&p, &json!({"action":"updater_check"})).unwrap();
         assert!(load(&p).unwrap().last_attempt.is_none());
-        fs::remove_file(p.join("transaction.json")).unwrap();
-        let lock = fsutil::Lock::acquire(&p.join("operation.lock")).unwrap();
-        dispatch(&p, &json!({"action":"updater_check"})).unwrap();
-        assert!(load(&p).unwrap().last_attempt.is_none());
-        drop(lock);
+        drop(active);
         fs::remove_dir_all(p).unwrap();
     }
     #[test]
@@ -1075,6 +1092,67 @@ mod tests {
             assert!(loaded.candidate.is_none());
             assert_eq!(loaded.last_attempt, Some(1234));
         }
+        fs::remove_dir_all(p).unwrap();
+    }
+    #[test]
+    fn unfinished_idle_setup_allows_checks_but_not_installation() {
+        let p = temp();
+        fsutil::json(
+            &p.join("state.json"),
+            &json!({"installations":[{"stage":"launcher_install"}]}),
+        )
+        .unwrap();
+        assert!(!workflow_readiness(&p).unwrap());
+        {
+            let _guard = check_idle_lock(&p).unwrap();
+        }
+        let value = status(&p, &Settings::default());
+        assert_eq!(value["install_ready"], false);
+        assert_eq!(value["install_blocked_message"], UNFINISHED_SETUP);
+        let result = dispatch(
+            &p,
+            &json!({"action":"updater_install","confirmed":true,"token":"not-needed"}),
+        )
+        .unwrap();
+        assert_eq!(result["manual_required"], true);
+        assert_eq!(result["message"], UNFINISHED_SETUP);
+        assert!(!p.join("update-request.json").exists());
+        fs::remove_dir_all(p).unwrap();
+    }
+    #[test]
+    fn saved_recovery_markers_are_unfinished_not_proof_of_running_work() {
+        let p = temp();
+        for name in [
+            "transaction.json",
+            "cleanup.json",
+            "restore.json",
+            "controller-job.json",
+            "steam-restart.json",
+            "update-request.json",
+        ] {
+            fs::write(p.join(name), b"retained interrupted fixture").unwrap();
+            assert!(!workflow_readiness(&p).unwrap());
+            {
+                let _guard = check_idle_lock(&p).unwrap();
+            }
+            assert_eq!(idle(&p).unwrap_err(), UNFINISHED_SETUP);
+            fs::remove_file(p.join(name)).unwrap();
+        }
+        let guard = fsutil::Lock::acquire(&p.join("operation.lock")).unwrap();
+        assert!(check_idle_lock(&p).is_err());
+        let result = dispatch(&p, &json!({"action":"updater_check"})).unwrap();
+        assert_eq!(result["install_ready"], false);
+        assert!(load(&p).unwrap().last_attempt.is_none());
+        let refused = dispatch(
+            &p,
+            &json!({"action":"updater_install","confirmed":true,"token":"unused"}),
+        )
+        .unwrap();
+        assert!(refused["message"]
+            .as_str()
+            .unwrap()
+            .contains("Another setup operation"));
+        drop(guard);
         fs::remove_dir_all(p).unwrap();
     }
 }

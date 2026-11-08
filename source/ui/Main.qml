@@ -27,6 +27,12 @@ ApplicationWindow {
     property var updateInfo: ({enabled:true,candidate:null,signing_configured:false})
     property bool updateDismissed: false
     property bool initialUpdateCheck: false
+    property bool updateStatusRefreshNeeded: true
+    Timer {
+        interval: 25; repeat: false
+        running: scanComplete && page==="home" && updateStatusRefreshNeeded && !backend.demo && !backend.busy && !backend.updateBusy
+        onTriggered: { updateStatusRefreshNeeded=false; backend.requestUpdate("updater_status",{}) }
+    }
     property string updateMessage: ""
     property bool manualUpdateFallback: false
     Timer {
@@ -301,7 +307,7 @@ ApplicationWindow {
     }
     function beginNormalStartup(){if(!backend.demo&&!backend.startupPending)call("scan")}
     Component.onCompleted: {if(backend.demo){previewSeed();Qt.callLater(focusPage)}else beginNormalStartup()}
-    onPageChanged: {if(page==="launcherBehavior")exitConsent.checked=false;if(repairFlowActive&&["home","games","repairOptions","sharedTileUpgrade","review"].indexOf(page)<0)abandonRepair();Qt.callLater(focusPage)}
+    onPageChanged: {if(page==="home")updateStatusRefreshNeeded=true;if(page==="launcherBehavior")exitConsent.checked=false;if(repairFlowActive&&["home","games","repairOptions","sharedTileUpgrade","review"].indexOf(page)<0)abandonRepair();Qt.callLater(focusPage)}
     function revealFocusedControl(){
         var item=win.activeFocusItem
         var flick=contentScroll.contentItem
@@ -324,6 +330,12 @@ ApplicationWindow {
         function onBackRequested(){win.back()}
         function onUpdateCompleted(action,response){
             if(!response.ok){
+                if(action==="updater_enabled"){
+                    if(response.persisted_status)updateInfo=response.persisted_status;
+                    automaticUpdateChecks.checked=Qt.binding(function(){return win.updateInfo.enabled!==false});
+                    updateMessage=response.persisted_status?"Could not save update setting. Please try again.":"Could not confirm update setting. Checks may still be enabled.";
+                    return;
+                }
                 if(action==="updater_install"){manualUpdateFallback=true;updateMessage="The update could not be installed. Your current installer is kept. Open the release page to download it by hand.";}
                 return;
             }
@@ -331,9 +343,21 @@ ApplicationWindow {
                 var d=response.data||{};
                 manualUpdateFallback=d.manual_required===true;
                 updateMessage=d.restart_required?"The verified update is ready. Restarting the installer.":(d.message||"Your current installer is kept.");
-            } else updateInfo=response.data||updateInfo;
+            } else {
+                var previousBlock=updateInfo.install_blocked_message||"";
+                if(action==="updater_status"&&response.data&&response.data.install_ready===true&&updateMessage===previousBlock){
+                    updateMessage="";manualUpdateFallback=false;
+                }
+                updateInfo=response.data||updateInfo;
+                if(action==="updater_enabled"){
+                    automaticUpdateChecks.checked=Qt.binding(function(){return win.updateInfo.enabled!==false});
+                    updateMessage="";
+                    if(updateInfo.enabled===false)updateDismissed=true;
+                }
+            }
         }
         function onCompleted(action,response){
+            updateStatusRefreshNeeded=true;
             if(response.controller_generation!==undefined&&response.controller_generation!==controllerGeneration)return;
             if(response.repair_generation!==undefined&&(!repairFlowActive||response.repair_generation!==repairGeneration))return;
             if(action==="review_repair"&&response.repair_generation!==undefined&&repairReviewScopeKey!==repairScopeKey){abandonRepair();errorText="Installed or missing editions changed. Choose repair again.";return}
@@ -441,18 +465,20 @@ ApplicationWindow {
                             visible: !!updateInfo.candidate && !updateDismissed
                             Layout.fillWidth: true; spacing: 8
                             InfoText { Layout.fillWidth:true; text:"A newer version is available" }
-                            InfoText { Layout.fillWidth:true; visible:!!updateInfo.candidate&&(updateInfo.candidate.automatic_assets_available!==true||updateInfo.signing_configured!==true); text:"Automatic installation is unavailable for this release. Use View release page to download it by hand." }
-                            ActionButton { objectName:"updateNow"; text:"Update now"; primary:true; Layout.fillWidth:true; enabled:!backend.busy&&!backend.updateBusy&&!!updateInfo.candidate&&updateInfo.candidate.automatic_assets_available===true&&updateInfo.signing_configured===true; onClicked:backend.requestUpdate("updater_install",{token:updateInfo.candidate.token,confirmed:true}) }
+                            InfoText { objectName:"unfinishedUpdateMessage"; Layout.fillWidth:true; visible:!!updateInfo.candidate&&updateInfo.install_ready!==true; text:updateInfo.install_blocked_message||"Finish the current operation before updating." }
+                            InfoText { Layout.fillWidth:true; visible:!!updateInfo.candidate&&updateInfo.install_ready===true&&(updateInfo.candidate.automatic_assets_available!==true||updateInfo.signing_configured!==true); text:"Automatic installation is unavailable for this release. Use View release page to download it by hand." }
+                            ActionButton { objectName:"updateNow"; text:"Update now"; primary:true; Layout.fillWidth:true; enabled:!backend.busy&&!backend.updateBusy&&!!updateInfo.candidate&&updateInfo.candidate.automatic_assets_available===true&&updateInfo.signing_configured===true&&updateInfo.install_ready===true; onClicked:backend.requestUpdate("updater_install",{token:updateInfo.candidate.token,confirmed:true}) }
                             ActionButton { objectName:"updateNotNow"; text:"Not now"; Layout.fillWidth:true; enabled:!backend.busy&&!backend.updateBusy; onClicked:updateDismissed=true }
                             ActionButton { objectName:"updateReleasePage"; text:"View release page"; Layout.fillWidth:true; enabled:!backend.busy; onClicked:backend.openReleasePage(updateInfo.candidate ? updateInfo.candidate.page : "") }
                         }
                         InfoText { visible:updateMessage!==""; Layout.fillWidth:true; text:updateMessage }
                         ActionButton { objectName:"manualUpdateReleasePage"; visible:manualUpdateFallback; text:"View release page"; Layout.fillWidth:true; enabled:!backend.busy; onClicked:backend.openReleasePage(updateInfo.candidate ? updateInfo.candidate.page : "") }
                         InstallerCheckBox {
+                            id:automaticUpdateChecks
                             objectName:"automaticUpdateChecks"; text:"Check for installer updates once a day"
                             Layout.fillWidth:true; checked:updateInfo.enabled!==false
                             enabled:!backend.busy&&!backend.updateBusy
-                            onToggled: { backend.requestUpdate("updater_enabled",{enabled:checked}); if(!checked)updateDismissed=true }
+                            onToggled:backend.requestUpdate("updater_enabled",{enabled:checked})
                         }
                         ActionButton{visible:!!session.steam_restart_pending;text:"Reopen Steam desktop controls";enabled:!backend.busy;onClicked:call("reopen_steam")}
                         InfoText{visible:!!session.state_error;Layout.fillWidth:true;text:"Setup records could not be read. Resetting archives those records and unfinished plans. Your games and Steam shortcuts stay in place. Then scan to reconnect them."}

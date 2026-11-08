@@ -208,8 +208,7 @@ fn run() -> Result<i32, String> {
             if !session.has_request()? {
                 return Err("Verified update restart had no owned request. The current portable is unchanged.".into());
             }
-            session.finish()?;
-            update_finished = true;
+            update_finished = session.finish()?;
             return Ok(0);
         }
         // JSON callers consume the engine's structured refusal and exit code.

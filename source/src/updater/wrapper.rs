@@ -11,7 +11,7 @@ use std::{
     fs::{self, File, OpenOptions},
     os::unix::{
         ffi::OsStrExt,
-        fs::{MetadataExt, OpenOptionsExt},
+        fs::{MetadataExt, OpenOptionsExt, PermissionsExt},
         io::AsRawFd,
     },
     path::{Path, PathBuf},
@@ -38,7 +38,7 @@ struct Request {
     release_url: String,
     signature_hex: String,
 }
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 struct Journal {
     schema: u32,
@@ -476,6 +476,375 @@ fn rollback(data: &Path, ctx: &Context) -> Result<Value> {
     )?;
     Ok(json!({"rolled_back":true,"already_original":false}))
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+struct CompletedBackup {
+    journal: Journal,
+    record_pin: FilePin,
+}
+#[derive(Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct BackupHistory {
+    schema: u32,
+    entries: Vec<CompletedBackup>,
+}
+fn history(data: &Path) -> Result<BackupHistory> {
+    let path = data.join("update-backups.json");
+    if !path.try_exists().map_err(|e| e.to_string())? {
+        return Ok(BackupHistory {
+            schema: 1,
+            entries: vec![],
+        });
+    }
+    let h: BackupHistory = serde_json::from_slice(&read_private(&path, 1024 * 1024)?)
+        .map_err(|_| "Backup ownership records are unreadable; all backups were kept")?;
+    if h.schema != 1 || h.entries.len() > 64 {
+        return Err("Backup ownership records are unsupported; all backups were kept".into());
+    }
+    Ok(h)
+}
+fn valid_historical(ctx: &Context, j: &Journal) -> Result<()> {
+    if j.schema != 1
+        || j.target != ctx.target
+        || !is_hex(&j.nonce, 32)
+        || j.staged != ctx.parent.join(format!(".wow-update-{}.new", j.nonce))
+        || j.backup != ctx.parent.join(format!(".wow-update-{}.backup", j.nonce))
+        || !is_hex(&j.old.sha256, 64)
+        || !is_hex(&j.new.sha256, 64)
+        || !is_hex(&j.old_source, 64)
+        || !is_hex(&j.new_source, 64)
+        || Version::parse(&j.new_version)? <= Version::parse(&j.old_version)?
+    {
+        return Err("Historical backup ownership does not match this portable".into());
+    }
+    Ok(())
+}
+fn historical_record(ctx: &Context, j: &Journal) -> PathBuf {
+    ctx.parent
+        .join(format!(".wow-update-{}.recovery.json", j.nonce))
+}
+fn move_no_replace(
+    from: i32,
+    from_name: &std::ffi::OsStr,
+    to: i32,
+    to_name: &std::ffi::OsStr,
+) -> Result<()> {
+    let a = CString::new(from_name.as_bytes()).map_err(|_| "Invalid cleanup filename")?;
+    let b = CString::new(to_name.as_bytes()).map_err(|_| "Invalid cleanup filename")?;
+    let rc = unsafe {
+        libc::syscall(
+            libc::SYS_renameat2,
+            from,
+            a.as_ptr(),
+            to,
+            b.as_ptr(),
+            libc::RENAME_NOREPLACE,
+        )
+    };
+    if rc != 0 {
+        return Err(format!(
+            "Older backup cleanup was deferred: {}",
+            std::io::Error::last_os_error()
+        ));
+    }
+    Ok(())
+}
+fn prune_pair(
+    ctx: &Context,
+    backup: &Path,
+    backup_pin: &FilePin,
+    record: &Path,
+    record_pin: &FilePin,
+) -> Result<()> {
+    use std::os::unix::fs::DirBuilderExt;
+    ctx.parent_unchanged()?;
+    let paths = [backup, record];
+    let expected = [backup_pin, record_pin];
+    for i in 0..2 {
+        if pin(&ctx.scoped(paths[i])?)? != *expected[i] {
+            return Err("Older backup or ownership record changed; both were kept".into());
+        }
+    }
+    let name = format!(".wow-update-clean-{}", fsutil::unique());
+    let qpath = ctx.path(std::ffi::OsStr::new(&name));
+    fs::DirBuilder::new()
+        .mode(0o700)
+        .create(&qpath)
+        .map_err(|e| e.to_string())?;
+    let q = OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC)
+        .open(&qpath)
+        .map_err(|e| e.to_string())?;
+    q.set_permissions(fs::Permissions::from_mode(0o700))
+        .map_err(|e| e.to_string())?;
+    let q_identity = q.metadata().map_err(|e| e.to_string())?;
+    let slots = [
+        std::ffi::OsStr::new("backup"),
+        std::ffi::OsStr::new("record"),
+    ];
+    let qfile = |slot: &std::ffi::OsStr| {
+        PathBuf::from(format!("/proc/self/fd/{}", q.as_raw_fd())).join(slot)
+    };
+    let mut moved = 0usize;
+    let result = (|| {
+        for i in 0..2 {
+            ctx.parent_unchanged()?;
+            if pin(&ctx.scoped(paths[i])?)? != *expected[i] {
+                return Err("Older cleanup file changed before quarantine".into());
+            }
+            move_no_replace(
+                ctx.dir.as_raw_fd(),
+                paths[i].file_name().unwrap(),
+                q.as_raw_fd(),
+                slots[i],
+            )?;
+            moved += 1;
+        }
+        q.sync_all().map_err(|e| e.to_string())?;
+        ctx.sync()?;
+        for i in 0..2 {
+            if pin(&qfile(slots[i]))? != *expected[i] {
+                return Err("Quarantined cleanup file did not match its owned identity".into());
+            }
+        }
+        let m = q.metadata().map_err(|e| e.to_string())?;
+        if m.dev() != q_identity.dev()
+            || m.ino() != q_identity.ino()
+            || m.uid() != unsafe { libc::geteuid() }
+            || m.mode() & 0o777 != 0o700
+        {
+            return Err("Cleanup quarantine permissions changed".into());
+        }
+        for i in 0..2 {
+            if pin(&qfile(slots[i]))? != *expected[i] {
+                return Err("Quarantined file changed before cleanup".into());
+            }
+            let slot = CString::new(slots[i].as_bytes()).map_err(|_| "Invalid cleanup filename")?;
+            if unsafe { libc::unlinkat(q.as_raw_fd(), slot.as_ptr(), 0) } != 0 {
+                return Err(format!(
+                    "Older backup cleanup was deferred: {}",
+                    std::io::Error::last_os_error()
+                ));
+            }
+        }
+        q.sync_all().map_err(|e| e.to_string())?;
+        ctx.sync()?;
+        Ok(())
+    })();
+    if result.is_err() {
+        for i in (0..moved).rev() {
+            if pin(&qfile(slots[i]))
+                .map(|p| p == *expected[i])
+                .unwrap_or(false)
+                && ctx.parent_unchanged().is_ok()
+            {
+                let _ = move_no_replace(
+                    q.as_raw_fd(),
+                    slots[i],
+                    ctx.dir.as_raw_fd(),
+                    paths[i].file_name().unwrap(),
+                );
+            }
+        }
+        let _ = q.sync_all();
+        let _ = ctx.sync();
+    }
+    if fs::symlink_metadata(&qpath)
+        .map(|m| m.is_dir() && m.dev() == q_identity.dev() && m.ino() == q_identity.ino())
+        .unwrap_or(false)
+    {
+        let _ = fs::remove_dir(&qpath);
+    }
+    result
+}
+fn retain_completed(data: &Path, ctx: &Context, newest: CompletedBackup) -> Result<Value> {
+    let j = &newest.journal;
+    valid_historical(ctx, j)?;
+    let newest_version = Version::parse(&j.new_version)?;
+    let mut h = history(data)?;
+    if let Some(existing) = h
+        .entries
+        .iter()
+        .find(|e| e.journal.target == j.target && e.journal.nonce == j.nonce)
+    {
+        if existing != &newest {
+            return Err("Completed backup ownership changed; all backups were kept".into());
+        }
+    } else {
+        if h.entries.len() >= 64 {
+            return Err("Backup history needs review; all backups were kept".into());
+        }
+        h.entries.push(newest.clone());
+    }
+    fsutil::json(&data.join("update-backups.json"), &h)?;
+    let mut kept = Vec::new();
+    let mut cleaned = 0usize;
+    let mut deferred = 0usize;
+    for entry in h.entries {
+        let older = entry.journal.target == ctx.target
+            && entry.journal.nonce != j.nonce
+            && Version::parse(&entry.journal.new_version)
+                .map(|v| v <= newest_version)
+                .unwrap_or(false);
+        if older {
+            let result = (|| {
+                valid_historical(ctx, &entry.journal)?;
+                let record = historical_record(ctx, &entry.journal);
+                let scoped_record = ctx.scoped(&record)?;
+                if pin(&scoped_record)? != entry.record_pin
+                    || pin(&ctx.scoped(&entry.journal.backup)?)? != entry.journal.old
+                {
+                    return Err("Older backup or record changed; both were kept".into());
+                }
+                let recorded: Journal =
+                    serde_json::from_slice(&read_private(&scoped_record, 64 * 1024)?)
+                        .map_err(|_| "Older recovery record is unreadable")?;
+                if recorded != entry.journal {
+                    return Err("Older recovery record contents changed".into());
+                }
+                ctx.parent_unchanged()?;
+                if pin(&ctx.target_fd())? != j.new || pin(&ctx.scoped(&j.backup)?)? != j.old {
+                    return Err("Newest retained backup changed; cleanup stopped".into());
+                }
+                prune_pair(
+                    ctx,
+                    &entry.journal.backup,
+                    &entry.journal.old,
+                    &record,
+                    &entry.record_pin,
+                )
+            })();
+            if result.is_ok() {
+                cleaned += 1;
+                continue;
+            }
+            deferred += 1;
+        }
+        kept.push(entry);
+    }
+    fsutil::json(
+        &data.join("update-backups.json"),
+        &BackupHistory {
+            schema: 1,
+            entries: kept,
+        },
+    )?;
+    Ok(
+        json!({"finalized":true,"older_pairs_removed":cleaned,"older_pairs_deferred":deferred,"retained_backup":j.backup}),
+    )
+}
+fn finalize(data: &Path, ctx: &Context, key: [u8; 32]) -> Result<Value> {
+    let _updates = fsutil::Lock::acquire(&data.join("updates.lock"))?;
+    ctx.parent_unchanged()?;
+    let r = ctx.request()?;
+    let j = ctx.journal()?;
+    if r.current != j.old
+        || r.staged.pin != j.new
+        || r.version != j.new_version
+        || r.source_sha256 != j.new_source
+    {
+        return Err("Finalized update identity does not match its authenticated request".into());
+    }
+    let ready = lines(&read_private(&ctx.runtime.join("update-ready"), 4096)?, 4)?;
+    let decision = lines(&read_private(&ctx.runtime.join("update-decision"), 128)?, 2)?;
+    if ready
+        != vec![
+            "WOW_UPDATE_READY_V1".to_owned(),
+            ctx.nonce.clone(),
+            j.new_version.clone(),
+            j.new_source.clone(),
+        ]
+        || decision != vec!["READY".to_owned(), ctx.nonce.clone()]
+    {
+        return Err("The new installer has not confirmed readiness; all backups were kept".into());
+    }
+    if pin(&ctx.target_fd())? != j.new || pin(&ctx.scoped(&j.backup)?)? != j.old {
+        return Err("Current or previous portable changed; all backups were kept".into());
+    }
+    verify_payload(
+        key,
+        &read_regular(&ctx.target_fd(), MAX_BINARY)?,
+        &j.new.sha256,
+        &decode_hex(&r.signature_hex)?,
+    )?;
+    let newest = CompletedBackup {
+        journal: j,
+        record_pin: pin(&ctx.recovery())?,
+    };
+    retain_completed(data, ctx, newest)
+}
+fn verified_previous_path(ctx: &Context, expected: &FilePin) -> Result<PathBuf> {
+    ctx.parent_unchanged()?;
+    for p in [ctx.backup(), ctx.staged(), ctx.target.clone()] {
+        if pin(&ctx.scoped(&p)?)
+            .map(|found| found == *expected)
+            .unwrap_or(false)
+        {
+            ctx.parent_unchanged()?;
+            if pin(&ctx.scoped(&p)?)? == *expected {
+                return Ok(p);
+            }
+        }
+    }
+    Err("No owned previous installer could be verified; recovery files were kept".into())
+}
+fn recovery_info(ctx: &Context) -> Result<Value> {
+    let b = ctx.binding()?;
+    if b[3] != env!("CARGO_PKG_VERSION") || b[4] != env!("WOW_SOURCE_SHA256") {
+        return Err("Original build binding does not match this recovery helper".into());
+    }
+    let expected = FilePin {
+        device: env("WOW_PORTABLE_DEV")?
+            .parse()
+            .map_err(|_| "Invalid portable device")?,
+        inode: env("WOW_PORTABLE_INO")?
+            .parse()
+            .map_err(|_| "Invalid portable inode")?,
+        size: env("WOW_PORTABLE_SIZE")?
+            .parse()
+            .map_err(|_| "Invalid portable size")?,
+        mode: env("WOW_PORTABLE_MODE")?
+            .parse()
+            .map_err(|_| "Invalid portable mode")?,
+        uid: env("WOW_PORTABLE_UID")?
+            .parse()
+            .map_err(|_| "Invalid portable owner")?,
+        sha256: b[2].clone(),
+    };
+    check_env_pin(&expected, true)?;
+    let path = verified_previous_path(ctx, &expected)?;
+    fsutil::safe_path(&path)?;
+    let wire = format!(
+        "WOW_UPDATE_RECOVERY_V1\n{}\n{}\n{}\n{}\n{}\n",
+        ctx.nonce,
+        path.to_str().ok_or("Recovery path is not UTF-8")?,
+        b[2],
+        b[3],
+        b[4]
+    );
+    let output = ctx.runtime.join("update-recovery-info");
+    if output.try_exists().map_err(|e| e.to_string())? {
+        let old = lines(&read_private(&output, 16384)?, 6)?;
+        if old[0] != "WOW_UPDATE_RECOVERY_V1"
+            || old[1] != ctx.nonce
+            || old[3] != b[2]
+            || old[4] != b[3]
+            || old[5] != b[4]
+        {
+            return Err("Existing recovery report is not owned by this update".into());
+        }
+        fsutil::atomic(&output, wire.as_bytes())?;
+    } else {
+        write_new(&output, wire.as_bytes(), 0o600)?;
+    }
+    File::open(&ctx.runtime)
+        .and_then(|f| f.sync_all())
+        .map_err(|e| e.to_string())?;
+    Ok(json!({"available":true,"path":path}))
+}
+
 fn abort_absent(path: &Path) -> Result<()> {
     if path.try_exists().map_err(|e| e.to_string())? {
         return Err("Startup was cancelled before readiness".into());
@@ -545,7 +914,14 @@ pub(super) fn dispatch(data: &Path, request: &Value) -> Result<Value> {
     if action == "updater_ready" {
         return ready();
     }
-    if !["updater_bind", "updater_commit", "updater_rollback"].contains(&action)
+    if ![
+        "updater_bind",
+        "updater_commit",
+        "updater_rollback",
+        "updater_finalize",
+        "updater_recovery_info",
+    ]
+    .contains(&action)
         || env("WOW_UPDATE_WRAPPER_ACTION")? != action
     {
         return Err("This update action is reserved for its running portable wrapper".into());
@@ -557,6 +933,13 @@ pub(super) fn dispatch(data: &Path, request: &Value) -> Result<Value> {
     let ctx = Context::from_env()?;
     match action {
         "updater_bind" => bind(&ctx),
+        "updater_recovery_info" => recovery_info(&ctx),
+        "updater_finalize" => {
+            let key = PRODUCTION_KEY
+                .ok_or("Signed automatic updates are not configured in this build")?;
+            super::prepare_data(data)?;
+            finalize(data, &ctx, key)
+        }
         "updater_commit" => {
             let key = PRODUCTION_KEY.ok_or(
                 "Signed automatic updates are not configured in this build; use the release page",
@@ -700,6 +1083,238 @@ mod tests {
         write_new(&p, format!("ABORT\n{}\n", ctx.nonce).as_bytes(), 0o600).unwrap();
         assert!(write_new(&p, b"READY\n", 0o600).is_err());
         assert!(fs::read_to_string(&p).unwrap().starts_with("ABORT\n"));
+        drop(ctx);
+        fs::remove_dir_all(root).unwrap();
+    }
+    fn next_context(old: &Context, nonce: &str) -> Context {
+        let runtime = old.parent.join(format!("runtime-{nonce}"));
+        fsutil::private_dir(&runtime).unwrap();
+        Context {
+            target: old.target.clone(),
+            parent: old.parent.clone(),
+            runtime: runtime.clone(),
+            nonce: nonce.into(),
+            request: runtime.join("update-request.json"),
+            receipt: runtime.join("update-receipt"),
+            binding: runtime.join("update-binding"),
+            dir: old.dir.try_clone().unwrap(),
+        }
+    }
+    fn completed_pair(
+        ctx: &Context,
+        old_version: &str,
+        new_version: &str,
+        bytes: &[u8],
+    ) -> CompletedBackup {
+        let old = pin(&ctx.target_fd()).unwrap();
+        write_new(&ctx.staged(), bytes, 0o700).unwrap();
+        let new = pin(&ctx.staged()).unwrap();
+        let j = Journal {
+            schema: 1,
+            nonce: ctx.nonce.clone(),
+            target: ctx.target.clone(),
+            old,
+            new,
+            staged: ctx.staged(),
+            backup: ctx.backup(),
+            old_version: old_version.into(),
+            old_source: "a".repeat(64),
+            new_version: new_version.into(),
+            new_source: "b".repeat(64),
+        };
+        write_new(&ctx.recovery(), &serde_json::to_vec(&j).unwrap(), 0o600).unwrap();
+        rename(ctx, &ctx.target, &j.staged, libc::RENAME_EXCHANGE).unwrap();
+        rename(ctx, &j.staged, &j.backup, libc::RENAME_NOREPLACE).unwrap();
+        CompletedBackup {
+            journal: j,
+            record_pin: pin(&ctx.recovery()).unwrap(),
+        }
+    }
+    #[test]
+    fn two_completed_updates_keep_only_newest_owned_previous_pair() {
+        let (root, data, first) = fixture();
+        let a = completed_pair(&first, "1.0.0", "1.0.1", b"version one fixture");
+        retain_completed(&data, &first, a).unwrap();
+        let second = next_context(&first, "22222222222222222222222222222222");
+        let b = completed_pair(&second, "1.0.1", "1.0.2", b"version two fixture");
+        retain_completed(&data, &second, b.clone()).unwrap();
+        assert!(!first.backup().exists());
+        assert!(!first.recovery().exists());
+        assert_eq!(pin(&second.backup()).unwrap(), b.journal.old);
+        assert_eq!(pin(&second.target).unwrap(), b.journal.new);
+        assert!(second.recovery().exists());
+        let h = history(&data).unwrap();
+        assert_eq!(h.entries.len(), 1);
+        assert_eq!(h.entries[0], b);
+        drop(second);
+        drop(first);
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn unrecorded_lookalike_pairs_survive_completed_cleanup() {
+        let (root, data, first) = fixture();
+        let a = completed_pair(&first, "1.0.0", "1.0.1", b"one");
+        retain_completed(&data, &first, a).unwrap();
+        let unknown = next_context(&first, "33333333333333333333333333333333");
+        write_new(
+            &unknown.backup(),
+            b"personal unrelated fixture bytes",
+            0o700,
+        )
+        .unwrap();
+        let lookalike = Journal {
+            schema: 1,
+            nonce: unknown.nonce.clone(),
+            target: unknown.target.clone(),
+            old: pin(&unknown.backup()).unwrap(),
+            new: pin(&unknown.target).unwrap(),
+            staged: unknown.staged(),
+            backup: unknown.backup(),
+            old_version: "0.1.0".into(),
+            old_source: "a".repeat(64),
+            new_version: "0.1.1".into(),
+            new_source: "b".repeat(64),
+        };
+        write_new(
+            &unknown.recovery(),
+            &serde_json::to_vec(&lookalike).unwrap(),
+            0o600,
+        )
+        .unwrap();
+        let saved = read_regular(&unknown.recovery(), 65536).unwrap();
+        let second = next_context(&first, "44444444444444444444444444444444");
+        let b = completed_pair(&second, "1.0.1", "1.0.2", b"two");
+        retain_completed(&data, &second, b).unwrap();
+        assert_eq!(
+            fs::read(unknown.backup()).unwrap(),
+            b"personal unrelated fixture bytes"
+        );
+        assert_eq!(read_regular(&unknown.recovery(), 65536).unwrap(), saved);
+        drop(second);
+        drop(unknown);
+        drop(first);
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn replaced_identical_backup_is_preserved_as_unresolved() {
+        let (root, data, first) = fixture();
+        let a = completed_pair(&first, "1.0.0", "1.0.1", b"one");
+        retain_completed(&data, &first, a.clone()).unwrap();
+        let duplicate = first.parent.join("independent-copy");
+        write_new(&duplicate, &fs::read(first.backup()).unwrap(), 0o700).unwrap();
+        fs::rename(&duplicate, first.backup()).unwrap();
+        let independently_owned = pin(&first.backup()).unwrap();
+        assert_ne!(independently_owned.inode, a.journal.old.inode);
+        let second = next_context(&first, "55555555555555555555555555555555");
+        let b = completed_pair(&second, "1.0.1", "1.0.2", b"two");
+        retain_completed(&data, &second, b).unwrap();
+        assert_eq!(pin(&first.backup()).unwrap(), independently_owned);
+        assert!(first.recovery().exists());
+        assert_eq!(history(&data).unwrap().entries.len(), 2);
+        drop(second);
+        drop(first);
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn recovery_reports_actual_verified_backup_not_a_guessed_name() {
+        let (root, _, ctx) = fixture();
+        let entry = completed_pair(&ctx, "1.0.0", "1.0.1", b"new bytes");
+        assert_eq!(
+            verified_previous_path(&ctx, &entry.journal.old).unwrap(),
+            ctx.backup()
+        );
+        fs::rename(ctx.backup(), ctx.staged()).unwrap();
+        write_new(&ctx.backup(), b"unrelated backup-name collision", 0o700).unwrap();
+        assert_eq!(
+            verified_previous_path(&ctx, &entry.journal.old).unwrap(),
+            ctx.staged()
+        );
+        assert_eq!(
+            fs::read(ctx.backup()).unwrap(),
+            b"unrelated backup-name collision"
+        );
+        fs::remove_file(ctx.staged()).unwrap();
+        write_new(&ctx.staged(), b"original fixture bytes", 0o700).unwrap();
+        assert!(verified_previous_path(&ctx, &entry.journal.old).is_err());
+        drop(ctx);
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn unconfirmed_current_update_never_authorizes_retention_cleanup() {
+        use ed25519_dalek::{Signer, SigningKey};
+        let (root, data, ctx) = fixture();
+        let mut entry = completed_pair(
+            &ctx,
+            env!("CARGO_PKG_VERSION"),
+            "999.0.0",
+            b"signed fake payload, not executable",
+        );
+        entry.journal.old_source = env!("WOW_SOURCE_SHA256").into();
+        fsutil::json(&ctx.recovery(), &entry.journal).unwrap();
+        entry.record_pin = pin(&ctx.recovery()).unwrap();
+        let j = &entry.journal;
+        write_new(
+            &ctx.binding,
+            wire(
+                "WOW_UPDATE_BIND_V1",
+                &ctx.nonce,
+                &j.old.sha256,
+                &j.old_version,
+                &j.old_source,
+            )
+            .as_bytes(),
+            0o600,
+        )
+        .unwrap();
+        let key = SigningKey::from_bytes(&[17u8; 32]);
+        let bytes = read_regular(&ctx.target_fd(), MAX_BINARY).unwrap();
+        let signature = key.sign(&bytes).to_bytes();
+        let request = Request {
+            schema: 1,
+            repository: REPOSITORY.into(),
+            nonce: ctx.nonce.clone(),
+            target: ctx.target.clone(),
+            current: j.old.clone(),
+            old_version: j.old_version.clone(),
+            old_source_sha256: j.old_source.clone(),
+            staged: Staged {
+                path: j.staged.clone(),
+                pin: j.new.clone(),
+            },
+            version: j.new_version.clone(),
+            source_sha256: j.new_source.clone(),
+            release_url: super::super::page(&format!("v{}", j.new_version)),
+            signature_hex: super::super::hex(&signature),
+        };
+        write_new(&ctx.request, &serde_json::to_vec(&request).unwrap(), 0o600).unwrap();
+        let before_target = pin(&ctx.target_fd()).unwrap();
+        let before_backup = pin(&ctx.backup()).unwrap();
+        let before_record = pin(&ctx.recovery()).unwrap();
+        assert!(finalize(&data, &ctx, key.verifying_key().to_bytes()).is_err());
+        assert!(!data.join("update-backups.json").exists());
+        write_new(
+            &ctx.runtime.join("update-ready"),
+            format!(
+                "WOW_UPDATE_READY_V1\n{}\n{}\n{}\n",
+                "f".repeat(32),
+                j.new_version,
+                j.new_source
+            )
+            .as_bytes(),
+            0o600,
+        )
+        .unwrap();
+        write_new(
+            &ctx.runtime.join("update-decision"),
+            format!("READY\n{}\n", ctx.nonce).as_bytes(),
+            0o600,
+        )
+        .unwrap();
+        assert!(finalize(&data, &ctx, key.verifying_key().to_bytes()).is_err());
+        assert!(!data.join("update-backups.json").exists());
+        assert_eq!(pin(&ctx.target_fd()).unwrap(), before_target);
+        assert_eq!(pin(&ctx.backup()).unwrap(), before_backup);
+        assert_eq!(pin(&ctx.recovery()).unwrap(), before_record);
         drop(ctx);
         fs::remove_dir_all(root).unwrap();
     }

@@ -90,7 +90,19 @@ void Bridge::requestUpdate(const QString &action,const QVariantMap &arguments){
  });
  // Updater dispatch owns separate update/operation locks and never touches
  // shared setup cancellation. Feed errors are handled quietly by the backend.
- m_updateWorker.setFuture(QtConcurrent::run([bytes]{char *result=wow_request(bytes.constData());QByteArray reply(result);wow_free(result);return reply;}));
+ m_updateWorker.setFuture(QtConcurrent::run([bytes,action]{
+  char *raw=wow_request(bytes.constData());QByteArray reply(raw);wow_free(raw);
+  if(action=="updater_enabled"){
+   auto failed=QJsonDocument::fromJson(reply).object();
+   if(!failed.value("ok").toBool()){
+    char *savedRaw=wow_request("{\"action\":\"updater_status\"}");
+    auto saved=QJsonDocument::fromJson(QByteArray(savedRaw)).object();wow_free(savedRaw);
+    if(saved.value("ok").toBool()&&saved.value("data").isObject())failed.insert("persisted_status",saved.value("data"));
+    reply=QJsonDocument(failed).toJson(QJsonDocument::Compact);
+   }
+  }
+  return reply;
+ }));
 }
 bool Bridge::cancel(){
  bool accepted=false;
