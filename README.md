@@ -6,13 +6,13 @@ This early test version installs Blizzard's Battle.net app, adds one Battle.net 
 
 ## Download and install
 
-You need native Steam, an internet connection and a Blizzard account with access to your chosen game.
+You need Steam as it comes on Steam Deck or Bazzite (the Flatpak version of Steam is not supported), an internet connection, and a Blizzard account with access to the game you want to play.
 
-1. On Steam Deck, switch to Desktop Mode. On Bazzite, use the desktop.
+1. On Steam Deck, press the Steam button, choose Power, then Switch to Desktop. On Bazzite, use the desktop.
 2. Open Steam and sign in.
 3. [Download WoW-SteamOS-Rust-Linux-x86_64](https://github.com/Coaxske/wow-steamos-installer/releases/download/v0.2.0-alpha.10-candidate.48/WoW-SteamOS-Rust-Linux-x86_64). This is the only file you need to run. The other release files contain instructions, checksums, licenses and source code.
 4. Keep the file somewhere permanent so you can reopen it for repair or removal.
-5. Right-click it, open Properties, and allow it to run as a program.
+5. Right-click the file, choose Properties, open the Permissions tab, check Is executable, then click OK.
 6. Open it and follow the instructions. Steam may close and reopen during setup.
 7. Sign in only inside Battle.net. The installer never asks for your password or authenticator codes.
 
@@ -32,7 +32,7 @@ On Steam Deck, return to Gaming Mode. Open **Battle.net** under Non-Steam in you
 
 Quit through WoW's own **Exit Game** menu. Steam's Exit game stops the whole Battle.net game session.
 
-Use **Gaming Mode pointer setup** in the installer if mouse movement or clicking does not work. Keep working controls unchanged. Before editing shared controls, save the original layout and use Steam's unique configuration for this device. The guide covers pointer and menu controls, not a complete gameplay layout.
+If the mouse pointer or clicking does not work in Battle.net, open Gaming Mode pointer setup in the installer for step-by-step help. In short: in Steam’s controller settings for the Battle.net button, set Right Trackpad Behavior to Mouse and Right Trackpad Click to Left Mouse Click. If your controls already work, leave them unchanged.
 
 ## Addons
 
@@ -41,6 +41,8 @@ After setup, choose **Open folders**, or open **World of Warcraft** in your Home
 Download an addon for your edition, unzip it, and put its folder into the matching AddOns link. For example:
 
 Retail AddOns/ExampleAddon/ExampleAddon.toc
+
+Make sure you do not end up with a folder inside a folder.
 
 The installer does not download or update addons.
 
