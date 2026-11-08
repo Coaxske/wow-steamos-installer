@@ -1,6 +1,6 @@
 # Candidate 48 acceptance
 
-Published Candidate 48 was tested on Steam Deck in Game Mode. Bazzite testing is in progress.
+Candidate 48 was tested on a Steam Deck that already had Battle.net and WoW set up. A brand-new installation has not been tested with this version yet. Bazzite testing is in progress.
 
 Public installer SHA-256: **19508288b4ace65e230930c704609b23be6e176fe1fc9a837a693abc13e2f6ac**.
 Matching Source.zip SHA-256: **eebea66950b2235d4cb3c08be4dc8b039b7ee3e26f5952d70ae63f63ceaf8150**.

@@ -1,6 +1,6 @@
 # WoW SteamOS Installer
 
-Published Candidate 48 was tested on Steam Deck in Game Mode. Bazzite testing is in progress.
+Candidate 48 was tested on a Steam Deck that already had Battle.net and WoW set up. A brand-new installation has not been tested with this version yet. Bazzite testing is in progress.
 
 This early test version installs Blizzard's Battle.net app, adds one Battle.net button to Steam, and makes game and AddOns folders easier to find.
 
@@ -58,17 +58,15 @@ Read the [install and removal guide](INSTALL-AND-REMOVE.md) for backup locations
 
 ## What was checked
 
-Published Candidate 48 was tested on an existing Steam Deck setup. In Game Mode, Retail and Classic Era reached character screens. Passive observation recorded the main Battle.net process exiting while the same identified game kept running; Agent was tracked separately. The tester used the physical trackpad to move and click in menus, quit through WoW's own Exit Game, and returned to the same Battle.net button with Play available. Reopening that button switched from Retail to Classic Era; this was not a separate same-edition relaunch pair for each game.
+Candidate 48 was tested on a Steam Deck that already had Battle.net and World of Warcraft set up.
 
-In Desktop Mode, automatic discovery found the working installation, so the existing-folder picker was not needed. The reviewed repair kept the existing Battle.net button, launcher, Proton environment and controller files. Open folders reached the expected installation and AddOns links. Link-only removal and recreation preserved the checked targets and contents. These were bounded comparisons, not a full comparison of every game file.
+- **Game Mode:** Retail and Classic Era each started from the Battle.net button and reached the character screen. Battle.net closed itself while the game kept running. The trackpad worked as a mouse in menus, and quitting through the game's own Exit Game option returned to the same Battle.net button, ready to play again.
+- **Desktop Mode:** the installer found the existing installation without needing a folder to be chosen. Repair kept the existing Battle.net button, the Battle.net app, its Proton setup and the controller settings files. Open folders worked, and removing and re-creating the folder shortcuts left the checked game and addon files in place.
+- **Forever:** the tester saw Forever working, but the recorded test was interrupted, so Forever is still marked experimental.
 
-The tester also personally observed Forever working correctly. An initial recorded run showed the main launcher exiting while the same Forever process stayed alive. A later session was interrupted and used a different game process. The firsthand observation and recorded points are separate; they do not establish one uninterrupted instrumented Forever cycle. Forever remains experimental, and full gameplay and performance are not established.
+Not yet tested with this version: a brand-new installation, the Choose existing folder option on a Steam Deck (it was checked with simulated tests on Bazzite), full gameplay and performance. Bazzite testing is in progress. Error134 and WOW51900319, seen in earlier testing, are still unexplained.
 
-Optional fresh setup was not run and awaits separate approval. The existing-folder picker was checked with simulated interface tests on Bazzite, not exercised on the actual Deck. Bazzite gameplay testing remains in progress.
-
-Earlier Error134 and WOW51900319 remain separate unexplained historical results. No cause or repair is claimed from these later successes.
-
-See [acceptance details](ACCEPTANCE-SUMMARY.md) and [supported editions and limitations](SUPPORTED-EDITIONS-AND-LIMITATIONS.md).
+See [acceptance details](ACCEPTANCE-SUMMARY.md) for the exact test records and their limits.
 
 ## Help
 
