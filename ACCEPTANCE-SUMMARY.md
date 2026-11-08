@@ -2,7 +2,7 @@
 
 Candidate 49 is not released. The production public verifier is configured; the private key is outside the project.
 
-On a Steam Deck with an existing installation, Candidate 49’s command-line check found Battle.net and WoW. The installer’s Home controls, whether the update setting persisted after reopening, and normal window exit remain unverified. A live automatic update from GitHub has not yet been confirmed. No Candidate 49 game-session or physical-controller pass is claimed.
+On a Steam Deck that already had Battle.net and WoW set up, Candidate 49 found both. These have not been checked on a Steam Deck yet: the new update buttons, the update on/off switch, and closing the installer normally. Updating automatically from GitHub has not been confirmed yet. No Candidate 49 game-session or physical-controller pass is claimed.
 
 ## Automated development checks
 
@@ -29,7 +29,7 @@ These checks ran on the Bazzite build machine in an isolated container, using di
 | Actual C49 normal invocation and window | One normal no-argument invocation and one matching desktop window were recorded. Process and KWin window metadata only; no Home-render or switch proof. No person observed. |
 | Actual C49 update attempt | A genuine saved attempt appeared with enabled=true and no candidate. Attempt/budget evidence only; successful HTTP, notice and live updating are unverified. History is preserved. |
 | Actual C49 Home controls, preference persistence and normal exit | UNVERIFIED. The existing accessibility route did not identify native-owned controls; no switch action or reopen test ran. The report ended with one owned window open. Hand check is deferred; no tests queued. |
-| Actual C49 preservation | Earlier bounded comparison:52of54 files byte-identical, with wrapper startup-log truncation and an app-info-only Steam metadata change as exceptions; writer/cause of that metadata change unknown. No new full comparison after the window launch, full game-tree equality or live layout proof. |
+| Actual C49 preservation | Earlier bounded comparison: 52 of 54 files byte-identical, with wrapper startup-log truncation and an app-info-only Steam metadata change as exceptions; writer/cause of that metadata change unknown. No new full comparison after the window launch, full game-tree equality or live layout proof. |
 | Actual C49 games or physical input | NOT RUN. Earlier C48 results below remain labeled C48. |
 | Production signing and final release package | Public verifier configured. Live signed-release testing and final release approval are pending. No private key is included in the build or source. These development snapshots are not final release artifacts. |
 

@@ -1,6 +1,6 @@
-Candidate 49 is a test version.
+Candidate 49 is a test version. It adds optional installer updates.
 
-On a Steam Deck with an existing installation, Candidate 49’s command-line check found Battle.net and WoW. The installer’s Home controls, whether the update setting persisted after reopening, and normal window exit remain unverified. A live automatic update from GitHub has not yet been confirmed.
+On a Steam Deck that already had Battle.net and WoW set up, Candidate 49 found both. These have not been checked on a Steam Deck yet: the new update buttons, the update on/off switch, and closing the installer normally. Updating automatically from GitHub has not been confirmed yet.
 
 Candidate 48 was tested on a Steam Deck that already had Battle.net and WoW set up. A brand-new installation has not been tested with Candidate 48 or 49 yet. Bazzite testing is in progress.
 
@@ -28,4 +28,4 @@ The production public key is included for verifying signed updates. The private 
 
 C48's existing-installation results remain separate evidence and do not test the C49 updater. Fresh installation, full gameplay and performance are not established. Bazzite gameplay testing remains in progress.
 
-GitHub receives ordinary connection information during release checks. No game settings, account names or installer records are sent. See [security and privacy](https://github.com/Coaxske/wow-steamos-installer/blob/C49_MERGE_COMMIT_SHA/SECURITY.md) and [acceptance details](https://github.com/Coaxske/wow-steamos-installer/blob/C49_MERGE_COMMIT_SHA/ACCEPTANCE-SUMMARY.md).
+GitHub receives ordinary connection information during release checks. No game settings, account names or installer records are sent. See [security and privacy](SECURITY.md) and [acceptance details](ACCEPTANCE-SUMMARY.md).

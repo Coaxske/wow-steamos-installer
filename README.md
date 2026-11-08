@@ -1,8 +1,8 @@
 # WoW SteamOS Installer
 
-Candidate 49 is a test version.
+Candidate 49 is a test version. It adds optional installer updates.
 
-On a Steam Deck with an existing installation, Candidate 49’s command-line check found Battle.net and WoW. The installer’s Home controls, whether the update setting persisted after reopening, and normal window exit remain unverified. A live automatic update from GitHub has not yet been confirmed.
+On a Steam Deck that already had Battle.net and WoW set up, Candidate 49 found both. These have not been checked on a Steam Deck yet: the new update buttons, the update on/off switch, and closing the installer normally. Updating automatically from GitHub has not been confirmed yet.
 
 The recorded gameplay and controller results below belong to Candidate 48. Bazzite gameplay testing is in progress.
 
@@ -76,7 +76,7 @@ Read the [install and removal guide](INSTALL-AND-REMOVE.md) for backup locations
 
 ## What was checked
 
-On a Steam Deck with an existing installation, Candidate 49’s command-line check found Battle.net and WoW. The installer’s Home controls, whether the update setting persisted after reopening, and normal window exit remain unverified. A live automatic update from GitHub has not yet been confirmed.
+On a Steam Deck that already had Battle.net and WoW set up, Candidate 49 found both. These have not been checked on a Steam Deck yet: the new update buttons, the update on/off switch, and closing the installer normally. Updating automatically from GitHub has not been confirmed yet.
 
 Candidate 49 also passed offline and private simulated updater checks on the Bazzite build machine. These are separate from live GitHub updating. No Candidate 49 game-session or physical-controller pass is claimed.
 
