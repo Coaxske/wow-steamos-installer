@@ -7,10 +7,10 @@
   "development_snapshot": {
     "build_mode": "public",
     "developer_tools": false,
-    "portable_executable_sha256": "b269e14ca151ffac381c7c2543914bc08329a1f7893e50e937dd4eb1a9d43d0a",
-    "source_archive_sha256": "16b1d317557a2288f9a87c58583f2178cd1c5a82b4d7a19f060fae64183a459a",
-    "source_fingerprint": "e540c3d99be055ff1f6c07f4542ef573cef6edcdaa7b0a382859bb9b788f6355",
-    "native_payload_sha256": "1bdf9fd30d520ceb2d3732a610ce8c65260a5127d34e76015f46f6bc75b21fbd",
+    "portable_executable_sha256": "e1af53fef3e073105380333f504dd51359d64b071bb85eed99d4b2d7c19cf201",
+    "source_archive_sha256": "498a13b7e1301996d234d2ca28f49c0adccf55e9e105136ea9f82c5ee166bd68",
+    "source_fingerprint": "a3e87368c47ef73d6e0e1c20ba3dbfba70f40c759aca53dc1b7b9114b8191524",
+    "native_payload_sha256": "7ff620db640cc10f42631ea7daec6e80afd4e2115e841fd5b08b50737095bbe9",
     "final_release": false
   },
   "checks": {

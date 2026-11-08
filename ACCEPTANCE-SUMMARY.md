@@ -31,13 +31,13 @@ Daily checks and the release-page link remain available for idle unfinished save
 
 ## Public-mode development snapshot, not a release
 
-Portable SHA-256: **b269e14ca151ffac381c7c2543914bc08329a1f7893e50e937dd4eb1a9d43d0a**.
+Portable SHA-256: **e1af53fef3e073105380333f504dd51359d64b071bb85eed99d4b2d7c19cf201**.
 
-Matching Source.zip SHA-256: **16b1d317557a2288f9a87c58583f2178cd1c5a82b4d7a19f060fae64183a459a**.
+Matching Source.zip SHA-256: **498a13b7e1301996d234d2ca28f49c0adccf55e9e105136ea9f82c5ee166bd68**.
 
-Source fingerprint: **e540c3d99be055ff1f6c07f4542ef573cef6edcdaa7b0a382859bb9b788f6355**.
+Source fingerprint: **a3e87368c47ef73d6e0e1c20ba3dbfba70f40c759aca53dc1b7b9114b8191524**.
 
-These identify the private unsigned development snapshot with no production key configured, not a final signed Candidate 49 release.
+These identify the private unsigned development snapshot with no production key configured, not a final signed Candidate 49 release. A recovery-test fixture was corrected after CI exposed an inode-reuse assumption. The replacement is now created before the original is replaced. Production recovery code is unchanged, and the corrected full suite passes. Earlier private packaged results retain their original simulation limits.
 
 ---
 

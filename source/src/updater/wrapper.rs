@@ -1233,8 +1233,10 @@ mod tests {
             fs::read(ctx.backup()).unwrap(),
             b"unrelated backup-name collision"
         );
-        fs::remove_file(ctx.staged()).unwrap();
-        write_new(&ctx.staged(), b"original fixture bytes", 0o700).unwrap();
+        let replacement = ctx.parent.join("independent-staged-replacement");
+        write_new(&replacement, b"original fixture bytes", 0o700).unwrap();
+        assert_ne!(pin(&replacement).unwrap().inode, entry.journal.old.inode);
+        fs::rename(&replacement, ctx.staged()).unwrap();
         assert!(verified_previous_path(&ctx, &entry.journal.old).is_err());
         drop(ctx);
         fs::remove_dir_all(root).unwrap();
