@@ -17,8 +17,8 @@
     "offline": "278 library +41 regression +1 public refusal PASS",
     "portable_handoff": "9 PASS",
     "packaged_private_feed": "16 PASS; simulated network/Qt/disposable saved state, separate synthetic keys, actual packaged file/signature/restart paths; includes actual public portable wrong-key refusal",
-    "live_GitHub_transport": "NOT RUN",
-    "C49_Steam_Deck": "NOT RUN",
+    "live_GitHub_transport": "NOT CONFIRMED; saved attempt is not successful HTTP or live signed-update proof",
+    "C49_Steam_Deck": "PARTIAL: command-line identity and existing-installation discovery; Home controls, update-setting persistence and normal window exit unverified",
     "strict_clippy": "PASS public and developer modes",
     "native_builds": "PASS public and developer modes",
     "public_verifier": "Intended public key embedded; test public key absent; developer tools disabled"
@@ -40,5 +40,15 @@
     "E": "Deferred"
   },
   "production_public_key_ed25519_hex": "e6007a9ad0bfa1f9cdf1a87fb900156aa697224b800c55fef9630e34d77e06f8",
-  "production_signed_release_testing": "NOT RUN; separate reviewed stage"
+  "production_signed_release_testing": "NOT RUN; separate reviewed stage",
+  "C49_Deck_scope": "On a Steam Deck with an existing installation, Candidate 49’s command-line check found Battle.net and WoW. The installer’s Home controls, whether the update setting persisted after reopening, and normal window exit remain unverified. A live automatic update from GitHub has not yet been confirmed.",
+  "C49_Deck_evidence_limits": {
+    "normal_invocation_and_window": "Process identity and KWin metadata only; no Home/control render proof",
+    "preference": "Enabled choice unchanged; no action or reopen-persistence proof",
+    "history": "Genuine saved daily attempt preserved",
+    "no_person_observed": true,
+    "normal_exit": "Unverified; reported window remains open",
+    "gameplay_and_physical": "No C49 pass; earlier results belong to C48"
+  },
+  "documentation_review": "Only root documentation changed after the private Deck checks. source/ and the tested executable are unchanged from 9ddeb579d0407b565f68ddcb99df6a9b78e30846."
 }

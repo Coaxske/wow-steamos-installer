@@ -1,6 +1,8 @@
 # Candidate 49 development acceptance
 
-Candidate 49 is not released. The production public verifier is configured; the private key is outside the project. No Candidate 49 Steam Deck or game acceptance is claimed.
+Candidate 49 is not released. The production public verifier is configured; the private key is outside the project.
+
+On a Steam Deck with an existing installation, Candidate 49’s command-line check found Battle.net and WoW. The installer’s Home controls, whether the update setting persisted after reopening, and normal window exit remain unverified. A live automatic update from GitHub has not yet been confirmed. No Candidate 49 game-session or physical-controller pass is claimed.
 
 ## Automated development checks
 
@@ -23,7 +25,12 @@ These checks ran on the Bazzite build machine in an isolated container, using di
 | C: failed Off save | PASS: a read-only fixture settings directory made the ordinary checkbox save fail. A fresh readback restored the visible persisted setting, showed a short error and left the notice undiscarded. A later ordinary Off save and reopening agreed on disabled checks. |
 | D: unfinished versus active work | PASS: a held operation lock blocked the check and installation, with no network request or daily-attempt consumption. Reopening the same idle unfinished fixture fetched metadata once, kept the release-page link, disabled Update now and returned the exact required backend refusal. A simulated saved-stage completion followed by normal init/status handlers refreshed readiness without another feed request. |
 | Configured public verifier | PASS: the intended production public key is present in the actual packaged native executable; the test verifier is absent. The actual public portable rejects the private feed's otherwise valid test-key signature and keeps its original bytes. Missing signatures, tampered bytes and wrong-key files remain refused. The production private key was not used in these checks. |
-| Actual C49 Steam Deck, games or physical input | NOT RUN. Earlier C48 results below remain labeled C48. |
+| Actual C49 Deck command-line identity and discovery | Partial scoped check: verified public-mode build and backend discovery of the existing Battle.net/WoW files. This is not Home/control evidence. |
+| Actual C49 normal invocation and window | One normal no-argument invocation and one matching desktop window were recorded. Process and KWin window metadata only; no Home-render or switch proof. No person observed. |
+| Actual C49 update attempt | A genuine saved attempt appeared with enabled=true and no candidate. Attempt/budget evidence only; successful HTTP, notice and live updating are unverified. History is preserved. |
+| Actual C49 Home controls, preference persistence and normal exit | UNVERIFIED. The existing accessibility route did not identify native-owned controls; no switch action or reopen test ran. The report ended with one owned window open. Hand check is deferred; no tests queued. |
+| Actual C49 preservation | Earlier bounded comparison:52of54 files byte-identical, with wrapper startup-log truncation and an app-info-only Steam metadata change as exceptions; writer/cause of that metadata change unknown. No new full comparison after the window launch, full game-tree equality or live layout proof. |
+| Actual C49 games or physical input | NOT RUN. Earlier C48 results below remain labeled C48. |
 | Production signing and final release package | Public verifier configured. Live signed-release testing and final release approval are pending. No private key is included in the build or source. These development snapshots are not final release artifacts. |
 
 The positive update and rollback checks start from a copy of this candidate with a separate known test public key compiled in. The C50 and C51 targets are retained private fixtures from the earlier updater checks, with their original source and method limits. The actual public candidate is separately checked for rejection of those test-key signatures. Their hashes differ from the public-mode development snapshot. Network replies and Qt actions were simulated privately. The two-update fixture advanced only its test processes' realtime clock; it did not edit saved throttle records or change the host clock. No private feed override, synthetic key, QA driver, log, capture, settings or backup is part of the public build.
