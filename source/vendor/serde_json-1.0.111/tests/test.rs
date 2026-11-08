@@ -34,7 +34,9 @@ use std::collections::BTreeMap;
 #[cfg(feature = "raw_value")]
 use std::collections::HashMap;
 use std::fmt::{self, Debug};
-use std::hash::{BuildHasher, Hash, Hasher};
+use std::hash::BuildHasher;
+#[cfg(feature = "raw_value")]
+use std::hash::{Hash, Hasher};
 use std::io;
 use std::iter;
 use std::marker::PhantomData;
@@ -2489,20 +2491,15 @@ fn test_value_into_deserializer() {
 
 #[test]
 fn hash_positive_and_negative_zero() {
-    let rand = std::collections::hash_map::RandomState::new();
-    let hash = |obj: Number| -> u64 {
-        let mut hasher = rand.build_hasher();
-        obj.hash(&mut hasher);
-        hasher.finish()
-    };
+    let rand = std::hash::RandomState::new();
 
     let k1 = serde_json::from_str::<Number>("0.0").unwrap();
     let k2 = serde_json::from_str::<Number>("-0.0").unwrap();
     if cfg!(feature = "arbitrary_precision") {
         assert_ne!(k1, k2);
-        assert_ne!(hash(k1), hash(k2));
+        assert_ne!(rand.hash_one(k1), rand.hash_one(k2));
     } else {
         assert_eq!(k1, k2);
-        assert_eq!(hash(k1), hash(k2));
+        assert_eq!(rand.hash_one(k1), rand.hash_one(k2));
     }
 }

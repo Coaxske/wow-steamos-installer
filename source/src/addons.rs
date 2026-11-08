@@ -1,19 +1,23 @@
 //! Publisher downloads. Each redirect is checked before the next HTTP request.
-use crate::{fsutil, Result};
+#[cfg(any(test, feature = "developer-tools"))]
+use crate::fsutil;
+use crate::Result;
+#[cfg(any(test, feature = "developer-tools"))]
 use serde_json::Value;
 use std::{
     fs,
     path::{Path, PathBuf},
-    process::Stdio,
-    thread,
-    time::Duration,
 };
+#[cfg(any(test, feature = "developer-tools"))]
+use std::{process::Stdio, thread, time::Duration};
+
 pub fn is_appimage(b: &[u8]) -> bool {
     b.len() > 1024
         && b.starts_with(b"\x7fELF\x02\x01")
         && b.get(8..11) == Some(b"AI\x02")
         && b.get(18..20) == Some(&[62, 0])
 }
+#[cfg(any(test, feature = "developer-tools"))]
 pub fn allowed(url: &str, manager: &str) -> bool {
     let Some(rest) = url.strip_prefix("https://") else {
         return false;
@@ -42,6 +46,7 @@ pub fn allowed(url: &str, manager: &str) -> bool {
         _ => false,
     }
 }
+#[cfg(any(test, feature = "developer-tools"))]
 pub fn asset(v: &Value, manager: &str) -> Result<(String, Option<String>)> {
     if v["prerelease"] == true || v["draft"] == true {
         return Err("Publisher returned a prerelease; choose a stable release.".into());
@@ -82,6 +87,7 @@ pub fn asset(v: &Value, manager: &str) -> Result<(String, Option<String>)> {
     };
     Ok((url.into(), hash))
 }
+#[cfg(any(test, feature = "developer-tools"))]
 fn fetch(url: &str, manager: &str, dest: &Path, limit: u64) -> Result<()> {
     let mut next = url.to_string();
     let header = dest.with_extension("headers");
@@ -174,8 +180,10 @@ fn fetch(url: &str, manager: &str, dest: &Path, limit: u64) -> Result<()> {
 }
 /// Published Linux AppImage link on Overwolf's official CurseForge page.
 /// Verified 2026-10-26; no guessed API, mirror, .deb or store package.
+#[cfg(any(test, feature = "developer-tools"))]
 pub const CURSEFORGE_OFFICIAL: &str =
     "https://curseforge.overwolf.com/downloads/curseforge-latest-linux.AppImage";
+#[cfg(any(test, feature = "developer-tools"))]
 fn cached_curseforge(dir: &Path) -> Option<PathBuf> {
     let record: Value =
         serde_json::from_slice(&fs::read(dir.join("curseforge-official.json")).ok()?).ok()?;
@@ -203,6 +211,7 @@ fn cached_curseforge(dir: &Path) -> Option<PathBuf> {
     }
     Some(path)
 }
+#[cfg(any(test, feature = "developer-tools"))]
 pub fn download(data: &Path, manager: &str, url: Option<&str>) -> Result<PathBuf> {
     if !["wowup_cf", "wowup_wago", "curseforge"].contains(&manager) {
         return Err("Select a supported addon manager".into());
@@ -474,4 +483,9 @@ mod candidate24_cache_tests {
         ));
         fs::remove_dir_all(dir).unwrap();
     }
+}
+
+#[cfg(not(any(test, feature = "developer-tools")))]
+pub fn download(_data: &Path, _manager: &str, _url: Option<&str>) -> Result<PathBuf> {
+    Err(crate::developer_tools::UNAVAILABLE.into())
 }

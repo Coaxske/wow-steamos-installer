@@ -1,21 +1,15 @@
-# Portable build
+# Portable build modes
 
-Build on the oldest supported Linux baseline with Qt/SDL development packages.
-Run `scripts/build.sh`, then `python3 scripts/package.py --qt-prefix /usr`.
-The script gathers the app, Qt QML modules/plugins, their dynamic dependencies
-and audited notices (packaging fails on an unmapped library), and compiles `launcher.rs` with that archive embedded.
+The default public build excludes developer capture/input/window/OCR tools, test checklists and addon-manager downloader/registration execution. Normal setup, repair, removal, folder access, manual pointer instructions, SDL navigation and Steam input ownership checks remain in the public build. Basic --self-check and --demo remain available.
 
-The launcher extracts into a newly created 0700 directory under the user cache (on disk) and starts
-the real application. It retains no browser or Python process. Child Steam and
-browser launches restore the pre-bundle library/plugin environment.
+Build public mode with scripts/build.sh, then python3 scripts/package.py --qt-prefix /usr --build-mode public. CMake uses WOW_ENABLE_DEVELOPER_TOOLS=OFF, build-public and target/public. The Rust developer-tools feature defaults off.
 
-`--demo` shows a labeled preview without invoking the filesystem-capable core.
-`--self-check` renders that preview and checks the QML root/footer. It does not
-validate Steam, graphical session startup, real hardware or gameplay.
-`--page setup --size 800x600 --screenshot /tmp/setup.png` can accompany self-check
-for visual review. Source-run self-check is separate from packaged self-check.
+For private developer use, build with scripts/build.sh --developer-tools and package with --build-mode developer --output dist-developer. CMake uses WOW_ENABLE_DEVELOPER_TOOLS=ON, build-developer and target/developer. The developer portable has a distinct filename and must not enter public release staging.
 
-Preserve the source, vendor dependency tree, runtime copyright/license texts,
-version, and checksum manifest with any testing bundle. Do not include personal
-runtime state, Steam data, settings backups, development credentials or caches.
-This project has no publishing script or remote repository configuration.
+Separate Rust/native output directories prevent mode reuse. Both native variants compare their linked Rust feature mode before opening the GUI/core. --build-info reports mode, version and source identity. Packaging checks native/checker/manifest mode and source identities before collecting libraries. Its dependency inventory describes actual bundled files.
+
+Only developer mode packages GStreamer capture plugins/scanner and the English OCR model. Public mode can still include transitive QtDBus dependencies required by ordinary Qt plugins; it does not provide desktop capture or remote input tools. Keep the applicable notices and corresponding source for the actual dependency closure.
+
+The portable uses a private 0700 cache directory, does not require FUSE, and contains no Python runtime. Child Steam/browser launches restore the original library/plugin environment. Preserve matching source, dependency sources, licenses, notices, version, mode and checksums. Exclude device settings, credentials, logs, captures, private helpers and backups.
+
+--self-check renders a labeled installer preview; it does not establish live Steam, device controls or gameplay acceptance. --demo also uses preview state. Developer-only detailed checks and screenshots require an explicit developer build.

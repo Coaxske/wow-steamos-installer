@@ -1,31 +1,77 @@
-# WoW SteamOS Installer — Candidate 44
+# WoW SteamOS Installer
 
-A portable Rust/Qt installer for native Steam on Linux x86_64. Tested on Steam Deck in Game Mode through the unchanged C43 launch/controller behavior. C44 adds automated-verified filesystem access links. Bazzite testing in progress.
+Earlier versions were tested on Steam Deck. This version was checked on a Bazzite PC.
 
-This release manages exactly one Steam tile for the selected copy: **Battle.net**. Installer choices select which WoW editions to set up. Open Battle.net from Steam, choose an installed edition/account inside the ordinary launcher, and press Play. With the guided Close after Play setting verified, the main launcher exits while WoW keeps running. Quit through WoW's own menu to return to the same Battle.net tile. Separate WoW/edition tiles and addon-manager integration are deferred.
+This early test version installs Blizzard's Battle.net app, adds one Battle.net button to Steam, and makes game and AddOns folders easier to find.
 
-Working launcher, prefix and Proton are reused. Fresh setup, rerun and repair converge on the same tile. Older edition tiles or C42's two-tile setup require an explicit identity choice when ambiguous. A verified private outside-installation metadata/controller backup precedes consolidation. Only validated installer-owned shortcuts are retired. Existing games, addons, preferences, custom layouts and artwork are preserved; layouts are not merged, reapplied or deleted.
+## Download and install
 
-## Games and AddOns folders
+You need native Steam, an internet connection and a Blizzard account with access to your chosen game.
 
-After setup, open **~/World of Warcraft** in Desktop Mode, or choose **Open folders** on the installer's completion screen. It contains filesystem links named **Battle.net**, **Retail installation**, **Classic Era installation**, **Forever installation**, and matching **Retail AddOns**, **Classic Era AddOns**, **Forever AddOns** for actual detected installations and existing Interface/AddOns directories. Only installed/detected clients receive links. Games on indexed Steam libraries or explicitly selected search locations on another drive are supported. Use the normal search-location control to include another location, reconnect an unavailable drive, then **Create / refresh links**.
+1. On Steam Deck, switch to Desktop Mode. On Bazzite, use the desktop.
+2. Open Steam and sign in.
+3. [Download WoW-SteamOS-Rust-Linux-x86_64](https://github.com/Coaxske/wow-steamos-installer/releases/download/v0.2.0-alpha.10-candidate.48/WoW-SteamOS-Rust-Linux-x86_64). This is the only file you need to run. The other release files contain instructions, checksums, licenses and source code.
+4. Keep the file somewhere permanent so you can reopen it for repair or removal.
+5. Right-click it, open Properties, and allow it to run as a program.
+6. Open it and follow the instructions. Steam may close and reopen during setup.
+7. Sign in only inside Battle.net. The installer never asks for your password or authenticator codes.
 
-To install an addon, download the edition-appropriate addon and extract its addon folder into that edition's AddOns link. For example, Retail AddOns/ExampleAddon/ExampleAddon.toc must resolve to the Retail client's real Interface/AddOns/ExampleAddon/ExampleAddon.toc. Avoid an extra nested archive folder. Follow the addon's own compatibility instructions. Files written through a link go directly to the existing installation; the installer does not download, update or validate third-party addons.
+Setup asks you to approve Battle.net's Close after Play setting. Before changing the setting, it backs up the original Battle.net settings. An already-enabled setting can be confirmed without changing it. This affects the selected installation in both Desktop and Gaming Mode.
 
-Paths are resolved locally. Games/addons are not moved or copied. Reruns reuse verified correct links. Multiple detected copies get distinct stable labels. An occupied user name or unowned existing World of Warcraft folder is preserved and reported; the installer does not overwrite or silently adopt it. Missing or ambiguous AddOns folders are reported without guessing or creating a substitute. Finish the official installation, ensure the actual Interface/AddOns directory exists, then refresh. Disconnected drives leave existing links intact; reconnect before use.
+## Already have Battle.net or WoW?
 
-**Remove access links only — keep games and addons** removes only unchanged, verified installer-created links. Targets and sample/user addons remain in place. Changed user entries are preserved. The empty access folder and private ownership record may remain for safe reuse. This differs from full installation removal: review its separate scope and backup first. Its personal-data backup covers Interface and WTF (including SavedVariables), not Screenshots, game files, the prefix/sign-in or every other folder. Make a separate verified backup for other data.
+The installer checks known locations and verified locations from Steam shortcuts. Separate copies stay separate.
 
-## Launcher and controls
+If nothing is found, choose **Choose existing folder** below **Already have Battle.net or WoW installed?** Select the existing folder and review the results. Cancelling the picker keeps your choices unchanged. An empty folder produces instructions to try another location.
 
-Automatic exit is a required normal guided setup step. Open installed Battle.net, sign in privately if needed, then close it and WoW normally before review. Explicitly approve the installation-wide change in BOTH Desktop and Game Mode, review, and Apply. The installer verifies an original-settings backup before changing only the required field and verifies the current typed setting afterward. Already-enabled settings can be confirmed without a vendor write. Reruns preserve the choice and never silently reapply changed preferences. A setting write alone is not runtime process-exit evidence.
+Finding a folder does not guarantee it can be reused. If no matching Battle.net Steam shortcut is found, follow the on-screen instructions to add the existing Battle.net app to Steam and choose its working Proton version, then retry. Finding files does not approve adoption, restore lost setup records or prove the game will reach Play.
 
-Automatic pointer configuration is unavailable. The normal manual guide targets this same Battle.net tile. Preserve working layouts. If an edit is needed, save/export the original and use Steam's unique-configuration-for-this-device option before changing shared controls. Right-trackpad Mouse and Left Mouse Click are pointer/menu controls, not a complete gameplay layout. Brightness, display power, sleep and lock policy remain under the operating system.
+## Play and controls
 
-## Evidence and limitations
+On Steam Deck, return to Gaming Mode. Open **Battle.net** under Non-Steam in your Steam library. Choose your installed edition and account, then press Play. With Close after Play enabled, Battle.net closes while WoW stays open.
 
-C43 actual Steam Deck Game Mode acceptance passed Era and Retail automatic main-launcher exit while the same correct game survived, own-menu quit and return to the same Battle.net tile. Era's physical pointer/menu check passed using the existing generic Battle.net layout. C44 changes folder access only; accepted launch/controller behavior is carried forward by source review. C44 folder setup/rerun/repair/removal, routing sample addon bytes, external/unavailable drives, occupied names and file-manager dispatch are automated disposable checks, not a new device/game session.
+Quit through WoW's own **Exit Game** menu. Steam's Exit game stops the whole Battle.net game session.
 
-Earlier Forever coverage is inherited and bounded to character screens. The changed Forever 1.60.1.70862 file was not tested; that limitation is accepted for this release. No full gameplay, performance or continuous process trace is claimed. Earlier Era Error134 and WOW51900319 remain separate unexplained historical records, not proven fixes. See accompanying acceptance/release notes for the original observation limits.
+Use **Gaming Mode pointer setup** in the installer if mouse movement or clicking does not work. Keep working controls unchanged. Before editing shared controls, save the original layout and use Steam's unique configuration for this device. The guide covers pointer and menu controls, not a complete gameplay layout.
 
-Build/package: scripts/build.sh and packaging/README.md. Matching Source.zip contains installer and vendored Rust/SDL inputs. Runtime corresponding sources, licenses and notices accompany release assets. Private QA tools, device records, captures, logs, settings, backups, credentials and transfer packets are excluded.
+## Addons
+
+After setup, choose **Open folders**, or open **World of Warcraft** in your Home folder. Links appear for detected installations and their existing AddOns folders.
+
+Download an addon for your edition, unzip it, and put its folder into the matching AddOns link. For example:
+
+Retail AddOns/ExampleAddon/ExampleAddon.toc
+
+The installer does not download or update addons.
+
+## Repair or remove
+
+Reopen the same installer.
+
+- **Repair Battle.net tile** repairs the existing Steam button without downloading the game again. Ambiguous or conflicting saved identities are refused.
+- **Remove access links only** removes verified installer-created links. Games and addons remain; the empty folder may remain too.
+- Full installation removal is a separate reviewed choice. Choose **Keep addon and game settings** to back up Interface and WTF. Screenshots, game files and other folders are not included. Copy other files you want to keep before removal.
+
+Read the [install and removal guide](../INSTALL-AND-REMOVE.md) for backup locations and restoration.
+
+## What was checked
+
+Candidate 48 was checked on Bazzite with a read-only scan and simulated interface tests. These checked the folder picker and review screens, stopping before Apply. Candidate 48 has not been run on a Steam Deck or through a new game session.
+
+The Steam Deck results come from earlier versions. Retail and Classic Era reached character screens, Battle.net closed while WoW stayed open, and normal quitting returned to the same Battle.net button. Earlier pointer and menu checks also passed.
+
+Forever works on Steam Deck as of Candidate 44. It remains experimental because recorded checks only reached character selection or creation, and client 1.60.1.70862 has no separate recorded test.
+
+Full gameplay and performance are not established. Earlier Error134 and WOW51900319 remain separate unexplained historical results.
+
+See [acceptance details](../ACCEPTANCE-SUMMARY.md) and [supported editions and limitations](../SUPPORTED-EDITIONS-AND-LIMITATIONS.md).
+
+## Help
+
+[Report a problem](https://github.com/Coaxske/wow-steamos-installer/issues) with a description and the error message. Do not upload Steam configuration, Battle.net settings, captures or backup folders.
+
+Free and open source under the [MIT License](LICENSE). This community project is not affiliated with Blizzard Entertainment or Valve.
+
+## Building from source
+
+See packaging/README.md. Public builds are the default. A separate private developer build can include developer tools; it must not be uploaded as the public installer.

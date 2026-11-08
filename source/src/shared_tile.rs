@@ -36,6 +36,19 @@ fn shared_tile_keeper(candidates:&[vdf::Object], req:&Json)->Result<Option<u32>>
     }
     Ok(candidates.first().and_then(|e|vdf::number(e,"appid")))
 }
+// Recover only the one explicitly saved shared identity. Never borrow an occupied ID.
+fn missing_shared_tile_identity(root:&vdf::Object,i:&Installation)->Result<Option<u32>> {
+    let saved:Vec<_>=i.bindings.iter().filter(|b|b.shared).map(|b|b.appid).collect();
+    let id=match saved.as_slice() {
+        []=>return Ok(None),
+        [id]=>*id,
+        _=>return Err("The saved Battle.net tile identity is ambiguous. Preserve this copy and review its setup records; no shortcut changed.".into()),
+    };
+    if id==0 || vdf::object(root,"shortcuts").ok_or("Missing shortcuts")?.iter().any(|(_,v)|matches!(v,Value::Object(e) if vdf::number(e,"appid")==Some(id))) {
+        return Err("The saved Battle.net tile identity is already used or invalid. No unrelated shortcut or controller association was changed.".into());
+    }
+    Ok(Some(id))
+}
 fn shared_migration_needed(plan:&Plan)->Result<bool> {
     Ok(plan.kind=="repair" && plan.shared_migration)
 }

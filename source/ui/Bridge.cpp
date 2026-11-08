@@ -19,11 +19,19 @@
 #include <QFile>
 #include <QProcessEnvironment>
 #include <QtConcurrent>
-extern "C" {char *wow_request(const char*);void wow_free(char*);void wow_cancel();void wow_reset_cancel();int wow_steam_state();char *wow_steam_snapshot();}
+extern "C" {char *wow_request(const char*);void wow_free(char*);void wow_cancel();void wow_reset_cancel();int wow_steam_state();
+#if WOW_ENABLE_DEVELOPER_TOOLS
+char *wow_steam_snapshot();
+#endif
+}
 static int steamDesktopRunning();
 Bridge::Bridge(bool demo,QObject *parent,bool selfCheck):QObject(parent),m_selfCheck(selfCheck),m_demo(demo){
  m_timer.setInterval(16);connect(&m_timer,&QTimer::timeout,this,&Bridge::pollInput);
- connect(&m_steamWorker,&QFutureWatcher<int>::finished,this,[this]{const int state=m_steamWorker.result();m_steamKnown=state>=0;m_steamPresent=state>0;m_steamError=state<0;m_probePending=false;if(m_trace)m_trace->write("probe_applied",{{"sequence",int(m_probeSequence)},{"code",state}});});
+ connect(&m_steamWorker,&QFutureWatcher<int>::finished,this,[this]{const int state=m_steamWorker.result();m_steamKnown=state>=0;m_steamPresent=state>0;m_steamError=state<0;m_probePending=false;
+#if WOW_ENABLE_DEVELOPER_TOOLS
+if(m_trace)m_trace->write("probe_applied",{{"sequence",int(m_probeSequence)},{"code",state}});
+#endif
+});
  qApp->installEventFilter(this);
  if(!demo)setDirectInput(true);
 }
@@ -76,7 +84,11 @@ bool Bridge::selectSelfCheckController(SDL_JoystickID id){
  if(!m_selfCheck||id<0)return false;
  closeController();m_active=false;m_waitNeutral=true;m_selfCheckId=id;return true;
 }
-void Bridge::closeController(){if(m_controller){if(m_trace)m_trace->write("controller_close",{{"instance",int(selfCheckSelectedId())}});SDL_GameControllerClose(m_controller);m_controller=nullptr;}m_axis=0;}
+void Bridge::closeController(){if(m_controller){
+#if WOW_ENABLE_DEVELOPER_TOOLS
+if(m_trace)m_trace->write("controller_close",{{"instance",int(selfCheckSelectedId())}});
+#endif
+SDL_GameControllerClose(m_controller);m_controller=nullptr;}m_axis=0;}
 void Bridge::setDirectInput(bool value){if(m_direct==value)return;m_direct=value;
  if(value){SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_STEAMDECK,"0");SDL_SetHint("SDL_JOYSTICK_HIDAPI_STEAM","1");SDL_SetHint("SDL_JOYSTICK_STEAM","1");if(SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER)!=0){m_direct=false;m_status="Controller access unavailable. Use touchscreen, mouse, keyboard, or KDE Connect.";}else{m_timer.start();m_status="Controller navigation is on. You can also use the mouse.";}}
  else{m_timer.stop();closeController();SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);m_status="Controller navigation is off. Mouse and Steam desktop controls still work.";}
@@ -179,9 +191,15 @@ void Bridge::pollInput(){
   const auto now=SDL_GetTicks64();
   if(now>=m_steamCheck&&!m_probePending){
    // A finished future can still have an unapplied queued completion. Never replace it.
-   m_probePending=true;const auto sequence=++m_probeSequence;auto trace=m_trace;auto probe=m_selfCheck&&m_probe?m_probe:std::function<int()>(steamDesktopRunning);
+   m_probePending=true;++m_probeSequence;auto probe=m_selfCheck&&m_probe?m_probe:std::function<int()>(steamDesktopRunning);
+#if WOW_ENABLE_DEVELOPER_TOOLS
+   const auto sequence=m_probeSequence;auto trace=m_trace;
    if(trace)trace->write("probe_scheduled",{{"sequence",int(sequence)}});
-   m_steamWorker.setFuture(QtConcurrent::run([trace,probe,sequence]{if(trace)trace->write("probe_started",{{"sequence",int(sequence)}});const int state=probe();if(trace)trace->write("probe_returned",{{"sequence",int(sequence)},{"code",state}});return state;}));m_steamCheck=now+1000;
+   m_steamWorker.setFuture(QtConcurrent::run([trace,probe,sequence]{if(trace)trace->write("probe_started",{{"sequence",int(sequence)}});const int state=probe();if(trace)trace->write("probe_returned",{{"sequence",int(sequence)},{"code",state}});return state;}));
+#else
+   m_steamWorker.setFuture(QtConcurrent::run([probe]{return probe();}));
+#endif
+   m_steamCheck=now+1000;
   }
   if(!m_steamKnown||m_steamPresent){
    closeController();m_active=false;m_waitNeutral=true;
@@ -197,7 +215,11 @@ void Bridge::pollInput(){
  SDL_PumpEvents();
  if(m_controller&&!SDL_GameControllerGetAttached(m_controller))closeController();
  if(!m_controller){
-  for(int n=0;n<SDL_NumJoysticks();n++)if(SDL_IsGameController(n)&&(!m_selfCheck||m_selfCheckId<0||SDL_JoystickGetDeviceInstanceID(n)==m_selfCheckId)){m_controller=SDL_GameControllerOpen(n);if(m_trace)m_trace->write("controller_open",{{"slot",n},{"instance",SDL_JoystickGetDeviceInstanceID(n)},{"success",m_controller!=nullptr}});if(m_controller)break;}
+  for(int n=0;n<SDL_NumJoysticks();n++)if(SDL_IsGameController(n)&&(!m_selfCheck||m_selfCheckId<0||SDL_JoystickGetDeviceInstanceID(n)==m_selfCheckId)){m_controller=SDL_GameControllerOpen(n);
+#if WOW_ENABLE_DEVELOPER_TOOLS
+if(m_trace)m_trace->write("controller_open",{{"slot",n},{"instance",SDL_JoystickGetDeviceInstanceID(n)},{"success",m_controller!=nullptr}});
+#endif
+if(m_controller)break;}
   if(!m_controller){
    const QString status="No accessible direct controller was detected. Keep Steam open for built-in controls; setup closes and reopens it automatically.";
    if(m_status!=status){m_status=status;emit controllerStatusChanged();}
@@ -253,6 +275,7 @@ bool Bridge::styleFolderDialog(QObject *object){
  visit(window->contentItem());return styled;
 }
 
+#if WOW_ENABLE_DEVELOPER_TOOLS
 bool Bridge::startInputTrace(const QString &path,const QString &pause,int seconds){
  if(m_trace||seconds<1||seconds>90||!QDir::isAbsolutePath(path)||!QDir::isAbsolutePath(pause))return false;
  auto trace=std::make_shared<InputTrace>(path,pause,seconds);if(!trace->valid())return false;m_trace=trace;
@@ -265,6 +288,8 @@ void Bridge::traceState(){
  char *raw=wow_steam_snapshot();const auto processes=QJsonDocument::fromJson(QByteArray(raw)).object();wow_free(raw);
  m_trace->write("state",{{"application_active",QGuiApplication::applicationState()==Qt::ApplicationActive},{"focus_window",QGuiApplication::focusWindow()!=nullptr},{"direct_enabled",m_direct},{"probe_pending",m_probePending},{"probe_sequence",int(m_probeSequence)},{"known",m_steamKnown},{"present",m_steamPresent},{"error",m_steamError},{"status",m_status},{"controller_instance",int(selfCheckSelectedId())},{"controller_attached",m_controller&&SDL_GameControllerGetAttached(m_controller)},{"active",m_active},{"wait_neutral",m_waitNeutral},{"controller_samples",int(m_controllerSamples)},{"direction_activity_samples",int(m_directionSamples)},{"navigation_dispatches",int(m_navigationDispatches)},{"devices",devices},{"process_snapshot",processes}});
 }
+
+#endif
 
 // Presentation preference only: never forwarded to installation/Steam/launcher state.
 QString Bridge::classicGuideMode(){

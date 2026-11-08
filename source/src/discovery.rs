@@ -1,6 +1,7 @@
 use crate::{
     catalog, fsutil,
     model::*,
+    steam,
     vdf::{self, Value},
     Result,
 };
@@ -294,6 +295,100 @@ fn skip_dir(name: &str) -> bool {
     ]
     .contains(&name.to_ascii_lowercase().as_str())
 }
+// Shortcuts provide read-only search hints, never ownership or adoption consent.
+// Inspect only recognized existing targets and their specific Proton environment.
+fn shortcut_search_roots(steam: &Steam, warnings: &mut Vec<String>) -> Vec<PathBuf> {
+    let mut roots = BTreeSet::new();
+    for user in &steam.users {
+        let entries = match steam::shortcuts_path(&steam.path, user)
+            .and_then(|p| steam::read_shortcuts(&p))
+        {
+            Ok(entries) => entries,
+            Err(error) => {
+                warnings.push(format!(
+                    "Could not read Steam shortcut search hints: {error}"
+                ));
+                continue;
+            }
+        };
+        for (_, value) in vdf::object(&entries, "shortcuts").into_iter().flatten() {
+            let Value::Object(entry) = value else {
+                continue;
+            };
+            let raw = vdf::string(entry, "exe").unwrap_or("").trim();
+            let target = if let Some(quoted) = raw.strip_prefix('"') {
+                let Some(target) = quoted.strip_suffix('"') else {
+                    continue;
+                };
+                target
+            } else {
+                raw
+            };
+            if target.contains('"') || !Path::new(target).is_absolute() {
+                continue;
+            }
+            let Ok(target) = Path::new(target).canonicalize() else {
+                continue;
+            };
+            if !fs::metadata(&target).is_ok_and(|m| m.is_file() && m.len() > 0) {
+                continue;
+            }
+            let name = target.file_name().unwrap_or_default().to_string_lossy();
+            let parent = target.parent().unwrap();
+            let launcher = name.eq_ignore_ascii_case("Battle.net.exe")
+                && parent.file_name().is_some_and(|n| n == "Battle.net");
+            let setup = name.eq_ignore_ascii_case("Battle.net-Setup.exe");
+            let game = catalog::is_game_exe(&name)
+                && (catalog::by_folder(&parent.file_name().unwrap_or_default().to_string_lossy())
+                    .is_some()
+                    || crate::products::installed(parent).is_some());
+            if !launcher && !setup && !game {
+                continue;
+            }
+            let options = vdf::string(entry, "LaunchOptions").unwrap_or("");
+            let explicit = steam::compat_prefix(options);
+            if options.contains("STEAM_COMPAT_DATA_PATH") && explicit.is_none() {
+                continue;
+            }
+            let explicit = match explicit {
+                Some(path) => match path.canonicalize() {
+                    Ok(path) => Some(path),
+                    Err(_) => continue,
+                },
+                None => None,
+            };
+            let inferred = prefix_of(&target);
+            if explicit
+                .as_ref()
+                .zip(inferred.as_ref())
+                .is_some_and(|(a, b)| a != b)
+            {
+                warnings.push(
+                    "Ignored a Steam shortcut with conflicting Proton environment paths.".into(),
+                );
+                continue;
+            }
+            let Some(prefix) = inferred.or(explicit) else {
+                continue;
+            };
+            if !prefix.join("pfx/drive_c").is_dir() || (setup && prefix.parent() != Some(parent)) {
+                continue;
+            }
+            for path in std::iter::once(prefix).chain(game.then(|| parent.to_path_buf())) {
+                if roots.contains(&path) {
+                    continue;
+                }
+                if roots.len() == 32 {
+                    warnings.push("Steam shortcut search hint limit reached. Choose an existing folder to search another copy.".into());
+                    return roots.into_iter().collect();
+                }
+                roots.insert(path);
+            }
+        }
+    }
+    roots.into_iter().collect()
+}
+
 pub fn scan(home: &Path, state: &State) -> Result<Scan> {
     let mut result = Scan {
         steam_running: steam_running()?,
@@ -309,6 +404,7 @@ pub fn scan(home: &Path, state: &State) -> Result<Scan> {
     for root in steam_roots(home) {
         match steam_info(&root) {
             Ok(steam) => {
+                roots.extend(shortcut_search_roots(&steam, &mut result.warnings));
                 for lib in &steam.libraries {
                     roots.push(lib.join("steamapps/compatdata"));
                     broad.push(lib.join("steamapps/common"));
@@ -585,5 +681,61 @@ mod steam_scope_live_fixture {
         assert!(!super::steam_running().unwrap());
         assert_eq!(crate::wow_steam_state(), 0);
         println!("PASS post-exit detector and Qt FFI report stopped");
+    }
+}
+
+#[cfg(test)]
+mod shortcut_hint_bound {
+    use super::*;
+    #[test]
+    fn c47_mixed_game_hint_cannot_exceed_root_limit() {
+        let root = std::env::temp_dir().join(format!("c47-bound-{}", fsutil::unique()));
+        let cfg = root.join("steam/userdata/123/config");
+        fs::create_dir_all(&cfg).unwrap();
+        let mut entries = vec![];
+        for n in 0..32 {
+            let prefix = root.join(format!("copy{n}/compatdata"));
+            let folder = prefix.join(if n == 31 {
+                "pfx/drive_c/World of Warcraft/_classic_era_"
+            } else {
+                "pfx/drive_c/Battle.net"
+            });
+            fs::create_dir_all(&folder).unwrap();
+            let file = folder.join(if n == 31 {
+                "WowClassic.exe"
+            } else {
+                "Battle.net.exe"
+            });
+            fs::write(&file, b"fixture").unwrap();
+            entries.push((
+                n.to_string(),
+                Value::Object(
+                    steam::entry(
+                        "Existing",
+                        &file,
+                        &steam::launch_options(&prefix, None).unwrap(),
+                        "old",
+                        Some(10000 + n),
+                    )
+                    .unwrap(),
+                ),
+            ));
+        }
+        fs::write(
+            cfg.join("shortcuts.vdf"),
+            vdf::binary(&vec![("shortcuts".into(), Value::Object(entries))]).unwrap(),
+        )
+        .unwrap();
+        let info = Steam {
+            path: root.join("steam"),
+            users: vec!["123".into()],
+            libraries: vec![],
+            protons: vec![],
+        };
+        let mut warnings = vec![];
+        let hints = shortcut_search_roots(&info, &mut warnings);
+        assert_eq!(hints.len(), 32);
+        assert!(warnings.iter().any(|w| w.contains("hint limit")));
+        fs::remove_dir_all(root).unwrap();
     }
 }

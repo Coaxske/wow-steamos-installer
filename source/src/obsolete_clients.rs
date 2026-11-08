@@ -124,7 +124,7 @@ fn obsolete_clients(
         let (Some(edition), Some(game)) = (&b.edition, &b.game) else {
             continue;
         };
-        if b.launcher || games.iter().any(|g| g.executable == PathBuf::from(game)) {
+        if b.launcher || games.iter().any(|g| g.executable == Path::new(game)) {
             continue;
         }
         let entries = vdf::object(root, "shortcuts").ok_or("Missing shortcuts")?;

@@ -1,11 +1,13 @@
-# Candidate 44 validation boundary
+# Candidate 48 verification boundaries
 
-C44's actual final packaged production engine is exercised with synthetic/disposable filesystem and Steam fixtures. Folder checks cover normal setup, rerun, repair, upgrade from frozen C43, correct installation/AddOns links, sample addon routing, no duplicate links, occupied names, external/unavailable drives, changed user entries, link-only and reviewed owned-removal hooks. Targets/addon contents are preserved by access-link removal. GUI checks use simulated engine replies and a harmless file-manager command stub to verify Open folders resolves the intended existing location; they do not establish a live desktop file-manager session.
+Current acceptance and frozen artifact identities are recorded in the accompanying ACCEPTANCE-SUMMARY.md and RELEASE-PROVENANCE.json.
 
-Source review must show no launch, Proton, controller or automatic-exit behavior change beyond folder hooks. Exact executable/native/embedded payload/source identity, checksums, runtime corresponding sources, licenses, notices and final public/history/account privacy review are release gates.
+Candidate 48's intended checks are the full offline Rust suite, formatting, strict clippy, public/private build separation, exact source and payload matching, an actual read-only Bazzite empty-record scan, and simulated packaged folder-picker/review cases stopping before Apply.
 
-Actual C43 Steam Deck Game Mode results carry forward: Era and Retail automatic main Battle.net exit while the same correct game survives, safe character screens, own-menu quits and same Battle.net ready tile; Era physical pointer/menu with the existing generic Battle.net layout. Launcher, Agent and game were observed separately. Window-query UNKNOWN is not absence; startup/current PID/start/image correlation is not continuous lifetime or an exit-status proof. No extra C44 game launch or physical acceptance is claimed.
+The interface cases use a private external driver and disposable files. They do not establish live Steam, game, controller or Steam Deck acceptance. Public builds exclude developer capture, external-input, window-reading, checklist and addon-manager download execution. Those tools require a separate private build switch.
 
-Earlier C41/C40 Forever character-screen coverage remains inherited with its recorded limits. Changed Forever 1.60.1.70862 was not tested, an explicitly accepted release limit. Original Era FIRST partial, Error134 and WOW51900319 remain separate unexplained records. A later pass is not a proven cause/fix. Timed QA limits are not product startup requirements. Brightness evidence is bounded filesystem/policy observation, not continuous physical-panel measurement.
+Earlier C46 Bazzite missing-tile repair and Classic Era launcher readiness are inherited observations. Earlier C43 Steam Deck Era/Retail game and pointer acceptance, C41 Forever character-screen coverage, and C44 folder/prerequisite/removal results retain their original build and method limits. Client 1.60.1.70862 has no separate recorded test. C48 has not had a new Deck or game session.
 
-Accepted prerequisite/download rerun, preservation, removal/restoration and physical-control evidence is reused with original build/method boundaries. Bazzite testing in progress; Bazzite manual acceptance is deferred and nonblocking. No private R3 development, new game launch, controller reconfiguration or display-policy change is part of C44.
+Error134 and WOW51900319 remain separate unexplained historical results. Later success does not prove a fix. Historical QA timing limits are not product startup requirements. Brightness evidence is bounded observation, not continuous physical measurement. Display, sleep and lock policy remain unchanged.
+
+No private device reports, captures, credentials, settings, backups, QA drivers or transfer packets belong in public assets.

@@ -1,24 +1,29 @@
-# Candidate 44 acceptance
+# Candidate 48 acceptance
 
-Frozen portable SHA-256: **5d839fa43b23a626509f1caea4c084271178de34775a3b29bdfb37ea88e2844c**.
-Matching Source.zip SHA-256: **3492cbce40c0ee421b61ab97fc7c4ebe092c0f11e6759e26277ba0a0089aa830**.
+Earlier versions were tested on Steam Deck. This version was checked on a Bazzite PC.
 
-**Tested on Steam Deck in Game Mode. Bazzite testing in progress.**
+Public installer SHA-256: **19508288b4ace65e230930c704609b23be6e176fe1fc9a837a693abc13e2f6ac**.
+Matching Source.zip SHA-256: **eebea66950b2235d4cb3c08be4dc8b039b7ee3e26f5952d70ae63f63ceaf8150**.
+Source fingerprint: **2ab87185e310d415cca876cb72af059c06563596866dc2ec8356ad3a7e026017**.
 
-| Evidence | Result and boundary |
+| Check | Result and limit |
 |---|---|
-| C43 actual Steam Deck Game Mode | Era and Retail passed ordinary chooser/Play, automatic main Battle.net process exit while the SAME correct WoW survived, safe character-screen observations, own-menu quit and return to the SAME Battle.net tile with green Play. Retail followed reopening that tile. |
-| C43 actual physical input | Era right-trackpad pointer/menu passed without holding Steam, using the existing generic Battle.net layout. Earlier distinct controller evidence is retained separately. |
-| C44 launch/controller review | No changes to neutral Steam launch, Proton configuration, exit-preference write/verification or controller implementations. C43 device behavior is inherited; no C44 game session was requested or run. |
-| C44 exact packaged folder checks | Automated production engine with disposable synthetic Steam/PE/filesystem fixtures: normal setup/rerun/repair, frozen-C43 upgrade, actual AddOns routing for three sample addons, stable no-duplicate links, external/unavailable drives, occupied user entries, confirmed link-only and full owned-removal hooks. Targets preserved by link removal. |
-| C44 GUI folder dispatch | Simulated engine replies with the real normal completion action/Bridge and a harmless xdg-open stub: intended existing folder resolves correctly; unavailable/foreign replies refused. Not a live Desktop file-manager test. |
-| C41 inherited edition coverage | Era FRESH, Retail FIRST/FRESH and experimental Forever FIRST/FRESH accepted within original limits; not relabeled C43/C44 runs. |
-| Forever compatibility and recorded-test limit | Forever works on Steam Deck as of C44. Earlier recorded checks were bounded to character selection/creation; there is no separate recorded test of client 1.60.1.70862. No new test, character creation or world entry is claimed. |
-| Prior prerequisite/preservation/removal | Completed isolated prerequisite/download reuse, protected-data, backed-up removal/22-file restoration and physical results retained within original build/method limits. No unrelated destructive replay. |
-| Bazzite | Build/coordinator machine; testing in progress. Manual acceptance deferred/nonblocking. C44 folder checks ran in an isolated offline build container. |
+| C48 offline source tests | PASS: 246 library tests, 41 regression tests and 1 production public-mode refusal test; formatting and strict clippy passed on Rust 1.75. |
+| C48 public build | PASS: default public build excludes developer checklist, capture, external mouse control, window reading and addon-manager download execution. The separate private developer build compiles and its offline tests pass. |
+| C48 actual Bazzite discovery | PASS: an empty-record, network-disabled read-only scan found two Battle.net installations and seven WoW client paths with no warnings. No adoption, download, launcher or game launch occurred. |
+| C48 packaged interface, simulated | PASS: ordinary folder-picker cancel, empty-folder retry, recognized external folder, missing-shortcut refusal, separate-copy selection and correct launcher/prefix/Proton/no-download review. Stopped before Apply. A separately labeled simulated pending-route case checked Back cancellation. |
+| C48 preservation | PASS within the sampled boundary: active installer records, selected metadata/controller/game samples and access-link identities were unchanged. Live paths were mounted read-only during discovery. This is not a full game-tree comparison. |
+| C48 source and runtime | PASS: 894 source inputs match Source.zip exactly; 768 runtime files match the embedded payload; all 87 library-to-notice mappings remain covered. Private QA drivers and device records are excluded. |
+| C48 Steam Deck, game and physical input | NOT TESTED. No C48 Deck, gameplay, physical-controller or installation-Apply pass is claimed. |
+| Earlier C46 Bazzite repair | Real Steam missing-tile repair retained the saved identity, launcher, prefix and Proton mapping. A separate adopted Classic Era launcher check offered Play without pressing it. These are earlier-build observations, not C48 acceptance. |
+| Earlier C43 Steam Deck Game Mode | Era and Retail used the single Battle.net tile. The main launcher exited while the same identified WoW process survived; normal quitting returned to that tile. Era pointer/menu input passed with the existing generic Battle.net layout. |
+| Earlier Forever | Forever works on Steam Deck as of C44. Earlier formal checks reached character selection/creation. Client 1.60.1.70862 has no separate recorded test. It remains experimental. |
+| Earlier installation and removal | Accepted prerequisite/rerun, protected-data, folder-link and backed-up removal/restoration checks retain their original build and simulated or actual-device method limits. They were not repeated for C48. |
 
-C43 human reports and prearmed bounded passive PID/start/startup-image/lifetime evidence distinguish main Battle.net, Agent and the correct game. Agent stayed alive at the overlap observation and was separately absent after normal quits. Launcher-window queries sometimes returned UNKNOWN; that is not proof of absence. Observer success is not the launcher's numeric exit status. Later original-PE mapping absence is not game death. Exact Play times, continuous all-process traces, uninterrupted focus, full gameplay and performance are not established.
+The C48 interface driver is private and external to the public executable. It invokes ordinary public controls with disposable files in an offscreen environment. These are simulated interface checks, not live Desktop or Steam Deck interaction.
 
-Actual accepted pointer behavior used the generic Battle.net layout, not the preserved Era custom file. Controller bytes/modes and selected Proton/backups were compared at bounded points; one metadata timestamp changed. The vendor configuration whole-file hash changed opaquely while the current required typed setting remained verified; complete vendor byte preservation is not claimed. Normal cleanup verified known main/Agent/game identities absent. Brightness/display checks are bounded filesystem/policy evidence rather than continuous physical brightness measurement.
+Historical observations keep Battle.net, Agent, the game process and launcher windows separate. UNKNOWN window results are not absence. Startup/current process correlation is not a continuous lifetime trace or a numeric launcher-exit-status proof. Earlier brightness checks are bounded observations, not continuous physical measurements. Normal display and sleep policies remain unchanged.
 
-Original Era FIRST partial, Error134 and WOW51900319 remain separate unexplained historical records. Later success is not a proven repair. Historical timed QA attempts remain inconclusive where recorded; no 180-second product startup requirement is imposed. Private raw evidence, captures, logs, device IDs, settings and backups remain off public assets.
+Error134 and WOW51900319 remain separate unexplained historical results. Later success does not prove their cause or a repair. Historical QA time limits are not product startup requirements. Full gameplay and performance are not established.
+
+Private logs, captures, settings, backups, device identifiers, handoffs, QA packets and transfer addresses are not public assets.

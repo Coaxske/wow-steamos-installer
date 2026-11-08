@@ -6,7 +6,9 @@
 #include <SDL.h>
 #include <functional>
 #include <memory>
+#if WOW_ENABLE_DEVELOPER_TOOLS
 #include "InputTrace.h"
+#endif
 class Bridge : public QObject {
  Q_OBJECT
  Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
@@ -30,7 +32,9 @@ public:
  bool selfCheckSteamKnown()const{return m_steamKnown;}
  bool selfCheckSteamPresent()const{return m_steamPresent;}
 
+#if WOW_ENABLE_DEVELOPER_TOOLS
  bool startInputTrace(const QString &path,const QString &pause,int seconds);
+#endif
  bool selfCheckProbe(std::function<int()> probe){if(!m_selfCheck)return false;m_probe=std::move(probe);return true;}
  void selfCheckPollNow(){if(m_selfCheck){m_steamCheck=0;pollInput();}}
  bool selfCheckFutureRunning()const{return m_steamWorker.isRunning();}
@@ -66,9 +70,11 @@ private:
  unsigned m_probeSequence=0;
  unsigned m_controllerSamples=0,m_directionSamples=0,m_navigationDispatches=0;
  std::function<int()> m_probe;
+#if WOW_ENABLE_DEVELOPER_TOOLS
  std::shared_ptr<InputTrace> m_trace;
  QTimer m_traceTimer;
  void traceState();
+#endif
  QTimer m_timer;
  SDL_GameController *m_controller=nullptr;
  Uint8 m_buttons[SDL_CONTROLLER_BUTTON_MAX]{};

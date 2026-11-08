@@ -1,132 +1,75 @@
 # WoW SteamOS Installer
 
-**Play World of Warcraft on your Steam Deck.**
+Earlier versions were tested on Steam Deck. This version was checked on a Bazzite PC.
 
-This free tool installs Blizzard's Battle.net app on your Steam Deck and adds one **Battle.net** button to your Steam library. Open it, pick your game, and press Play.
+This early test version installs Blizzard's Battle.net app, adds one Battle.net button to Steam, and makes game and AddOns folders easier to find.
 
-> **This is an early test version.** It has been tested on Steam Deck. Bazzite PCs are still being tested. See [What has been tested](#what-has-been-tested) before you start.
+## Download and install
 
-You do not need to know anything about coding or GitHub to use it. Just follow the steps below.
+You need Steam as it comes on Steam Deck or Bazzite (the Flatpak version of Steam is not supported), an internet connection, and a Blizzard account with access to the game you want to play.
 
----
+1. On Steam Deck, press the Steam button, choose Power, then Switch to Desktop. On Bazzite, use the desktop.
+2. Open Steam and sign in.
+3. [Download WoW-SteamOS-Rust-Linux-x86_64](https://github.com/Coaxske/wow-steamos-installer/releases/download/v0.2.0-alpha.10-candidate.48/WoW-SteamOS-Rust-Linux-x86_64). This is the only file you need to run. The other release files contain instructions, checksums, licenses and source code.
+4. Keep the file somewhere permanent so you can reopen it for repair or removal.
+5. Right-click the file, choose Properties, open the Permissions tab, check Is executable, then click OK.
+6. Open it and follow the instructions. Steam may close and reopen during setup.
+7. Sign in only inside Battle.net. The installer never asks for your password or authenticator codes.
 
-## What you need
+Setup asks you to approve Battle.net's Close after Play setting. Before changing the setting, it backs up the original Battle.net settings. An already-enabled setting can be confirmed without changing it. This affects the selected installation in both Desktop and Gaming Mode.
 
-- A **Steam Deck**
-- A **Blizzard account** with access to the World of Warcraft version you want to play
-- An **internet connection**
+## Already have Battle.net or WoW?
 
----
+The installer checks known locations and verified locations from Steam shortcuts. Separate copies stay separate.
 
-## How to install
+If nothing is found, choose **Choose existing folder** below **Already have Battle.net or WoW installed?** Select the existing folder and review the results. Cancelling the picker keeps your choices unchanged. An empty folder produces instructions to try another location.
 
-1. **Switch to Desktop Mode.** Press the Steam button, choose **Power**, then **Switch to Desktop**.
-2. **Open Steam once** and make sure you are signed in.
-3. **Download the installer.** Go to the [download page](https://github.com/Coaxske/wow-steamos-installer/releases/tag/v0.2.0-alpha.10-candidate.44). Under **Assets**, download only this file:
+Finding a folder does not guarantee it can be reused. If no matching Battle.net Steam shortcut is found, follow the on-screen instructions to add the existing Battle.net app to Steam and choose its working Proton version, then retry. Finding files does not approve adoption, restore lost setup records or prove the game will reach Play.
 
-   **`WoW-SteamOS-Rust-Linux-x86_64`**
+## Play and controls
 
-   That is the only file you need to run. The other files provide checksums, instructions, licenses and source code.
-4. **Move the file somewhere permanent.** Move it out of your Downloads folder into a folder you will keep. You will open this same file again later to repair or remove the setup.
-5. **Allow the file to run.** Right-click the file, choose **Properties**, open the **Permissions** tab, check **Is executable**, then click **OK**.
-6. **Open it.** Double-click the file. The installer opens and walks you through each step on screen.
-7. **Sign in to Battle.net when asked.** The installer opens Blizzard's Battle.net app. Sign in there and download the game version you want. **The installer never asks for your password or authenticator codes.** You only type those into Battle.net itself.
-8. **Finish the remaining steps on screen.**
-   - Steam may close and reopen during setup. This is normal.
-   - The installer will ask to turn on Battle.net's **close after Play** setting. This makes Battle.net close itself once your game starts, so Steam can bring you back to your library when you quit. Your original Battle.net settings are backed up first. This setting applies to Battle.net in both Desktop Mode and Gaming Mode.
+On Steam Deck, return to Gaming Mode. Open **Battle.net** under Non-Steam in your Steam library. Choose your installed edition and account, then press Play. With Close after Play enabled, Battle.net closes while WoW stays open.
 
----
+Quit through WoW's own **Exit Game** menu. Steam's Exit game stops the whole Battle.net game session.
 
-## How to play
+If the mouse pointer or clicking does not work in Battle.net, open **Gaming Mode pointer setup** in the installer for step-by-step help. In short: in Steam's controller settings for the Battle.net button, set Right Trackpad Behavior to Mouse and Right Trackpad Click to Left Mouse Click. If your controls already work, leave them unchanged.
 
-1. **Return to Gaming Mode.** Double-click **Return to Gaming Mode** on the desktop.
-2. **Find Battle.net in your Steam library.** It is listed under **Non-Steam**.
-3. **Open it, choose your game, and press Play.** You can choose Retail, Classic Era or Forever inside Battle.net. Battle.net closes on its own and the game keeps running.
-4. **Quit from inside the game.** Press Esc, then choose **Exit Game**. Steam's own "Exit game" button closes everything at once, so use the game's menu when you can.
+## Addons
 
-### Using the trackpad as a mouse
+After setup, choose **Open folders**, or open **World of Warcraft** in your Home folder. Links appear for detected installations and their existing AddOns folders.
 
-Battle.net needs a mouse pointer. The installer shows a short guide for this. In short, open the controller settings for the **Battle.net** button in Steam and set:
+Download an addon for your edition, unzip it, and put its folder into the matching AddOns link. For example:
 
-- **Right Trackpad** to act as a **Mouse**
-- **Right Trackpad click** to **Left Mouse Click**
+Retail AddOns/ExampleAddon/ExampleAddon.toc
 
-If you already have controls that work, you do not need to change them.
+Make sure you do not end up with a folder inside a folder.
 
----
-
-## Installing addons
-
-After setup, a new folder called **World of Warcraft** appears in your Home folder (in Desktop Mode). You can also click **Open folders** at the end of setup. Inside it you will find shortcuts such as **Retail AddOns**, **Classic Era AddOns** and **Forever AddOns**.
-
-To add an addon:
-
-1. Download an addon made for your game version.
-2. Unzip it.
-3. Drag the addon's folder into the matching AddOns shortcut.
-
-The result should look like `Retail AddOns/ExampleAddon/ExampleAddon.toc`. Make sure you do not end up with a folder inside a folder.
-
-The installer does not download or update addons for you.
-
----
+The installer does not download or update addons.
 
 ## Repair or remove
 
-Open the installer again (the same file you downloaded) and choose what you want to do:
+Reopen the same installer.
 
-- **Repair** fixes the Battle.net button and finds newly installed game versions. It does not make duplicate buttons.
-- **Remove access links only** removes the installer's verified folder shortcuts. Your games and addons stay where they are. The empty World of Warcraft folder may remain.
-- **Remove this installation** deletes the game installation that the installer set up. Choose **Keep addon and game settings** first to back up your addon settings and game settings (the Interface and WTF folders). Screenshots and other files are **not** backed up, so copy anything else you want to keep before removing.
+- **Repair Battle.net tile** repairs the existing Steam button without downloading the game again. Ambiguous or conflicting saved identities are refused.
+- **Remove access links only** removes verified installer-created links. Games and addons remain; the empty folder may remain too.
+- Full installation removal is a separate reviewed choice. Choose **Keep addon and game settings** to back up Interface and WTF. Screenshots, game files and other folders are not included. Copy other files you want to keep before removal.
 
-The installer shows you exactly what it will remove and asks you to confirm before anything is deleted.
+Read the [install and removal guide](INSTALL-AND-REMOVE.md) for backup locations and restoration.
 
----
+## What was checked
 
-## What has been tested
+Candidate 48 was checked on Bazzite with a read-only scan and simulated interface tests. These checked the folder picker and review screens, stopping before Apply. Candidate 48 has not been run on a Steam Deck or through a new game session.
 
-- **Steam Deck, Gaming Mode:** Retail and Classic Era start from the Battle.net button, Battle.net closes itself while the game keeps running, and quitting the game returns you to the same Battle.net button. Testing reached the character screen. Full gameplay has not been formally tested.
-- **Trackpad mouse:** Worked in Battle.net and game menus.
-- **Forever:** Works on Steam Deck. It is still marked experimental because the formal recorded tests only went as far as character selection, and the newest Forever update has not had its own recorded test.
-- **Addon folders:** Checked with automated tests, not yet on a real Steam Deck.
-- **Bazzite:** Testing in progress.
+The Steam Deck results come from earlier versions. Retail and Classic Era reached character screens, Battle.net closed while WoW stayed open, and normal quitting returned to the same Battle.net button. Earlier pointer and menu checks also passed.
 
-If you see **error 134** or **WOW51900319**, these appeared in earlier testing and the cause is not known yet. Please report them (see below).
+Forever works on Steam Deck as of Candidate 44. It remains experimental because recorded checks only reached character selection or creation, and client 1.60.1.70862 has no separate recorded test.
 
-**Not available yet:** separate buttons for each game version, automatic controller setup, and addon manager support.
+Full gameplay and performance are not established. Earlier Error134 and WOW51900319 remain separate unexplained historical results.
 
-### About the testing tools in this version
+See [acceptance details](ACCEPTANCE-SUMMARY.md) and [supported editions and limitations](SUPPORTED-EDITIONS-AND-LIMITATIONS.md).
 
-This test version also contains tools the developer uses to test the installer. Normal setup does not use any of them.
+## Help
 
-- A **Test this build** checklist under **Help & advanced options**. It runs read-only checks and saves your answers in the installer's own data folder. You can ignore it.
-- Tools that can take screenshots, move the mouse, and read the list of open windows for automated testing. They cannot be started from the installer’s screens. They only run if someone starts them on purpose with special commands.
-- Unused code for downloading addon managers (CurseForge or WowUp). Its buttons are hidden.
+[Report a problem](https://github.com/Coaxske/wow-steamos-installer/issues) with a description and the error message. Do not upload Steam configuration, Battle.net settings, captures or backup folders.
 
-These tools will be removed from public downloads in the next version.
-
----
-
-## Getting help
-
-If something goes wrong, open an [Issue](https://github.com/Coaxske/wow-steamos-installer/issues) and describe what you were doing and what happened.
-
-**For your privacy, do not attach** Steam configuration files, Battle.net settings files, or the installer's backup folders. They can contain account details.
-
----
-
-## For advanced users
-
-- [Detailed install, repair and removal guide](INSTALL-AND-REMOVE.md)
-- [Full test results](ACCEPTANCE-SUMMARY.md)
-- [Supported versions and limitations](SUPPORTED-EDITIONS-AND-LIMITATIONS.md)
-- [Release notes](RELEASE-NOTES.md)
-- [Source code and build instructions](source/README.md)
-
-Each release includes a `SHA256SUMS` file so you can confirm the download was not damaged.
-
-This project is free and open source under the [MIT License](LICENSE).
-
----
-
-*This is a community project. It is not made by, endorsed by, or affiliated with Blizzard Entertainment or Valve. World of Warcraft and Battle.net are trademarks of Blizzard Entertainment. Steam and Steam Deck are trademarks of Valve Corporation.*
+Free and open source under the [MIT License](LICENSE). This community project is not affiliated with Blizzard Entertainment or Valve.

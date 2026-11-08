@@ -1,55 +1,31 @@
-# Current C38 runtime notice
+# Dependency notices and source
 
-This working package uses a Debian12/Bookworm toolchain with Qt6.4.2. The portable bundles upstream SDL2.30.0 (confirmed by SDL_GetVersion), with licenses/libsdl2-upstream-2.30.0.txt; the build image separately has distribution SDL2.26.5 installed. Do not confuse that installed toolchain package with the shipped runtime library. Older Ubuntu descriptions below are historical. The bundled runtime/LICENSE-INVENTORY.json maps each included dynamic component to its shipped distribution notice. The source and all applicable license notices accompany the portable packaging; preserve them when distributing. No new third-party component was introduced by launcher-choice integration.
+The installer is provided under the included MIT license. World of Warcraft and Battle.net are Blizzard trademarks. This project is not affiliated with Blizzard Entertainment or Valve.
 
-## Earlier notices and development references
+## Current build
 
-# Dependency notices
+Candidate 48 uses Rust 1.75, Debian 12 build inputs, Qt 6.4.2 and upstream SDL 2.30.0. Qt is dynamically linked. The public build includes normal Qt and SDL controls. Separate private developer builds add QtTest, direct QtDBus, GStreamer capture and Tesseract OCR components.
 
-This new application's original code is provided under the included MIT license.
-No old installer implementation is bundled. World of Warcraft and Battle.net
-are Blizzard trademarks; this project is not affiliated with Blizzard or Valve.
+LICENSE-INVENTORY.json in the packaged runtime maps the actual bundled libraries to their notices. Required transitive QtDBus libraries can remain in public mode without providing capture or external input tools. Host graphics drivers and glibc remain system components. Developer capture additionally uses host PipeWire and desktop portal services.
 
-The testing binary dynamically loads Qt 6.4.2 and SDL 2.30.0. Qt libraries and
-QML modules are used under their applicable LGPL terms; copyright notices and
-LGPL/GPL license texts accompany the runtime and release. Qt is not statically
-linked into this application. The native wrapper embeds a redistributable
-runtime archive and extracts it before launching the dynamically linked app.
+All 19 pinned Rust registry packages have verified archive checksums. Six earlier distribution-modified copies were replaced with exact-version originals: cfg-if 1.0.0, cpufeatures 0.2.11, serde_json 1.0.111, sha2 0.10.8, syn 2.0.48 and typenum 1.16.0. Their full source and license texts remain in vendor/. No package version or enabled product feature was changed for that correction.
 
-For inspection or replacement of LGPL libraries, run:
+## Licenses and corresponding source
 
-```sh
-./WoW-SteamOS-Rust-Linux-x86_64 --extract-runtime ~/.cache/wow-runtime-new
-LD_LIBRARY_PATH=~/.cache/wow-runtime-new/lib \
-QT_PLUGIN_PATH=~/.cache/wow-runtime-new/plugins \
-QML2_IMPORT_PATH=~/.cache/wow-runtime-new/qml \
-~/.cache/wow-runtime-new/bin/wow-steamos
-```
+Qt and its modules use their applicable LGPL terms. The runtime includes distribution copyright notices and applicable LGPL, GPL and other license texts. Release source archives provide the corresponding distribution sources and patches for the actual runtime closure, plus upstream SDL source. Keep these notices and source available when redistributing.
 
-The destination must not already exist and must be on the cache filesystem.
-Replace libraries with compatible modified versions in that extracted tree.
-Reverse engineering for debugging modifications to LGPL components is permitted
-as required by their licenses. This project imposes no restriction on that use.
+Rust dependencies and their license texts are in vendor/: serde, serde_derive, serde_json, sha2, digest, crypto-common, block-buffer, libc, generic-array, typenum, cfg-if, cpufeatures, itoa, ryu, proc-macro2, quote, syn, unicode-ident and version_check.
 
-Upstream source locations:
+Upstream references:
 - Qt: https://download.qt.io/archive/qt/6.4/6.4.2/submodules/
 - SDL: https://www.libsdl.org/release/SDL2-2.30.0.tar.gz
-- Distribution source/patches for this build: Ubuntu Noble package source
-  repositories for qt6-base, qt6-declarative, qt6-wayland, libsdl2 and the other
-  package names listed in `licenses/`. Refer to their copyright files.
+- Debian source packages: https://sources.debian.org/
 
-Rust dependencies and their full local sources/license notices are included in
-`vendor/`: serde/serde_derive/serde_json, sha2/digest/crypto-common/block-buffer,
-libc, generic-array, typenum, cfg-if, cpufeatures, itoa, ryu, proc-macro2, quote,
-syn, unicode-ident, and version_check. They are pinned to the lockfile versions
-and sourced from Ubuntu distribution packages. Some distribution-generated
-Cargo checksums are marked “Could not get crate checksum”; the bundled directory
-sources are the authoritative build input and the release ZIP has a separate
-SHA-256 manifest. Review each dependency's own license before redistributing.
+## Replacing LGPL libraries
 
-Other dynamically loaded support libraries are listed in the extracted runtime's
-`lib/` directory; a machine-generated library-to-notice inventory and distribution copyright notices are included in
-`licenses/`. The native graphics stack and glibc remain system dependencies.
+The portable executable can extract its runtime into a new cache folder:
 
+    ./WoW-SteamOS-Rust-Linux-x86_64 --extract-runtime ~/.cache/wow-runtime-new
+    LD_LIBRARY_PATH=~/.cache/wow-runtime-new/lib QT_PLUGIN_PATH=~/.cache/wow-runtime-new/plugins QML2_IMPORT_PATH=~/.cache/wow-runtime-new/qml ~/.cache/wow-runtime-new/bin/wow-steamos
 
-Candidate 25 native observation/input uses Qt DBus and the XDG RemoteDesktop/ScreenCast portal, GStreamer/PipeWire capture and Tesseract English OCR. GStreamer plugins, plugin scanner, Tesseract/Leptonica dependencies and eng.traineddata are bundled with distribution copyright notices. Host PipeWire client ABI and the desktop portal/KDE services remain system components. No Python runtime, Codex service or private test artifacts are required. OS capability tokens stay in the installer’s private data directory, never in bundles or reports.
+Use compatible modified libraries in that extracted folder. The destination must not already exist and must be on the cache filesystem. Reverse engineering for debugging modifications to LGPL components is permitted as required by their licenses. This project imposes no restriction on that use.
