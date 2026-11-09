@@ -13,7 +13,7 @@ The installer never asks for your Blizzard password or authenticator codes. Sign
 
 ## Installer update checks
 
-Candidate 49 can request this repository's public GitHub release list at most once every 24 hours, including failed attempts. Test releases are included and drafts are ignored. GitHub receives ordinary connection information such as the IP address and request headers. The fixed program label is WoW-SteamOS-Updater/1; no installer version or device identifiers are sent. No Steam or Battle.net configuration, game settings, account names or local records are sent.
+The installer can request this repository's public GitHub release list at most once every 24 hours, including failed attempts. Test releases are included and drafts are ignored. GitHub receives ordinary connection information such as the IP address and request headers. The fixed program label is WoW-SteamOS-Updater/1; no installer version or device identifiers are sent. No Steam or Battle.net configuration, game settings, account names or local records are sent.
 
 Turn off **Check for installer updates once a day** on Home to stop automatic checks. Offline failures are silent. **Not now** keeps the current installer. Only **Update now** authorizes downloading and replacement. Actively running setup, repair or removal blocks checks and replacement. Idle unfinished saved setups still permit daily checks and the release-page link, but block automatic installation. Readiness is checked again before replacement.
 
@@ -21,9 +21,15 @@ Downloads must begin at this repository's HTTPS release addresses. Every redirec
 
 The download is staged beside the portable, not in the extracted application cache. The newest verified previous executable is kept as a backup. Older completed backups and their recovery records are removed only when the updater's private ownership records and both files still match. Unrelated files, modified copies and unresolved recovery remain. If replacement or restart fails, the prior executable is retained or restored. If the new process's exit cannot be confirmed, the updater keeps recovery files and refuses an unsafe automatic rollback. Its error names the actual verified backup location when available, explains how to open a safe copy, and links to the fixed releases page. A failed update-check preference write restores the displayed switch from a fresh readback and shows an error. A folder that cannot be written requires downloading the next installer by hand.
 
-The installer contains the production public key for verifying signed updates. The private signing key is stored outside the project and is not included in any build or release file. Private automated tests use separate test keys. Live signed-update testing and Candidate 49 Steam Deck acceptance remain pending. If the production key is lost or compromised, clients that cannot verify a new signature must use the project's fixed release page and manually install the reviewed replacement.
+The installer contains the production public key for verifying signed updates. The private signing key is stored outside the project and is not included in any build or release file. Private automated tests use separate test keys. Published Candidate 49 live-update results are documented with their limits in ACCEPTANCE-SUMMARY.md. Candidate 50 live updating and Steam Deck checks require the later reviewed test stage. If the production key is lost or compromised, clients that cannot verify a new signature must use the project's fixed release page and manually install the reviewed replacement.
 
-Candidate 48 users must download Candidate 49 once by hand to get the updater.
+Candidate 48 users must download the current installer once by hand to get the updater. Candidate 49 already includes update checks.
+
+## Temporary update files and startup logs
+
+Candidate 50 records ownership and file identities for new updater temporary files. Cleanup must coordinate with the update lock and recovery state. It does not delete files based only on a matching name. Active work, unresolved recovery, verified backups, the installed executable and unrelated or replaced files stay protected. Older leftovers with no trustworthy record are retained.
+
+Normal startup keeps startup.log and one previous private log, startup.previous.log, in the existing local data folder. Helpers and another installer window must not replace a running window's diagnostic. A restarted update writes its own startup messages in that same profile. Logs may contain local paths or other private details; do not upload them.
 
 ## Local changes
 
@@ -46,3 +52,5 @@ Do not upload Steam or Battle.net settings, tokens, passwords, logs, captures, d
 ## Report a security problem
 
 On the project's GitHub page, open Security and choose Report a vulnerability. Please report security issues privately rather than in a public Issue.
+
+Startup diagnostics are optional. If a native window lock is live or unverifiable, existing logs are preserved and the native window check decides whether startup can continue. Other logging failures do not by themselves prevent startup. An actually held startup logging lock still refuses a concurrent launcher.

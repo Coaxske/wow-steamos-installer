@@ -14,30 +14,55 @@ use std::{
 };
 const UA: &str = "WoW-SteamOS-Updater/1";
 const API: &str = "https://api.github.com/repos/Coaxske/wow-steamos-installer/releases";
-struct Scratch(PathBuf);
+struct Scratch(PathBuf, super::Artifact);
 impl Scratch {
-    fn new(parent: &Path) -> Result<Self> {
-        let p = parent.join(format!(".wow-update-tmp-{}", fsutil::unique()));
+    fn new(data: &Path, parent: &Path) -> Result<Self> {
+        Self::new_with_nonce(data, parent, &fsutil::unique())
+    }
+    fn new_with_nonce(data: &Path, parent: &Path, nonce: &str) -> Result<Self> {
+        if !super::artifact_hex(nonce) {
+            return Err("Invalid scratch nonce".into());
+        }
+        let p = parent.join(format!(".wow-update-tmp-{nonce}"));
         fs::DirBuilder::new()
             .mode(0o700)
             .create(&p)
             .map_err(|e| e.to_string())?;
-        Ok(Self(p))
+        // Pin this attempt's new empty directory; never recurse on registration failure.
+        let owned = super::artifact_open_dir(&p)?;
+        let identity =
+            super::ArtifactIdentity::metadata(&owned.metadata().map_err(|e| e.to_string())?)?;
+        match super::Artifact::new(data, &p, "scratch", nonce, None) {
+            Ok(tracked) => Ok(Self(p, tracked)),
+            Err(error) => {
+                if super::ArtifactIdentity::metadata(&owned.metadata().map_err(|e| e.to_string())?)
+                    .ok()
+                    .as_ref()
+                    == Some(&identity)
+                    && super::ArtifactIdentity::read(&p).ok().as_ref() == Some(&identity)
+                {
+                    let _ = fs::remove_dir(&p);
+                }
+                Err(error)
+            }
+        }
     }
 }
 impl Drop for Scratch {
     fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.0);
+        self.1.finish();
     }
 }
-fn new_file(p: &Path) -> Result<File> {
-    OpenOptions::new()
+fn new_file(p: &Path, artifact: &mut super::Artifact) -> Result<File> {
+    let file = OpenOptions::new()
         .write(true)
         .create_new(true)
         .mode(0o600)
         .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
         .open(p)
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+    artifact.add(p)?;
+    Ok(file)
 }
 fn clean_command(program: &Path) -> Command {
     let mut c = Command::new(program);
@@ -58,16 +83,18 @@ fn run(
     files: &[(&Path, u64)],
     stdout_limit: u64,
     deadline: Instant,
+    artifact: &mut super::Artifact,
 ) -> Result<ExitStatus> {
     let stdout = dir.join("stdout");
     let stderr = dir.join("stderr");
     command
         .stdin(Stdio::null())
-        .stdout(Stdio::from(new_file(&stdout)?))
-        .stderr(Stdio::from(new_file(&stderr)?));
+        .stdout(Stdio::from(new_file(&stdout, artifact)?))
+        .stderr(Stdio::from(new_file(&stderr, artifact)?));
+    let lease_fd = artifact.lease_fd();
     unsafe {
-        command.pre_exec(|| {
-            if libc::setpgid(0, 0) != 0 {
+        command.pre_exec(move || {
+            if libc::setpgid(0, 0) != 0 || libc::fcntl(lease_fd, libc::F_SETFD, 0) == -1 {
                 Err(std::io::Error::last_os_error())
             } else {
                 Ok(())
@@ -246,7 +273,7 @@ fn location(headers: &[u8], expected: u16) -> Result<Option<String>> {
 }
 fn get_until(data: &Path, url: &str, max: u64, deadline: Instant) -> Result<Vec<u8>> {
     let kind = initial(url)?;
-    let scratch = Scratch::new(data)?;
+    let mut scratch = Scratch::new(data, data)?;
     let mut current = url.to_owned();
     for hop in 0..=5 {
         cancelled()?;
@@ -256,10 +283,11 @@ fn get_until(data: &Path, url: &str, max: u64, deadline: Instant) -> Result<Vec<
             .mode(0o700)
             .create(&dir)
             .map_err(|e| e.to_string())?;
+        scratch.1.add(&dir)?;
         let body = dir.join("body");
         let headers = dir.join("headers");
-        drop(new_file(&body)?);
-        drop(new_file(&headers)?);
+        drop(new_file(&body, &mut scratch.1)?);
+        drop(new_file(&headers, &mut scratch.1)?);
         let mut c = clean_command(Path::new("/usr/bin/curl"));
         c.arg("--disable")
             .arg("--globoff")
@@ -299,7 +327,14 @@ fn get_until(data: &Path, url: &str, max: u64, deadline: Instant) -> Result<Vec<
             .arg(&body)
             .arg("--url")
             .arg(&current);
-        let status = run(c, &dir, &[(&body, max), (&headers, 64 * 1024)], 8, deadline)?;
+        let status = run(
+            c,
+            &dir,
+            &[(&body, max), (&headers, 64 * 1024)],
+            8,
+            deadline,
+            &mut scratch.1,
+        )?;
         if !status.success() {
             return Err("The update download did not complete".into());
         }
@@ -359,9 +394,9 @@ pub(super) fn releases(data: &Path) -> Result<Vec<u8>> {
     }
     Err("Release history exceeds the bounded update check".into())
 }
-pub(super) fn build_info(portable: &Path) -> Result<Value> {
+pub(super) fn build_info(data: &Path, portable: &Path) -> Result<Value> {
     let parent = portable.parent().ok_or("Missing staged directory")?;
-    let scratch = Scratch::new(parent)?;
+    let mut scratch = Scratch::new(data, parent)?;
     let mut command = clean_command(portable);
     command
         .arg("--build-info")
@@ -376,6 +411,7 @@ pub(super) fn build_info(portable: &Path) -> Result<Value> {
         &[],
         16384,
         Instant::now() + Duration::from_secs(120),
+        &mut scratch.1,
     )?;
     if !status.success() {
         return Err("Signed portable build identity could not be read".into());
@@ -416,5 +452,37 @@ mod tests {
         );
         assert!(location(b"HTTP/2 302\nlocation: a\nLocation: b\n", 302).is_err());
         assert!(location(b"HTTP/2 200\n", 302).is_err());
+    }
+
+    fn registration_temp() -> PathBuf {
+        let p = std::env::temp_dir().join(format!("wow-updater-registration-{}", fsutil::unique()));
+        fsutil::private_dir(&p).unwrap();
+        p
+    }
+    #[test]
+    fn scratch_registration_collision_keeps_existing_record_and_removes_new_empty_directory() {
+        let data = registration_temp();
+        let nonce = fsutil::unique();
+        super::super::prepare_data(&super::super::artifact_store(&data)).unwrap();
+        let record = super::super::artifact_record_path(&data, &nonce);
+        super::super::write_new(&record, b"preexisting user record", 0o600).unwrap();
+        assert!(Scratch::new_with_nonce(&data, &data, &nonce).is_err());
+        assert!(!data.join(format!(".wow-update-tmp-{nonce}")).exists());
+        assert!(!super::super::artifact_lease_path(&data, &nonce).exists());
+        assert_eq!(fs::read(record).unwrap(), b"preexisting user record");
+        fs::remove_dir_all(data).unwrap();
+    }
+    #[test]
+    fn scratch_registration_collision_preserves_preexisting_lease() {
+        let data = registration_temp();
+        let nonce = fsutil::unique();
+        super::super::prepare_data(&super::super::artifact_store(&data)).unwrap();
+        let lease = super::super::artifact_lease_path(&data, &nonce);
+        super::super::write_new(&lease, b"preexisting lease", 0o600).unwrap();
+        assert!(Scratch::new_with_nonce(&data, &data, &nonce).is_err());
+        assert!(!data.join(format!(".wow-update-tmp-{nonce}")).exists());
+        assert_eq!(fs::read(lease).unwrap(), b"preexisting lease");
+        assert!(!super::super::artifact_record_path(&data, &nonce).exists());
+        fs::remove_dir_all(data).unwrap();
     }
 }

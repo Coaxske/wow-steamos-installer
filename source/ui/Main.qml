@@ -10,7 +10,7 @@ ApplicationWindow {
     width: 1100; height: 740
     minimumWidth: 780; minimumHeight: 540
     color: "#101825"
-    title: "WoW SteamOS Installer · " + Qt.application.version
+    title: "Deckhand · " + Qt.application.version
     font.family: "Sans Serif"
     font.pixelSize: 16
     palette.window: "#101825"
@@ -195,6 +195,24 @@ ApplicationWindow {
             return null;
         }
         var target=seek(root);if(target)target.forceActiveFocus();else backButton.forceActiveFocus();
+    }
+    function checkFirstSignInHint() {
+        // The normal packaged self-check exercises this actual setup screen in
+        // preview mode only. It never opens Battle.net or applies setup.
+        if(!backend.demo)return false;
+        var savedSession=session,savedId=selectedId,savedPage=page;
+        session=({state:{installations:[{id:"hint-check",stage:"games",editions:["era"]}]}});
+        selectedId="hint-check";page="games";
+        var shown=setupStep==="download" && firstSignInHint.visible
+            && setupBattleNetAction.visible && setupBattleNetAction.text==="Open Battle.net"
+            && firstSignInHint.text==="If Battle.net shows \"The application encountered an unexpected error\" right after you sign in, close the message and choose Open Battle.net again. This can happen the first time.";
+        session=({state:{installations:[{id:"hint-check",stage:"launcher_install",editions:["era"]}]}});
+        var hiddenDuringInstall=setupStep==="launcher" && !firstSignInHint.visible;
+        session=({state:{installations:[{id:"hint-check",stage:"games",editions:["era"]}]}});
+        page="home";
+        var hiddenAtHome=!firstSignInHint.visible;
+        session=savedSession;selectedId=savedId;page=savedPage;
+        return shown && hiddenDuringInstall && hiddenAtHome;
     }
     function checkGuidance(){
         return Guide.defaultProton([{name:"Cachy-Proton"},{name:"proton_11"}])==="proton_11"
@@ -422,7 +440,7 @@ ApplicationWindow {
     header: Rectangle {
         height:62;visible:height>0;color:"#18212c"
         RowLayout{anchors.fill:parent;anchors.margins:18
-            Label{text:"WoW SteamOS Installer";color:"#f1f5fb";font.pixelSize:22;font.bold:true}
+            Label{text:"Deckhand";color:"#f1f5fb";font.pixelSize:22;font.bold:true}
             Item{Layout.fillWidth:true}
             Label{text:backend.demo?"Preview":Qt.application.version;color:"#a7b5c5";font.pixelSize:13}
         }
@@ -531,12 +549,12 @@ ApplicationWindow {
                         Label{text:reinstallMode?"Reinstall World of Warcraft":"Choose your games";font.pixelSize:28;font.bold:true;color:"#f2f6fc"}
                         InfoText{Layout.fillWidth:true;text:reinstallMode?"The next screen will show exactly what will be removed. You’ll need to download these games again.":"Supported core release: Retail and Classic Era. Choose at least one. Availability depends on your Battle.net account. Experimental choices are not covered by core acceptance."}
                         Repeater{model:["retail","era"].map(function(id){return catalog.find(function(e){return e.id===id})}).filter(function(e){return !!e});InstallerCheckBox{required property var modelData;Layout.fillWidth:true;objectName:"edition_"+modelData.id;text:modelData.id==="retail"?"World of Warcraft (Retail)":modelData.name;checked:editions.indexOf(modelData.id)>=0;onToggled:toggleEdition(modelData.id,checked)}}
-                        InstallerCheckBox{id:otherEditions;objectName:"moreEditions";text:"Experimental editions and test clients — outside the supported core release";Layout.fillWidth:true}
+                        InstallerCheckBox{id:otherEditions;objectName:"moreEditions";text:"Experimental editions and test clients (outside the supported core release)";Layout.fillWidth:true}
                         Repeater{model:otherEditions.checked?catalog.filter(function(e){return ["retail","era"].indexOf(e.id)<0}):[];ColumnLayout{required property var modelData;Layout.fillWidth:true;InstallerCheckBox{objectName:"edition_"+modelData.id;Layout.fillWidth:true;text:modelData.name;checked:editions.indexOf(modelData.id)>=0;onToggled:toggleEdition(modelData.id,checked)}InfoText{Layout.fillWidth:true;text:modelData.note;font.pixelSize:14}}}
                         InfoText{Layout.fillWidth:true;text:"Exactly one Battle.net Steam tile opens the ordinary edition chooser for all selected games. Separate WoW and edition tiles are deferred."}
                         InfoText{Layout.fillWidth:true;text:"Classic Era also serves Hardcore and Season of Discovery. Era, Hardcore and Season of Discovery share one client and download. Other Classic products use separate clients; installed editions use the single Battle.net tile; this mode guide does not select them.";font.pixelSize:14}
-                        ActionButton{objectName:"setupClassicGuide";visible:editions.indexOf("era")>=0;Layout.fillWidth:true;text:"Classic mode: "+classicModeName()+" — selection guide";onClicked:go("classicMode")}
-                        Label{text:"Addon manager (optional, experimental — not required for core setup)";color:"#edf3fa"}
+                        ActionButton{objectName:"setupClassicGuide";visible:editions.indexOf("era")>=0;Layout.fillWidth:true;text:"Classic mode: "+classicModeName()+" (selection guide)";onClicked:go("classicMode")}
+                        Label{text:"Addon manager (optional and experimental; not required for core setup)";color:"#edf3fa"}
                         ComboBox{id:setupAddon;objectName:"setupAddon";Layout.fillWidth:true;model:[{name:"No addon manager (first release)",value:"none"}];textRole:"name";valueRole:"value";currentIndex:Math.max(0,model.findIndex(function(m){return m.value===wantedAddon}));onActivated:wantedAddon=currentValue}
                         Label{text:"Battle.net language";color:"#edf3fa";font.pixelSize:18}
                         ComboBox{id:languageChoice;Layout.fillWidth:true;textRole:"name";valueRole:"code";model:[{name:"English (US)",code:"enUS"},{name:"English (UK)",code:"enGB"},{name:"Deutsch",code:"deDE"},{name:"Español (España)",code:"esES"},{name:"Español (Latinoamérica)",code:"esMX"},{name:"Français",code:"frFR"},{name:"Italiano",code:"itIT"},{name:"한국어",code:"koKR"},{name:"Polski",code:"plPL"},{name:"Português (Brasil)",code:"ptBR"},{name:"Русский",code:"ruRU"},{name:"繁體中文",code:"zhTW"},{name:"简体中文",code:"zhCN"}]}
@@ -615,9 +633,10 @@ ApplicationWindow {
                         Label{text:setupStep==="launcher"?"Install Battle.net":setupStep==="download"?"Install your games":setupStep==="restore"?"Restore your settings":setupStep==="complete"?"Your games":"Your Battle.net Steam tile";font.pixelSize:28;font.bold:true;color:"#f2f6fc"}
                         InfoText{Layout.fillWidth:true;text:setupStep==="launcher"?"Open the installer below. Finish installing Battle.net, then close Battle.net and return here.":setupStep==="download"?(games.length?"Installed games were found. Check them below to prepare your Steam shortcuts. Open Battle.net if you need updates or another edition.":"Open Battle.net, sign in, and download the editions you chose. Use the default install folder. When downloads finish, close Battle.net and return here."):setupStep==="restore"?"Your addon and game settings were saved before reinstalling. Restore them before opening the games, or start with new settings and keep the backup for later.":setupStep==="complete"?"Open Battle.net below, choose an installed edition and press Play.":"Open Battle.net from Steam. Choose the installed edition in Battle.net and press Play. Addon-manager integration is deferred for this one-tile release. Existing addons and managers are preserved."}
                         InfoText{visible:setupStep==="launcher"||setupStep==="download";Layout.fillWidth:true;text:"Keep Steam open for Deck trackpad and keyboard controls. Battle.net uses mouse/touch input. In Gaming Mode use Gaming Mode pointer setup for ordinary trackpad mouse/click; Steam-held pointer is only a temporary workaround. KDE Connect also works for text. Sign in only inside Battle.net; remembered sign-in is optional there. If Battle.net lists multiple WoW accounts, select the account that owns the intended edition before pressing Play. This installer never asks for passwords or authentication codes.";font.pixelSize:14}
-                        ActionButton{visible:setupStep==="launcher"||setupStep==="download";text:setupStep==="launcher"?"Open Battle.net installer":"Open Battle.net";Layout.fillWidth:true;primary:true;enabled:!backend.busy&&!!launcherTile();onClicked:launchBattleNet()}
-                        ActionButton{visible:setupStep==="launcher";text:"Battle.net is installed — continue";Layout.fillWidth:true;enabled:!backend.busy;onClicked:call("review_launcher",{id:selectedId})}
-                        ActionButton{visible:setupStep==="download";text:downloadsChecked?"Continue with these games":games.length?"Check games and add Steam shortcuts":"Downloads finished — check games";Layout.fillWidth:true;enabled:!backend.busy;onClicked:checkDownloads()}
+                        ActionButton{id:setupBattleNetAction;objectName:"setupBattleNetAction";visible:setupStep==="launcher"||setupStep==="download";text:setupStep==="launcher"?"Open Battle.net installer":"Open Battle.net";Layout.fillWidth:true;primary:true;enabled:!backend.busy&&!!launcherTile();onClicked:launchBattleNet()}
+                        InfoText{id:firstSignInHint;objectName:"firstSignInHint";visible:setupStep==="download";Layout.fillWidth:true;text:"If Battle.net shows \"The application encountered an unexpected error\" right after you sign in, close the message and choose Open Battle.net again. This can happen the first time."}
+                        ActionButton{visible:setupStep==="launcher";text:"Battle.net is installed. Continue";Layout.fillWidth:true;enabled:!backend.busy;onClicked:call("review_launcher",{id:selectedId})}
+                        ActionButton{visible:setupStep==="download";text:downloadsChecked?"Continue with these games":games.length?"Check games and add Steam shortcuts":"Downloads finished. Check games";Layout.fillWidth:true;enabled:!backend.busy;onClicked:checkDownloads()}
                         InfoText{visible:setupStep==="download"&&downloadsChecked&&missingDownloads.length>0;Layout.fillWidth:true;text:"Still missing: "+missingDownloads.map(editionName).join(", ")+". Finish these downloads, or continue with the games already installed."}
                         InstallerCheckBox{id:partialClients;objectName:"downloadPartialConsent";visible:setupStep==="download"&&downloadsChecked&&missingDownloads.length>0;Layout.fillWidth:true;text:"Continue with only the games already installed"}
                         InstallerCheckBox{id:foreverBeta;Layout.fillWidth:true;visible:setupStep==="download"&&games.filter(function(g){return g.id==="classic_beta"}).length===1&&games.every(function(g){return g.id!=="forever"});text:"This beta download is World of Warcraft Forever (I checked in Battle.net)";contentItem:Text{text:foreverBeta.text;color:"#edf3fa";font.pixelSize:15;wrapMode:Text.WordWrap;leftPadding:foreverBeta.indicator.width+foreverBeta.spacing}}
@@ -625,7 +644,7 @@ ApplicationWindow {
                         ActionButton{visible:setupStep==="restore";text:"Use new settings and keep the backup";Layout.fillWidth:true;enabled:!backend.busy;onClicked:skipRestoreDialog.open()}
                         InfoText{Layout.fillWidth:true;text:"Gaming Mode: Steam's default gamepad layout may not provide a mouse. The single Battle.net tile uses one controller layout for all editions. Before using Battle.net or a game menu, verify ordinary right-trackpad mouse and click on that tile. Existing custom layouts are not changed."}
                         InfoText{visible:setupStep==="test"||setupStep==="complete";Layout.fillWidth:true;text:"After playing, use WoW’s own menu to quit normally. In Gaming Mode, wait for Steam to return to this same Battle.net tile with green Play, then launch it again. Choose Retail, Classic Era or Forever in Battle.net and press Play. The shared Steam tile does not select an edition. Steam’s Exit game stops the whole tile and is not a way to close only Battle.net."}
-                        ActionButton{objectName:"gamesClassicGuide";visible:(current.editions||[]).indexOf("era")>=0||games.some(function(g){return g.id==="era"});Layout.fillWidth:true;text:"Classic mode: "+classicModeName()+" — selection guide";onClicked:go("classicMode")}
+                        ActionButton{objectName:"gamesClassicGuide";visible:(current.editions||[]).indexOf("era")>=0||games.some(function(g){return g.id==="era"});Layout.fillWidth:true;text:"Classic mode: "+classicModeName()+" (selection guide)";onClicked:go("classicMode")}
                         ActionButton{objectName:"gamesPointerGuide";text:"Gaming Mode pointer setup";Layout.fillWidth:true;enabled:!!selectedId&&!backend.busy;onClicked:openPointerHelp()}
                         Repeater{model:setupStep==="test"||setupStep==="complete"?gameTiles:[];RowLayout{required property var modelData;Layout.fillWidth:true
                             ActionButton{Layout.fillWidth:true;text:"Open "+modelData.name;enabled:!backend.busy;onClicked:call("launch",{id:selectedId,appid:modelData.appid})}
@@ -642,7 +661,7 @@ ApplicationWindow {
                                 ActionButton{objectName:"refreshFolders";text:"Create / refresh links";enabled:!!selectedId&&!backend.busy;onClicked:call("refresh_folders",{id:selectedId})}
                             }
                             InfoText{Layout.fillWidth:true;text:"In Desktop Mode, open this folder and extract each addon into the matching Retail AddOns, Classic Era AddOns or Forever AddOns link. Keep the addon's own folder directly inside AddOns. Links use detected folders, including connected drives; your games and addons stay in place. Missing or occupied paths are reported without overwriting content."}
-                            Repeater{model:folderInfo.links||[];InfoText{required property var modelData;Layout.fillWidth:true;text:modelData.name+(modelData.pending?" — pending":!modelData.owned_unchanged?" — changed; preserved":!modelData.target_available?" — target unavailable; reconnect its drive":"")}}
+                            Repeater{model:folderInfo.links||[];InfoText{required property var modelData;Layout.fillWidth:true;text:modelData.name+(modelData.pending?": pending":!modelData.owned_unchanged?": changed; preserved":!modelData.target_available?": target unavailable; reconnect its drive":"")}}
                         }
                         InfoText{visible:setupStep==="complete";Layout.fillWidth:true;text:"Add the other supported edition later: open Battle.net for this selected copy, download Retail or Classic Era into its default folder, then close Battle.net and WoW. Review the shortcuts below. Keep this copy; do not reinstall or create another environment. The review preserves existing game files and tile identities. Reuse the single Battle.net tile and its existing controls; no extra edition tile is created."}
                         ActionButton{objectName:"addEditionReview";visible:setupStep==="complete";text:"Check for another edition and review shortcuts";Layout.fillWidth:true;enabled:!backend.busy;onClicked:prepareReview()}
@@ -704,7 +723,7 @@ ApplicationWindow {
                         InstallerCheckBox{id:keepSettings;text:"Keep addon and game settings";checked:false}
                         ActionButton{text:"Review removal of selected copy";danger:true;enabled:!!current.id&&!backend.busy;onClicked:call("review_clean",{id:selectedId,keep_settings:keepSettings.checked})}
                         ActionButton{text:"Review reinstall of selected copy";enabled:!!current.id&&!backend.busy;onClicked:{beginReinstallSetup()}}
-                        ActionButton{text:"Install another copy — keep current";onClicked:{beginFreshSetup()}}
+                        ActionButton{text:"Install another copy (keep current)";onClicked:{beginFreshSetup()}}
                         ActionButton{text:"Review old or duplicate Steam tiles";enabled:!!current.id&&!backend.busy;onClicked:call("legacy_candidates",{id:selectedId})}
                         Flow{Layout.fillWidth:true;spacing:10
                             ActionButton{text:"Restore preserved settings";enabled:!!selectedId&&!backend.busy;onClicked:call("settings_backups")}
@@ -721,7 +740,7 @@ ApplicationWindow {
                         InstallerCheckBox{id:removeComplete;visible:!!current.owned;text:"Remove the complete dedicated environment if it is exclusively owned";checked:true}
                         InfoText{visible:!current.owned;Layout.fillWidth:true;text:"This installation was adopted. Only conventional game/launcher folders can be removed; surrounding shared components are retained."}
                         InfoText{Layout.fillWidth:true;text:"Access links in ~/World of Warcraft are separate from game data. Remove links only to keep every target in place. Full removal below still affects only its separately reviewed game/environment folders."}
-                        ActionButton{objectName:"removeFolderLinks";text:"Remove access links only — keep games and addons";enabled:!!current.id&&!backend.busy;onClicked:call("remove_folder_links",{id:selectedId,confirmed:true})}
+                        ActionButton{objectName:"removeFolderLinks";text:"Remove access links only (keep games and addons)";enabled:!!current.id&&!backend.busy;onClicked:call("remove_folder_links",{id:selectedId,confirmed:true})}
                         ActionButton{text:"Review removal";danger:true;enabled:!!selectedId&&!backend.busy;onClicked:call("review_clean",{id:selectedId,keep_settings:removeKeep.checked,complete_owned:!!current.owned&&removeComplete.checked})}
                     }
                     ColumnLayout {

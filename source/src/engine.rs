@@ -1267,7 +1267,7 @@ fn apply(ctx: &Context, req: &Json) -> Result<Json> {
         let _report = folder_access(ctx, &p.installation, true);
     }
     Ok(
-        json!({"message":if p.kind=="setup"{"Setup saved. Start Steam and open Battle.net."}else if p.kind=="adopt"{"Existing setup adopted. Check games, then review shortcut repair."}else if p.kind=="exit"{"Battle.net behavior choice saved for this installation. Continue setup; existing game files and shortcuts are unchanged."}else{"Shortcuts ready — test your games."},"kind":p.kind,"id":p.installation.id}),
+        json!({"message":if p.kind=="setup"{"Setup saved. Start Steam and open Battle.net."}else if p.kind=="adopt"{"Existing setup adopted. Check games, then review shortcut repair."}else if p.kind=="exit"{"Battle.net behavior choice saved for this installation. Continue setup; existing game files and shortcuts are unchanged."}else{"Shortcuts ready. Test your games."},"kind":p.kind,"id":p.installation.id}),
     )
 }
 #[cfg(any(test, feature = "developer-tools"))]

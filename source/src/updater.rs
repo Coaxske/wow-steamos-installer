@@ -9,7 +9,11 @@ use std::{
     cmp::Ordering,
     fs::{self, File, OpenOptions},
     io::{Read, Write},
-    os::unix::fs::{MetadataExt, OpenOptionsExt, PermissionsExt},
+    os::unix::{
+        ffi::OsStrExt,
+        fs::{MetadataExt, OpenOptionsExt, PermissionsExt},
+        io::AsRawFd,
+    },
     path::{Path, PathBuf},
     sync::atomic::{AtomicU8, Ordering as AtomicOrdering},
     time::{SystemTime, UNIX_EPOCH},
@@ -143,6 +147,19 @@ fn prepare_data(data: &Path) -> Result<()> {
     }
     Ok(())
 }
+fn canonical_data(data: &Path) -> Result<PathBuf> {
+    prepare_data(data)?;
+    let before = ArtifactIdentity::read(data)?;
+    let resolved = data.canonicalize().map_err(|e| e.to_string())?;
+    if !before.directory
+        || ArtifactIdentity::read(&resolved)? != before
+        || ArtifactIdentity::read(data)? != before
+    {
+        return Err("Update settings directory changed during resolution".into());
+    }
+    Ok(resolved)
+}
+
 fn workflow_readiness(data: &Path) -> Result<bool> {
     let mut ready = true;
     for name in [
@@ -193,6 +210,8 @@ fn idle_lock(data: &Path) -> Result<fsutil::Lock> {
 }
 pub fn dispatch(data: &Path, request: &Value) -> Result<Value> {
     let action = request["action"].as_str().ok_or("Missing update action")?;
+    let resolved_data = canonical_data(data)?;
+    let data = resolved_data.as_path();
     if [
         "updater_bind",
         "updater_commit",
@@ -208,12 +227,16 @@ pub fn dispatch(data: &Path, request: &Value) -> Result<Value> {
     if action == "updater_status" {
         return load(data).map(|s| status(data, &s));
     }
-    prepare_data(data)?;
     let _update_lock = match fsutil::Lock::acquire(&data.join("updates.lock")) {
         Ok(lock) => lock,
         Err(_) if action == "updater_check" => return Ok(status(data, &load(data)?)),
         Err(e) => return Err(e),
     };
+    if action == "updater_check" {
+        if let Ok(_operation) = fsutil::Lock::acquire(&data.join("operation.lock")) {
+            let _ = fsutil::json(&data.join("update-cleanup.json"), &cleanup_abandoned(data));
+        }
+    }
     let mut s = load(data)?;
     match action {
         "updater_enabled" => {
@@ -628,6 +651,14 @@ fn env_pin() -> Result<(PathBuf, FilePin, PathBuf, String)> {
     Ok((target, current, request, nonce))
 }
 fn write_new_pinned(path: &Path, bytes: &[u8], mode: u32) -> Result<fs::Metadata> {
+    write_new_observed(path, bytes, mode, |_| Ok(()))
+}
+fn write_new_observed(
+    path: &Path,
+    bytes: &[u8],
+    mode: u32,
+    created: impl FnOnce(&fs::Metadata) -> Result<()>,
+) -> Result<fs::Metadata> {
     let mut f = OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -638,7 +669,9 @@ fn write_new_pinned(path: &Path, bytes: &[u8], mode: u32) -> Result<fs::Metadata
     let own = f.metadata().map_err(|e| e.to_string())?;
     let result = (|| {
         f.set_permissions(fs::Permissions::from_mode(mode))
-            .and_then(|_| f.write_all(bytes))
+            .map_err(|e| e.to_string())?;
+        created(&f.metadata().map_err(|e| e.to_string())?)?;
+        f.write_all(bytes)
             .and_then(|_| f.sync_all())
             .map_err(|e| e.to_string())?;
         let end = f.metadata().map_err(|e| e.to_string())?;
@@ -677,6 +710,699 @@ fn cleanup_owned(path: &Path, owner: Option<&fs::Metadata>, expected_hash: Optio
     }
     fs::remove_file(path).is_ok()
 }
+
+// Durable ownership for updater-created temporary files. Legacy/unrecorded
+// files are intentionally outside this cleanup policy.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+struct ArtifactIdentity {
+    device: u64,
+    inode: u64,
+    uid: u32,
+    mode: u32,
+    directory: bool,
+}
+impl ArtifactIdentity {
+    fn read(path: &Path) -> Result<Self> {
+        let m = fs::symlink_metadata(path).map_err(|e| e.to_string())?;
+        Self::metadata(&m)
+    }
+    fn metadata(m: &fs::Metadata) -> Result<Self> {
+        if m.file_type().is_symlink()
+            || (!m.is_dir() && !m.is_file())
+            || m.uid() != unsafe { libc::geteuid() }
+            || m.mode() & 0o6022 != 0
+            || (!m.is_dir() && m.nlink() != 1)
+        {
+            return Err("Update artifact identity is not exclusively owned".into());
+        }
+        Ok(Self {
+            device: m.dev(),
+            inode: m.ino(),
+            uid: m.uid(),
+            mode: m.mode(),
+            directory: m.is_dir(),
+        })
+    }
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ArtifactProcess {
+    pid: u32,
+    start: String,
+}
+fn process_pin(pid: u32) -> Result<ArtifactProcess> {
+    let p = PathBuf::from(format!("/proc/{pid}"));
+    if fs::metadata(&p).map_err(|e| e.to_string())?.uid() != unsafe { libc::geteuid() } {
+        return Err("Update process owner changed".into());
+    }
+    let s = fs::read_to_string(p.join("stat")).map_err(|e| e.to_string())?;
+    let start = s
+        .rsplit_once(')')
+        .and_then(|(_, x)| x.split_whitespace().nth(19))
+        .ok_or("Update process identity unavailable")?;
+    Ok(ArtifactProcess {
+        pid,
+        start: start.into(),
+    })
+}
+fn artifact_exists(path: &Path) -> Result<bool> {
+    match fs::symlink_metadata(path) {
+        Ok(_) => Ok(true),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(e) => Err(e.to_string()),
+    }
+}
+fn process_may_live(p: &ArtifactProcess) -> bool {
+    match process_pin(p.pid) {
+        Ok(now) => now.start == p.start,
+        Err(_) => artifact_exists(&PathBuf::from(format!("/proc/{}", p.pid))).unwrap_or(true),
+    }
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ArtifactMember {
+    relative: PathBuf,
+    identity: ArtifactIdentity,
+    sealed: Option<FilePin>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ArtifactRecord {
+    schema: u32,
+    nonce: String,
+    kind: String,
+    root: PathBuf,
+    parent: ArtifactIdentity,
+    owners: Vec<ArtifactProcess>,
+    handoff: Option<PathBuf>,
+    members: Vec<ArtifactMember>,
+    lease: ArtifactIdentity,
+}
+struct Artifact {
+    data: PathBuf,
+    record: ArtifactRecord,
+    lease: File,
+}
+fn artifact_store(data: &Path) -> PathBuf {
+    data.join("update-artifacts")
+}
+fn artifact_record_path(data: &Path, nonce: &str) -> PathBuf {
+    artifact_store(data).join(format!("{nonce}.json"))
+}
+fn artifact_lease_path(data: &Path, nonce: &str) -> PathBuf {
+    artifact_store(data).join(format!("{nonce}.lock"))
+}
+fn artifact_hex(s: &str) -> bool {
+    s.len() == 32 && s.bytes().all(|x| x.is_ascii_hexdigit())
+}
+#[derive(Default)]
+struct ArtifactRegistration {
+    files: Vec<(PathBuf, File, ArtifactIdentity, Option<String>)>,
+    committed: bool,
+}
+impl ArtifactRegistration {
+    fn track(&mut self, path: &Path, file: &File, hash: Option<String>) -> Result<()> {
+        let opened = file.metadata().map_err(|e| e.to_string())?;
+        let identity = ArtifactIdentity::metadata(&opened)?;
+        if ArtifactIdentity::read(path)? != identity {
+            return Err("Registration file identity changed".into());
+        }
+        let held = match file.try_clone() {
+            Ok(held) => held,
+            Err(error) => {
+                let _ = cleanup_owned(path, Some(&opened), hash.as_deref());
+                return Err(error.to_string());
+            }
+        };
+        self.files.push((path.into(), held, identity, hash));
+        Ok(())
+    }
+    fn seal(&mut self, path: &Path, hash: String) {
+        if let Some(entry) = self.files.iter_mut().find(|entry| entry.0 == path) {
+            entry.3 = Some(hash);
+        }
+    }
+}
+impl Drop for ArtifactRegistration {
+    fn drop(&mut self) {
+        if self.committed {
+            return;
+        }
+        for (path, file, identity, hash) in self.files.iter().rev() {
+            let Ok(opened) = file.metadata() else {
+                continue;
+            };
+            if ArtifactIdentity::metadata(&opened).ok().as_ref() != Some(identity)
+                || ArtifactIdentity::read(path).ok().as_ref() != Some(identity)
+            {
+                continue;
+            }
+            let _ = cleanup_owned(path, Some(&opened), hash.as_deref());
+        }
+    }
+}
+
+impl Artifact {
+    fn new(
+        data: &Path,
+        root: &Path,
+        kind: &str,
+        nonce: &str,
+        handoff: Option<&Path>,
+    ) -> Result<Self> {
+        Self::new_with_sync(data, root, kind, nonce, handoff, |store| {
+            File::open(store)
+                .and_then(|f| f.sync_all())
+                .map_err(|e| e.to_string())
+        })
+    }
+    fn new_with_sync(
+        data: &Path,
+        root: &Path,
+        kind: &str,
+        nonce: &str,
+        handoff: Option<&Path>,
+        sync: impl FnOnce(&Path) -> Result<()>,
+    ) -> Result<Self> {
+        if !artifact_hex(nonce) {
+            return Err("Invalid update artifact nonce".into());
+        }
+        let store = artifact_store(data);
+        prepare_data(&store)?;
+        let lp = artifact_lease_path(data, nonce);
+        let mut registration = ArtifactRegistration::default();
+        let lease = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+            .open(&lp)
+            .map_err(|e| e.to_string())?;
+        registration.track(&lp, &lease, Some(fsutil::hash(b"")))?;
+        if unsafe { libc::flock(lease.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
+            return Err("Update artifact is active".into());
+        }
+        let mut owners = vec![process_pin(std::process::id())?];
+        if let Some(request) = std::env::var_os("WOW_UPDATE_REQUEST").map(PathBuf::from) {
+            private_parent(&request)?;
+            let p = request.parent().unwrap().join("processes");
+            if p.exists() {
+                for value in String::from_utf8(read_regular(&p, 1024)?)
+                    .map_err(|_| "Invalid wrapper processes")?
+                    .split_whitespace()
+                {
+                    let pid = value
+                        .parse::<u32>()
+                        .map_err(|_| "Invalid wrapper process")?;
+                    if let Ok(owner) = process_pin(pid) {
+                        if !owners.iter().any(|x| x.pid == pid) {
+                            owners.push(owner);
+                        }
+                    }
+                }
+            }
+        }
+        let parent = ArtifactIdentity::read(root.parent().ok_or("Missing artifact parent")?)?;
+        let record = ArtifactRecord {
+            schema: 1,
+            nonce: nonce.into(),
+            kind: kind.into(),
+            root: root.into(),
+            parent,
+            owners,
+            handoff: handoff.map(Path::to_path_buf),
+            members: vec![ArtifactMember {
+                relative: PathBuf::new(),
+                identity: ArtifactIdentity::read(root)?,
+                sealed: None,
+            }],
+            lease: ArtifactIdentity::read(&lp)?,
+        };
+        let value = Self {
+            data: data.into(),
+            record,
+            lease,
+        };
+        validate_artifact(&value.record)?;
+        let record_path = artifact_record_path(data, nonce);
+        let bytes = serde_json::to_vec_pretty(&value.record).map_err(|e| e.to_string())?;
+        let mut record_file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+            .open(&record_path)
+            .map_err(|e| e.to_string())?;
+        registration.track(&record_path, &record_file, None)?;
+        let record_identity =
+            ArtifactIdentity::metadata(&record_file.metadata().map_err(|e| e.to_string())?)?;
+        record_file
+            .write_all(&bytes)
+            .and_then(|_| record_file.sync_all())
+            .map_err(|e| e.to_string())?;
+        registration.seal(&record_path, fsutil::hash(&bytes));
+        let expected_record = FilePin {
+            device: record_identity.device,
+            inode: record_identity.inode,
+            size: bytes.len() as u64,
+            mode: record_identity.mode,
+            uid: record_identity.uid,
+            sha256: fsutil::hash(&bytes),
+        };
+        let verify_registration = || -> Result<()> {
+            let opened = record_file.metadata().map_err(|e| e.to_string())?;
+            if !metadata_same(
+                &opened,
+                &fs::symlink_metadata(&record_path).map_err(|e| e.to_string())?,
+            ) || pin(&record_path)? != expected_record
+                || ArtifactIdentity::metadata(&value.lease.metadata().map_err(|e| e.to_string())?)?
+                    != value.record.lease
+                || ArtifactIdentity::read(&lp)? != value.record.lease
+            {
+                return Err("Update registration changed before commit".into());
+            }
+            Ok(())
+        };
+        verify_registration()?;
+        sync(&store)?;
+        verify_registration()?;
+        registration.committed = true;
+        Ok(value)
+    }
+    fn save(&self) -> Result<()> {
+        fsutil::json(
+            &artifact_record_path(&self.data, &self.record.nonce),
+            &self.record,
+        )
+    }
+    fn add(&mut self, path: &Path) -> Result<()> {
+        let relative = path
+            .strip_prefix(&self.record.root)
+            .map_err(|_| "Artifact left its owned root")?
+            .to_path_buf();
+        if self.record.members.iter().any(|m| m.relative == relative) {
+            return Err("Duplicate update artifact".into());
+        }
+        self.record.members.push(ArtifactMember {
+            relative,
+            identity: ArtifactIdentity::read(path)?,
+            sealed: None,
+        });
+        validate_artifact(&self.record)?;
+        self.save()
+    }
+    fn seal(&mut self, path: &Path) -> Result<()> {
+        let relative = path
+            .strip_prefix(&self.record.root)
+            .map_err(|_| "Artifact left its owned root")?;
+        let member = self
+            .record
+            .members
+            .iter_mut()
+            .find(|m| m.relative == relative)
+            .ok_or("Artifact ownership missing")?;
+        if ArtifactIdentity::read(path)? != member.identity {
+            return Err("Update artifact changed before sealing".into());
+        }
+        member.sealed = Some(pin(path)?);
+        self.save()
+    }
+    fn lease_fd(&self) -> i32 {
+        self.lease.as_raw_fd()
+    }
+    fn finish(&self) {
+        if remove_artifact(&self.record).is_ok() {
+            let _ = forget_artifact(&self.data, &self.record);
+        }
+    }
+}
+fn validate_artifact(r: &ArtifactRecord) -> Result<()> {
+    if r.schema != 1
+        || !artifact_hex(&r.nonce)
+        || r.members.is_empty()
+        || r.members.len() > 64
+        || r.owners.is_empty()
+        || r.owners.len() > 8
+        || !r.root.is_absolute()
+    {
+        return Err("Unsupported update artifact record".into());
+    }
+    if r.owners.iter().any(|p| {
+        p.pid == 0
+            || p.start.is_empty()
+            || p.start.len() > 24
+            || !p.start.bytes().all(|b| b.is_ascii_digit())
+    }) {
+        return Err("Invalid artifact process identity".into());
+    }
+    match (r.kind.as_str(), r.handoff.as_ref()) {
+        ("scratch", None) => {}
+        ("stage", Some(p))
+            if p.is_absolute()
+                && p.file_name().and_then(|x| x.to_str()) == Some("update-request.json")
+                && p.parent()
+                    .and_then(|x| x.file_name())
+                    .and_then(|x| x.to_str())
+                    == Some(format!("run-{}", r.nonce).as_str()) => {}
+        _ => return Err("Invalid artifact handoff reference".into()),
+    }
+    let expected = match r.kind.as_str() {
+        "scratch" => format!(".wow-update-tmp-{}", r.nonce),
+        "stage" => format!(".wow-update-{}.new", r.nonce),
+        _ => return Err("Invalid update artifact kind".into()),
+    };
+    if r.root.file_name().and_then(|s| s.to_str()) != Some(expected.as_str())
+        || r.root
+            .parent()
+            .ok_or("Artifact parent missing")?
+            .canonicalize()
+            .map_err(|e| e.to_string())?
+            != r.root.parent().unwrap()
+    {
+        return Err("Update artifact path changed".into());
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    for m in &r.members {
+        if !seen.insert(m.relative.clone()) {
+            return Err("Duplicate update artifact record".into());
+        }
+        let parts: Vec<_> = m.relative.components().collect();
+        if !parts
+            .iter()
+            .all(|x| matches!(x, std::path::Component::Normal(_)))
+            || parts.len() > 2
+        {
+            return Err("Invalid artifact member".into());
+        }
+        if !parts.is_empty() {
+            if r.kind != "scratch" {
+                return Err("Staged artifact has unexpected members".into());
+            }
+            let names: Vec<_> = parts
+                .iter()
+                .map(|x| x.as_os_str().to_string_lossy())
+                .collect();
+            let leaf = names.last().unwrap();
+            let file = ["body", "headers", "stdout", "stderr"].contains(&leaf.as_ref());
+            let hop = names.len() == 1 && ["0", "1", "2", "3", "4", "5"].contains(&leaf.as_ref());
+            if (!file && !hop)
+                || (names.len() == 2
+                    && !["0", "1", "2", "3", "4", "5"].contains(&names[0].as_ref()))
+                || m.identity.directory != hop
+            {
+                return Err("Unexpected update artifact member".into());
+            }
+        }
+    }
+    if !seen.contains(Path::new("")) || r.members[0].identity.directory != (r.kind == "scratch") {
+        return Err("Update artifact root kind changed".into());
+    }
+    Ok(())
+}
+fn artifact_member_matches(path: &Path, m: &ArtifactMember) -> Result<()> {
+    if ArtifactIdentity::read(path)? != m.identity {
+        return Err("Update artifact identity changed; file kept".into());
+    }
+    if let Some(expected) = &m.sealed {
+        if pin(path)? != *expected {
+            return Err("Completed update artifact changed; file kept".into());
+        }
+    }
+    Ok(())
+}
+fn artifact_tree_matches(root: &Path, r: &ArtifactRecord) -> Result<()> {
+    let mut stack = vec![(PathBuf::new(), root.to_path_buf())];
+    while let Some((relative, path)) = stack.pop() {
+        let m = r
+            .members
+            .iter()
+            .find(|x| x.relative == relative)
+            .ok_or("Unrecorded update artifact content was kept")?;
+        artifact_member_matches(&path, m)?;
+        if m.identity.directory {
+            for item in fs::read_dir(&path).map_err(|e| e.to_string())? {
+                let item = item.map_err(|e| e.to_string())?;
+                stack.push((relative.join(item.file_name()), item.path()));
+            }
+        }
+    }
+    Ok(())
+}
+fn artifact_fd_path(dir: &File, name: &std::ffi::OsStr) -> PathBuf {
+    PathBuf::from(format!("/proc/self/fd/{}", dir.as_raw_fd())).join(name)
+}
+fn artifact_open_dir(path: &Path) -> Result<File> {
+    OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC)
+        .open(path)
+        .map_err(|e| e.to_string())
+}
+fn artifact_move(dir: &File, from: &std::ffi::OsStr, to: &std::ffi::OsStr) -> Result<()> {
+    let from = std::ffi::CString::new(from.as_bytes()).map_err(|_| "Invalid artifact name")?;
+    let to = std::ffi::CString::new(to.as_bytes()).map_err(|_| "Invalid artifact name")?;
+    if unsafe {
+        libc::syscall(
+            libc::SYS_renameat2,
+            dir.as_raw_fd(),
+            from.as_ptr(),
+            dir.as_raw_fd(),
+            to.as_ptr(),
+            libc::RENAME_NOREPLACE,
+        )
+    } != 0
+    {
+        return Err("Update artifact quarantine was deferred".into());
+    }
+    dir.sync_all().map_err(|e| e.to_string())
+}
+fn artifact_recovery_pending(r: &ArtifactRecord) -> bool {
+    if std::env::var_os("WOW_PORTABLE_PATH")
+        .map(PathBuf::from)
+        .as_ref()
+        == Some(&r.root)
+    {
+        return true;
+    }
+    if r.kind != "stage" {
+        return false;
+    }
+    let parent = r.root.parent().unwrap();
+    for suffix in ["backup", "recovery.json"] {
+        if artifact_exists(&parent.join(format!(".wow-update-{}.{suffix}", r.nonce)))
+            .unwrap_or(true)
+        {
+            return true;
+        }
+    }
+    if let Some(request) = &r.handoff {
+        let Some(runtime) = request.parent() else {
+            return true;
+        };
+        if request.file_name().and_then(|x| x.to_str()) != Some("update-request.json")
+            || runtime.file_name().and_then(|x| x.to_str())
+                != Some(format!("run-{}", r.nonce).as_str())
+        {
+            return true;
+        }
+        if artifact_exists(runtime).unwrap_or(true) && private_parent(request).is_err() {
+            return true;
+        }
+        for name in [
+            "update-request.json",
+            "update-pending",
+            "update-receipt",
+            "update-recovery-info",
+        ] {
+            if artifact_exists(&runtime.join(name)).unwrap_or(true) {
+                return true;
+            }
+        }
+    }
+    false
+}
+fn remove_artifact(r: &ArtifactRecord) -> Result<()> {
+    validate_artifact(r)?;
+    let parent = r.root.parent().unwrap();
+    if ArtifactIdentity::read(parent)? != r.parent {
+        return Err("Update artifact parent changed".into());
+    }
+    let parent_fd = artifact_open_dir(parent)?;
+    if ArtifactIdentity::metadata(&parent_fd.metadata().map_err(|e| e.to_string())?)? != r.parent {
+        return Err("Update artifact parent changed".into());
+    }
+    let original = r.root.file_name().unwrap();
+    let quarantine = std::ffi::OsString::from(format!(".wow-update-clean-{}", r.nonce));
+    let original_path = artifact_fd_path(&parent_fd, original);
+    let qpath = artifact_fd_path(&parent_fd, &quarantine);
+    let original_exists = artifact_exists(&original_path)?;
+    let q_exists = artifact_exists(&qpath)?;
+    if !original_exists && !q_exists {
+        return Ok(());
+    }
+    if artifact_recovery_pending(r) {
+        return Err("Update recovery still refers to this file".into());
+    }
+    if original_exists && q_exists {
+        return Err("Ambiguous cleanup paths were kept".into());
+    }
+    if original_exists {
+        artifact_tree_matches(&original_path, r)?;
+        artifact_move(&parent_fd, original, &quarantine)?;
+    }
+    artifact_tree_matches(&qpath, r)?;
+    let root_member = r
+        .members
+        .iter()
+        .find(|m| m.relative.as_os_str().is_empty())
+        .ok_or("Missing root identity")?;
+    if !root_member.identity.directory {
+        artifact_member_matches(&qpath, root_member)?;
+        let name =
+            std::ffi::CString::new(quarantine.as_bytes()).map_err(|_| "Invalid quarantine")?;
+        if unsafe { libc::unlinkat(parent_fd.as_raw_fd(), name.as_ptr(), 0) } != 0 {
+            return Err("Owned staged file cleanup deferred".into());
+        }
+        return parent_fd.sync_all().map_err(|e| e.to_string());
+    }
+    let root_fd = artifact_open_dir(&qpath)?;
+    let mut members: Vec<_> = r
+        .members
+        .iter()
+        .filter(|m| !m.relative.as_os_str().is_empty())
+        .collect();
+    members.sort_by_key(|m| std::cmp::Reverse(m.relative.components().count()));
+    for m in members {
+        let leaf = m.relative.file_name().ok_or("Invalid artifact member")?;
+        let parent_relative = m.relative.parent().unwrap();
+        let dir = if parent_relative.as_os_str().is_empty() {
+            root_fd.try_clone().map_err(|e| e.to_string())?
+        } else {
+            let ancestor = r
+                .members
+                .iter()
+                .find(|x| x.relative == parent_relative)
+                .ok_or("Missing artifact directory identity")?;
+            let path = artifact_fd_path(&root_fd, parent_relative.as_os_str());
+            if fs::symlink_metadata(&path).is_err() {
+                continue;
+            }
+            artifact_member_matches(&path, ancestor)?;
+            artifact_open_dir(&path)?
+        };
+        let path = artifact_fd_path(&dir, leaf);
+        match fs::symlink_metadata(&path) {
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(e) => return Err(e.to_string()),
+            Ok(_) => {}
+        }
+        artifact_member_matches(&path, m)?;
+        let name =
+            std::ffi::CString::new(leaf.as_bytes()).map_err(|_| "Invalid artifact member")?;
+        let flag = if m.identity.directory {
+            libc::AT_REMOVEDIR
+        } else {
+            0
+        };
+        if unsafe { libc::unlinkat(dir.as_raw_fd(), name.as_ptr(), flag) } != 0 {
+            return Err("Owned update artifact cleanup deferred".into());
+        }
+    }
+    artifact_member_matches(&qpath, root_member)?;
+    let name = std::ffi::CString::new(quarantine.as_bytes()).map_err(|_| "Invalid quarantine")?;
+    if unsafe { libc::unlinkat(parent_fd.as_raw_fd(), name.as_ptr(), libc::AT_REMOVEDIR) } != 0 {
+        return Err("Owned scratch cleanup deferred".into());
+    }
+    parent_fd.sync_all().map_err(|e| e.to_string())
+}
+fn forget_artifact(data: &Path, r: &ArtifactRecord) -> Result<()> {
+    let path = artifact_record_path(data, &r.nonce);
+    let current: Value = serde_json::from_slice(&read_regular(&path, MAX_STATE)?)
+        .map_err(|_| "Invalid artifact record")?;
+    if current != serde_json::to_value(r).map_err(|e| e.to_string())? {
+        return Err("Artifact record changed".into());
+    }
+    if ArtifactIdentity::read(&artifact_lease_path(data, &r.nonce))? != r.lease {
+        return Err("Artifact lease identity changed".into());
+    }
+    fs::remove_file(path).map_err(|e| e.to_string())?;
+    fs::remove_file(artifact_lease_path(data, &r.nonce)).map_err(|e| e.to_string())
+}
+fn cleanup_abandoned(data: &Path) -> Value {
+    let mut removed = 0usize;
+    let mut kept = 0usize;
+    let store = artifact_store(data);
+    let result = (|| -> Result<()> {
+        if !store.exists() {
+            return Ok(());
+        }
+        prepare_data(&store)?;
+        let entries: Vec<_> = fs::read_dir(&store).map_err(|e| e.to_string())?.collect();
+        if entries.len() > 256 {
+            return Err("Too many artifact records; all files kept".into());
+        }
+        for entry in entries {
+            let entry = entry.map_err(|e| e.to_string())?;
+            let p = entry.path();
+            if p.extension().and_then(|x| x.to_str()) != Some("json") {
+                continue;
+            }
+            let clean = (|| -> Result<()> {
+                let id = p
+                    .file_stem()
+                    .and_then(|x| x.to_str())
+                    .ok_or("Invalid artifact record filename")?;
+                if !artifact_hex(id) {
+                    return Err("Unrecognized artifact record".into());
+                }
+                let meta = fs::symlink_metadata(&p).map_err(|e| e.to_string())?;
+                if meta.uid() != unsafe { libc::geteuid() }
+                    || meta.mode() & 0o077 != 0
+                    || meta.nlink() != 1
+                {
+                    return Err("Artifact record is not private".into());
+                }
+                let r: ArtifactRecord = serde_json::from_slice(&read_regular(&p, MAX_STATE)?)
+                    .map_err(|_| "Unreadable artifact ownership record")?;
+                validate_artifact(&r)?;
+                if r.nonce != id || r.owners.iter().any(process_may_live) {
+                    return Err("Artifact creator is active or uncertain".into());
+                }
+                let lp = artifact_lease_path(data, id);
+                if ArtifactIdentity::read(&lp)? != r.lease {
+                    return Err("Artifact lease changed".into());
+                }
+                let lease = OpenOptions::new()
+                    .read(true)
+                    .write(true)
+                    .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+                    .open(&lp)
+                    .map_err(|e| e.to_string())?;
+                if ArtifactIdentity::metadata(&lease.metadata().map_err(|e| e.to_string())?)?
+                    != r.lease
+                {
+                    return Err("Artifact opened lease changed".into());
+                }
+                if unsafe { libc::flock(lease.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
+                    return Err("Artifact writer remains active".into());
+                }
+                remove_artifact(&r)?;
+                forget_artifact(data, &r)?;
+                Ok(())
+            })();
+            if clean.is_ok() {
+                removed += 1;
+            } else {
+                kept += 1;
+            }
+        }
+        Ok(())
+    })();
+    json!({"removed":removed,"kept":kept,"ownership_limit":"Unrecorded files, legacy leftovers, unknown contents and changed identities are preserved. An interruption before ownership registration may leave an unrecorded file.","error":result.err()})
+}
+
 fn stage(data: &Path, candidate: &Candidate, key: [u8; 32]) -> Result<()> {
     cancelled()?;
     validate_candidate(candidate)?;
@@ -711,9 +1437,28 @@ fn stage(data: &Path, candidate: &Candidate, key: [u8; 32]) -> Result<()> {
     let staged = parent.join(format!(".wow-update-{nonce}.new"));
     let mut request_pin = None;
     let mut staged_owned = None;
+    let mut artifact = None;
     let result = (|| {
-        staged_owned = Some(write_new_pinned(&staged, &bytes, current.mode & 0o777)?);
-        let info = transport::build_info(&staged)?;
+        staged_owned = Some(write_new_observed(
+            &staged,
+            &bytes,
+            current.mode & 0o777,
+            |_| {
+                artifact = Some(Artifact::new(
+                    data,
+                    &staged,
+                    "stage",
+                    &nonce,
+                    Some(&request),
+                )?);
+                Ok(())
+            },
+        )?);
+        artifact
+            .as_mut()
+            .ok_or("Missing staged ownership")?
+            .seal(&staged)?;
+        let info = transport::build_info(data, &staged)?;
         if info["version"].as_str() != Some(candidate.version.as_str())
             || info["developer_tools"] != false
             || info["build_mode"].as_str() != Some("public")
@@ -985,7 +1730,7 @@ mod tests {
     fn unset_key_refuses_install_without_network_or_portable_env() {
         let p = temp();
         let bytes =
-            serde_json::to_vec(&vec![release("v0.2.0-alpha.10-candidate.50", false)]).unwrap();
+            serde_json::to_vec(&vec![release("v0.2.0-alpha.10-candidate.51", false)]).unwrap();
         let candidate = select_release(&bytes, env!("CARGO_PKG_VERSION"))
             .unwrap()
             .unwrap();
@@ -1184,5 +1929,287 @@ mod tests {
             .contains("Another setup operation"));
         drop(guard);
         fs::remove_dir_all(p).unwrap();
+    }
+
+    fn scratch_fixture(data: &Path) -> Artifact {
+        let nonce = fsutil::unique();
+        let root = data.join(format!(".wow-update-tmp-{nonce}"));
+        fsutil::private_dir(&root).unwrap();
+        Artifact::new(data, &root, "scratch", &nonce, None).unwrap()
+    }
+    fn abandon_fixture(a: &mut Artifact) {
+        a.record.owners = vec![ArtifactProcess {
+            pid: u32::MAX,
+            start: "1".into(),
+        }];
+        a.save().unwrap();
+    }
+    #[test]
+    fn interrupted_download_owned_partial_is_removed_and_cleanup_repeats_harmlessly() {
+        let data = temp();
+        let mut a = scratch_fixture(&data);
+        let root = a.record.root.clone();
+        let hop = root.join("0");
+        fsutil::private_dir(&hop).unwrap();
+        a.add(&hop).unwrap();
+        let body = hop.join("body");
+        write_new(&body, b"", 0o600).unwrap();
+        a.add(&body).unwrap();
+        fs::write(&body, b"interrupted transfer bytes").unwrap();
+        abandon_fixture(&mut a);
+        drop(a);
+        let result = cleanup_abandoned(&data);
+        assert_eq!(result["removed"], 1);
+        assert!(!root.exists());
+        assert_eq!(cleanup_abandoned(&data)["removed"], 0);
+        fs::remove_dir_all(data).unwrap();
+    }
+    #[test]
+    fn cleanup_preserves_unrecorded_and_changed_partial_identities() {
+        let data = temp();
+        let mut a = scratch_fixture(&data);
+        let root = a.record.root.clone();
+        let body = root.join("body");
+        write_new(&body, b"owned", 0o600).unwrap();
+        a.add(&body).unwrap();
+        let displaced = data.join("saved-partial");
+        fs::rename(&body, displaced).unwrap();
+        write_new(&body, b"unrelated replacement", 0o600).unwrap();
+        abandon_fixture(&mut a);
+        drop(a);
+        assert_eq!(cleanup_abandoned(&data)["removed"], 0);
+        assert_eq!(fs::read(&body).unwrap(), b"unrelated replacement");
+        let legacy = data.join(format!(".wow-update-tmp-{}", fsutil::unique()));
+        fsutil::private_dir(&legacy).unwrap();
+        fs::write(legacy.join("body"), b"unrecorded old transfer").unwrap();
+        cleanup_abandoned(&data);
+        assert!(legacy.join("body").exists());
+        fs::remove_dir_all(data).unwrap();
+    }
+    #[test]
+    fn cleanup_preserves_unknown_scratch_content() {
+        let data = temp();
+        let mut a = scratch_fixture(&data);
+        let root = a.record.root.clone();
+        write_new(&root.join("personal-notes"), b"unrelated", 0o600).unwrap();
+        abandon_fixture(&mut a);
+        drop(a);
+        assert_eq!(cleanup_abandoned(&data)["removed"], 0);
+        assert_eq!(fs::read(root.join("personal-notes")).unwrap(), b"unrelated");
+        fs::remove_dir_all(data).unwrap();
+    }
+    #[test]
+    fn artifact_activity_lease_survives_creator_and_blocks_cleanup() {
+        use std::os::unix::process::CommandExt;
+        let data = temp();
+        let mut a = scratch_fixture(&data);
+        let root = a.record.root.clone();
+        abandon_fixture(&mut a);
+        let fd = a.lease_fd();
+        let mut command = std::process::Command::new("/bin/sh");
+        command.args(["-c", "sleep 0.2"]);
+        unsafe {
+            command.pre_exec(move || {
+                if libc::fcntl(fd, libc::F_SETFD, 0) == -1 {
+                    Err(std::io::Error::last_os_error())
+                } else {
+                    Ok(())
+                }
+            });
+        }
+        let mut child = command.spawn().unwrap();
+        drop(a);
+        assert_eq!(cleanup_abandoned(&data)["removed"], 0);
+        assert!(root.exists());
+        assert!(child.wait().unwrap().success());
+        assert_eq!(cleanup_abandoned(&data)["removed"], 1);
+        fs::remove_dir_all(data).unwrap();
+    }
+    #[test]
+    fn active_owner_process_preserves_artifacts_without_a_profile_lock() {
+        let data = temp();
+        let a = scratch_fixture(&data);
+        let root = a.record.root.clone();
+        drop(a);
+        assert_eq!(cleanup_abandoned(&data)["removed"], 0);
+        assert!(root.exists());
+        fs::remove_dir_all(data).unwrap();
+    }
+    fn stage_fixture(data: &Path, parent: &Path) -> Artifact {
+        let nonce = fsutil::unique();
+        let root = parent.join(format!(".wow-update-{nonce}.new"));
+        write_new(&root, b"partial staged installer", 0o700).unwrap();
+        let runtime = data.join(format!("run-{nonce}"));
+        fsutil::private_dir(&runtime).unwrap();
+        Artifact::new(
+            data,
+            &root,
+            "stage",
+            &nonce,
+            Some(&runtime.join("update-request.json")),
+        )
+        .unwrap()
+    }
+    #[test]
+    fn interrupted_stage_is_cleaned_but_recovery_references_and_backups_are_preserved() {
+        let data = temp();
+        let parent = temp();
+        let mut a = stage_fixture(&data, &parent);
+        let root = a.record.root.clone();
+        let request = a.record.handoff.clone().unwrap();
+        write_new(&request, b"retained unresolved handoff", 0o600).unwrap();
+        abandon_fixture(&mut a);
+        let nonce = a.record.nonce.clone();
+        drop(a);
+        assert_eq!(cleanup_abandoned(&data)["removed"], 0);
+        fs::remove_file(&request).unwrap();
+        let recovery = parent.join(format!(".wow-update-{nonce}.recovery.json"));
+        write_new(&recovery, b"unresolved recovery", 0o600).unwrap();
+        assert_eq!(cleanup_abandoned(&data)["removed"], 0);
+        fs::remove_file(recovery).unwrap();
+        let backup = parent.join(format!(".wow-update-{nonce}.backup"));
+        write_new(&backup, b"previous installer", 0o700).unwrap();
+        assert_eq!(cleanup_abandoned(&data)["removed"], 0);
+        assert!(root.exists());
+        assert_eq!(fs::read(&backup).unwrap(), b"previous installer");
+        fs::remove_file(backup).unwrap();
+        assert_eq!(cleanup_abandoned(&data)["removed"], 1);
+        fs::remove_dir_all(data).unwrap();
+        fs::remove_dir_all(parent).unwrap();
+    }
+    #[test]
+    fn sealed_stage_edit_is_preserved() {
+        let data = temp();
+        let parent = temp();
+        let mut a = stage_fixture(&data, &parent);
+        let root = a.record.root.clone();
+        a.seal(&root).unwrap();
+        fs::write(&root, b"changed same inode").unwrap();
+        abandon_fixture(&mut a);
+        drop(a);
+        assert_eq!(cleanup_abandoned(&data)["removed"], 0);
+        assert_eq!(fs::read(root).unwrap(), b"changed same inode");
+        fs::remove_dir_all(data).unwrap();
+        fs::remove_dir_all(parent).unwrap();
+    }
+
+    #[test]
+    fn startup_cleanup_respects_active_operation_and_opt_out() {
+        let data = temp();
+        let mut a = scratch_fixture(&data);
+        let root = a.record.root.clone();
+        abandon_fixture(&mut a);
+        drop(a);
+        dispatch(&data, &json!({"action":"updater_enabled","enabled":false})).unwrap();
+        let operation = fsutil::Lock::acquire(&data.join("operation.lock")).unwrap();
+        dispatch(&data, &json!({"action":"updater_check"})).unwrap();
+        assert!(root.exists());
+        drop(operation);
+        dispatch(&data, &json!({"action":"updater_check"})).unwrap();
+        assert!(!root.exists());
+        assert!(!load(&data).unwrap().enabled);
+        assert!(load(&data).unwrap().last_attempt.is_none());
+        fs::remove_dir_all(data).unwrap();
+    }
+    #[test]
+    fn current_portable_is_never_cleaned_as_an_abandoned_stage() {
+        let data = temp();
+        let parent = temp();
+        let mut a = stage_fixture(&data, &parent);
+        let root = a.record.root.clone();
+        abandon_fixture(&mut a);
+        drop(a);
+        let previous = std::env::var_os("WOW_PORTABLE_PATH");
+        std::env::set_var("WOW_PORTABLE_PATH", &root);
+        let result = cleanup_abandoned(&data);
+        if let Some(p) = previous {
+            std::env::set_var("WOW_PORTABLE_PATH", p);
+        } else {
+            std::env::remove_var("WOW_PORTABLE_PATH");
+        }
+        assert_eq!(result["removed"], 0);
+        assert!(root.exists());
+        fs::remove_dir_all(data).unwrap();
+        fs::remove_dir_all(parent).unwrap();
+    }
+
+    #[test]
+    fn updater_dispatch_resolves_data_parent_alias_once() {
+        use std::os::unix::fs::symlink;
+        let base = temp();
+        let real = base.join("actual");
+        fsutil::private_dir(&real).unwrap();
+        let alias = base.join("alias");
+        symlink(&real, &alias).unwrap();
+        let data_alias = alias.join("profile");
+        let resolved = canonical_data(&data_alias).unwrap();
+        assert_eq!(resolved, real.join("profile"));
+        dispatch(
+            &data_alias,
+            &json!({"action":"updater_enabled","enabled":false}),
+        )
+        .unwrap();
+        assert!(!load(&resolved).unwrap().enabled);
+        assert_eq!(
+            dispatch(&data_alias, &json!({"action":"updater_status"})).unwrap()["enabled"],
+            false
+        );
+        let mut artifact = scratch_fixture(&resolved);
+        let root = artifact.record.root.clone();
+        abandon_fixture(&mut artifact);
+        drop(artifact);
+        dispatch(&data_alias, &json!({"action":"updater_check"})).unwrap();
+        assert!(!root.exists());
+        assert!(load(&resolved).unwrap().last_attempt.is_none());
+        fs::remove_dir_all(base).unwrap();
+    }
+    #[test]
+    fn updater_data_leaf_symlink_is_rejected_without_touching_target() {
+        use std::os::unix::fs::symlink;
+        let base = temp();
+        let data = base.join("actual-profile");
+        fsutil::private_dir(&data).unwrap();
+        fs::write(data.join("sentinel"), b"keep").unwrap();
+        let alias = base.join("profile-link");
+        symlink(&data, &alias).unwrap();
+        assert!(dispatch(&alias, &json!({"action":"updater_status"})).is_err());
+        assert_eq!(fs::read(data.join("sentinel")).unwrap(), b"keep");
+        assert_eq!(fs::read_dir(&data).unwrap().count(), 1);
+        fs::remove_dir_all(base).unwrap();
+    }
+    #[test]
+    fn failed_artifact_registration_rolls_back_only_attempt_owned_files() {
+        let data = temp();
+        let nonce = fsutil::unique();
+        let root = data.join(format!(".wow-update-tmp-{nonce}"));
+        fsutil::private_dir(&root).unwrap();
+        let failed = Artifact::new_with_sync(&data, &root, "scratch", &nonce, None, |_| {
+            Err("simulated registration sync failure".into())
+        });
+        assert!(failed.is_err());
+        assert!(!artifact_record_path(&data, &nonce).exists());
+        assert!(!artifact_lease_path(&data, &nonce).exists());
+        assert!(root.is_dir());
+        fs::remove_dir_all(data).unwrap();
+    }
+    #[test]
+    fn registration_failure_preserves_replaced_record_and_lease() {
+        let data = temp();
+        let nonce = fsutil::unique();
+        let root = data.join(format!(".wow-update-tmp-{nonce}"));
+        fsutil::private_dir(&root).unwrap();
+        let record = artifact_record_path(&data, &nonce);
+        let lease = artifact_lease_path(&data, &nonce);
+        let failed = Artifact::new_with_sync(&data, &root, "scratch", &nonce, None, |_| {
+            fs::rename(&record, data.join("moved-owned-record")).unwrap();
+            fs::rename(&lease, data.join("moved-owned-lease")).unwrap();
+            write_new(&record, b"unrelated record replacement", 0o600).unwrap();
+            write_new(&lease, b"unrelated lease replacement", 0o600).unwrap();
+            Err("simulated final registration failure".into())
+        });
+        assert!(failed.is_err());
+        assert_eq!(fs::read(record).unwrap(), b"unrelated record replacement");
+        assert_eq!(fs::read(lease).unwrap(), b"unrelated lease replacement");
+        fs::remove_dir_all(data).unwrap();
     }
 }

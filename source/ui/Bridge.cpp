@@ -349,9 +349,12 @@ void Bridge::traceState(){
 
 // Presentation preference only: never forwarded to installation/Steam/launcher state.
 QString Bridge::classicGuideMode(){
- const auto mode=QSettings().value("guides/classicMode", "era").toString();
+ // Keep the existing settings namespace when the visible name becomes Deckhand.
+ QSettings settings("WoWSteamOSRust","WoW SteamOS Installer");
+ const auto mode=settings.value("guides/classicMode", "era").toString();
  return QStringList{"era","hardcore","sod"}.contains(mode)?mode:QStringLiteral("era");
 }
 void Bridge::setClassicGuideMode(const QString &mode){
- if(QStringList{"era","hardcore","sod"}.contains(mode))QSettings().setValue("guides/classicMode",mode);
+ QSettings settings("WoWSteamOSRust","WoW SteamOS Installer");
+ if(QStringList{"era","hardcore","sod"}.contains(mode))settings.setValue("guides/classicMode",mode);
 }
