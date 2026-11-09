@@ -1,4 +1,4 @@
-# Candidate 49 development features and limits
+# Candidate 49 features and limits
 
 - One installer-managed Battle.net button per selected installation. Choose Retail, Classic Era or experimental Forever inside Battle.net.
 - Guided setup, missing-button repair, reviewed reuse of an existing setup, and removal with separately verified settings backups.
@@ -16,5 +16,5 @@
 - Fresh installation was not part of the device check. Bazzite checks used a read-only scan and simulated interface tests before Apply; Bazzite gameplay testing remains in progress.
 - Exact build identities, earlier results and method limits are listed in ACCEPTANCE-SUMMARY.md.
 
-- Installer update checks, explicit Update now consent, checksum and signature verification, and backup/rollback passed offline and simulated private-feed checks. The production public verifier is configured; private checks use separate test keys. Idle unfinished setups permit release checks and manual downloads; automatic installation waits until they are finished or removed. A live automatic update from GitHub remains unconfirmed.
-- On a Steam Deck that already had Battle.net and WoW set up, Candidate 49 found both. These have not been checked on a Steam Deck yet: the new update buttons, the update on/off switch, and closing the installer normally. Updating automatically from GitHub has not been confirmed yet. The gameplay and controller results above remain Candidate 48 evidence.
+- Installer update checks, explicit Update now consent, checksum and signature verification, and backup/rollback passed offline and simulated private-feed checks. The production public verifier is configured; private checks use separate test keys. Idle unfinished setups permit release checks and manual downloads; automatic installation waits until they are finished or removed. Live-update and device results are detailed in ACCEPTANCE-SUMMARY.md.
+- On a Steam Deck that already had Battle.net and WoW set up, Candidate 49 found both. In a live test on that Deck, an older test copy of the installer found Candidate 49 on GitHub. After Update now was pressed, it downloaded and installed the signed update, kept the previous copy as a backup, and restarted as Candidate 49. That updated window later closed unexpectedly before it could be closed normally. The cause is not known, but the update had finished: Candidate 49 and the backup were still in place. In a separate check, Candidate 49 stayed open on the Deck through checks every two minutes for 30 minutes, then closed normally. The update on/off switch also worked on the Deck: after it was turned off, it stayed off when the installer was reopened. The gameplay and controller results above remain Candidate 48 evidence.

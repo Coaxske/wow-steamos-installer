@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "C49 development, NOT released or frozen",
+  "status": "Published Candidate 49 pre-release; post-release documentation adds device results without replacing release assets",
   "version": "0.2.0-alpha.10-candidate.49",
   "production_public_key_configured": true,
   "source_base_commit": "acce22f5f67ca1ef61381af69cb3b85cdf3c9ca2",
@@ -23,7 +23,7 @@
     "native_builds": "PASS public and developer modes",
     "public_verifier": "Intended public key embedded; test public key absent; developer tools disabled"
   },
-  "release_manifest": "Root SHA256SUMS still describes the historical C48 release assets. A C49 asset manifest is not prepared until the final signed release freeze.",
+  "release_manifest": "Root SHA256SUMS retains its historical Candidate 48 entries. The immutable Candidate 49 release assets contain their publication-time SHA256SUMS. Post-release repository documentation does not replace those assets.",
   "published_C48_baseline": {
     "tag": "v0.2.0-alpha.10-candidate.48",
     "source_merge_commit": "0ead653070e05aaf28d0eba61f1612a3155361d4",
@@ -41,7 +41,7 @@
   },
   "production_public_key_ed25519_hex": "e6007a9ad0bfa1f9cdf1a87fb900156aa697224b800c55fef9630e34d77e06f8",
   "production_signed_release_testing": "NOT RUN; separate reviewed stage",
-  "C49_Deck_scope": "On a Steam Deck that already had Battle.net and WoW set up, Candidate 49 found both. These have not been checked on a Steam Deck yet: the new update buttons, the update on/off switch, and closing the installer normally. Updating automatically from GitHub has not been confirmed yet.",
+  "C49_Deck_scope": "On a Steam Deck that already had Battle.net and WoW set up, Candidate 49 found both. In a live test on that Deck, an older test copy of the installer found Candidate 49 on GitHub. After Update now was pressed, it downloaded and installed the signed update, kept the previous copy as a backup, and restarted as Candidate 49. That updated window later closed unexpectedly before it could be closed normally. The cause is not known, but the update had finished: Candidate 49 and the backup were still in place. In a separate check, Candidate 49 stayed open on the Deck through checks every two minutes for 30 minutes, then closed normally. The update on/off switch also worked on the Deck: after it was turned off, it stayed off when the installer was reopened.",
   "C49_Deck_evidence_limits": {
     "normal_invocation_and_window": "Process identity and KWin metadata only; no Home/control render proof",
     "preference": "Enabled choice unchanged; no action or reopen-persistence proof",
@@ -50,5 +50,23 @@
     "normal_exit": "Unverified; reported window remains open",
     "gameplay_and_physical": "No C49 pass; earlier results belong to C48"
   },
-  "documentation_review": "Only root documentation changed after the private Deck checks. source/ and the tested executable are unchanged from 9ddeb579d0407b565f68ddcb99df6a9b78e30846."
+  "documentation_review": "Only root documentation changed after the private Deck checks. source/ and the tested executable are unchanged from 9ddeb579d0407b565f68ddcb99df6a9b78e30846.",
+  "historical_field_scope": "The development_snapshot, checks, production_signed_release_testing and C49_Deck_evidence_limits retain prepublication observations. Their original values and hashes are preserved. Current published-device results are in post_release_acceptance.",
+  "published_C49_release": {
+    "tag": "v0.2.0-alpha.10-candidate.49",
+    "source_merge_commit": "ef1bb9eb5cee9dcb7d10bb107f0f9a8155fe54ce",
+    "portable_executable_sha256": "d17151020ccce00d7fd2e384b33e7ec7c437549552795079a50bf2084a71fd5d",
+    "source_archive_sha256": "1c03e2443d4ae8f8802ad418e443d968836037bc3ec6a6811846a214528b8e7f",
+    "signature_sha256": "7035078e66c6f25de5d5f3f5c5773f8c516c4cbbcc22451cb703ddaeb52f7a42",
+    "asset_count": 19,
+    "assets": "Unchanged publication-time snapshot"
+  },
+  "post_release_acceptance": {
+    "Bazzite_live_update": "PASS within one disposable starter/profile and the real GitHub feed. The owner pressed Not now and Update now and normally closed the updated window. Automated interface, production signature, hash, retained-backup and fresh restart/exit evidence; numeric GUI exit codes unknown. Not gameplay acceptance.",
+    "Steam_Deck_live_update": "Signed replacement, retained backup and initial Candidate 49 Home supported. The updated window/processes later disappeared before final normal close. Cause, exact exit time and numeric exit statuses remain unknown. No clean final-close pass for that lifetime.",
+    "Steam_Deck_detached_survival": "Separate lifetime with no update installed: same window/wrapper/native/profile present at 16 samples about two minutes apart over 1800.053 seconds. Not continuous observation. Scheduled-close observer TypeError occurred before a request; later helper normally closed the same instance without relaunch. Wrapper wait 0, native numeric exit unknown. Earlier disappearance remains unexplained.",
+    "Steam_Deck_switch": "PASS for one new disposable profile across three detached launches: visible On, owner Off, reopened Off, owner On, reopened On; three automated ordinary closes. Owner wake/unlock and two clicks separate from automated screenshots, identities and saved-record comparisons. Only enabled changed. No new durable attempt/candidate change while Off in compared snapshots; no zero-network or successful-transport inference. Native numeric exit codes unknown.",
+    "preservation_limit": "Real profile was not targeted; sampled real update-history bytes matched. No full filesystem audit. Raw captures, logs, identifiers, settings, backups and private QA material remain private.",
+    "scope": "C48 gameplay evidence remains C48. No new game/controller, fresh-setup or removal result. Cleanup E remains deferred."
+  }
 }

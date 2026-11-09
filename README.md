@@ -2,7 +2,7 @@
 
 Candidate 49 is a test version. It adds optional installer updates.
 
-On a Steam Deck that already had Battle.net and WoW set up, Candidate 49 found both. These have not been checked on a Steam Deck yet: the new update buttons, the update on/off switch, and closing the installer normally. Updating automatically from GitHub has not been confirmed yet.
+On a Steam Deck that already had Battle.net and WoW set up, Candidate 49 found both. In a live test on that Deck, an older test copy of the installer found Candidate 49 on GitHub. After Update now was pressed, it downloaded and installed the signed update, kept the previous copy as a backup, and restarted as Candidate 49. That updated window later closed unexpectedly before it could be closed normally. The cause is not known, but the update had finished: Candidate 49 and the backup were still in place. In a separate check, Candidate 49 stayed open on the Deck through checks every two minutes for 30 minutes, then closed normally. The update on/off switch also worked on the Deck: after it was turned off, it stayed off when the installer was reopened.
 
 The recorded gameplay and controller results below belong to Candidate 48. Bazzite gameplay testing is in progress.
 
@@ -32,7 +32,7 @@ When a newer version is found, choose **Update now**, **Not now** or **View rele
 
 Before replacement, the updater checks both the published SHA-256 checksum and a digital signature for the exact installer file. After a successful update, the newest verified previous installer is kept. Older backups are removed only when the updater's own records and the files still match. The old installer is retained or restored if replacement or restart fails. If automatic restart or the new process's exit cannot be confirmed, recovery files may be retained for manual reopening. If an update cannot be verified, use **View release page** to download it by hand.
 
-The installer includes the production public key for verifying signed updates. The private signing key stays outside the project. Private automated checks use separate test keys. A live automatic update from GitHub has not yet been confirmed. Candidate 49’s partial Deck results are described below.
+The installer includes the production public key for verifying signed updates. The private signing key stays outside the project. Private automated checks use separate test keys. A live signed update passed on Bazzite. The Steam Deck update and later checks are described below with their limits.
 
 The GitHub check requests this repository's public release list. It does not send game settings, account names or installer records. GitHub receives ordinary connection information, such as your IP address and request headers. The check identifies itself as WoW-SteamOS-Updater/1; it does not send this installer's version or device identifiers. See [security and privacy](SECURITY.md).
 
@@ -76,7 +76,7 @@ Read the [install and removal guide](INSTALL-AND-REMOVE.md) for backup locations
 
 ## What was checked
 
-On a Steam Deck that already had Battle.net and WoW set up, Candidate 49 found both. These have not been checked on a Steam Deck yet: the new update buttons, the update on/off switch, and closing the installer normally. Updating automatically from GitHub has not been confirmed yet.
+On a Steam Deck that already had Battle.net and WoW set up, Candidate 49 found both. In a live test on that Deck, an older test copy of the installer found Candidate 49 on GitHub. After Update now was pressed, it downloaded and installed the signed update, kept the previous copy as a backup, and restarted as Candidate 49. That updated window later closed unexpectedly before it could be closed normally. The cause is not known, but the update had finished: Candidate 49 and the backup were still in place. In a separate check, Candidate 49 stayed open on the Deck through checks every two minutes for 30 minutes, then closed normally. The update on/off switch also worked on the Deck: after it was turned off, it stayed off when the installer was reopened.
 
 Candidate 49 also passed offline and private simulated updater checks on the Bazzite build machine. These are separate from live GitHub updating. No Candidate 49 game-session or physical-controller pass is claimed.
 
