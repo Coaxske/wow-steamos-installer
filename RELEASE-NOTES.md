@@ -2,9 +2,11 @@ Candidate 49 is a test version. It adds optional installer updates.
 
 On a Steam Deck that already had Battle.net and WoW set up, Candidate 49 found both. In a live test on that Deck, an older test copy of the installer found Candidate 49 on GitHub. After Update now was pressed, it downloaded and installed the signed update, kept the previous copy as a backup, and restarted as Candidate 49. That updated window later closed unexpectedly before it could be closed normally. The cause is not known, but the update had finished: Candidate 49 and the backup were still in place. In a separate check, Candidate 49 stayed open on the Deck through checks every two minutes for 30 minutes, then closed normally. The update on/off switch also worked on the Deck: after it was turned off, it stayed off when the installer was reopened.
 
-Candidate 48 was tested on a Steam Deck that already had Battle.net and WoW set up. A brand-new installation has not been tested with Candidate 48 or 49 yet. Bazzite testing is in progress.
+Candidate 48 was tested on a Steam Deck that already had Battle.net and WoW set up. A brand-new installation with Candidate 49 worked on a Bazzite PC: Battle.net and Classic Era installed from scratch, and the game reached the character screen. Battle.net crashed the first time after sign-in and worked when opened again. A brand-new installation has not been tested on Steam Deck yet.
 
 Download **[WoW-SteamOS-Rust-Linux-x86_64](https://github.com/Coaxske/wow-steamos-installer/releases/download/v0.2.0-alpha.10-candidate.49/WoW-SteamOS-Rust-Linux-x86_64)**. It is the only file you need to run. Candidate 48 users must download Candidate 49 once by hand to get the updater. Then follow the [step-by-step install guide](https://github.com/Coaxske/wow-steamos-installer#download-and-install).
+
+If Battle.net shows "The application encountered an unexpected error" right after you sign in, close the message and open Battle.net again. In testing, it worked the second time.
 
 ## Changes
 
@@ -26,6 +28,6 @@ Sixteen private packaged scenarios passed, including two successive updates with
 
 The production public key is included for verifying signed updates. The private signing key is stored outside the project and is not included in the installer or source files. Private automated checks use separate test keys. A live update from GitHub passed on Bazzite using an older test copy of the installer in a separate folder. Not now left that copy unchanged, the notice came back after closing and reopening, and Update now installed the production-signed Candidate 49, kept the previous copy as a backup and restarted as Candidate 49. The project owner pressed both buttons and closed the updated Bazzite window normally. Automated checks recorded the screens and verified the checksum, production signature, backup and new processes. The Steam Deck result is described above. Optional stale partial-download cleanup is deferred.
 
-C48's existing-installation results remain separate evidence and do not test the C49 updater. Fresh installation, full gameplay and performance are not established. Bazzite gameplay testing remains in progress.
+C48's existing-installation results remain separate evidence and do not test the C49 updater. The Bazzite fresh-installation check stopped at the character screen. Full gameplay, performance and a fresh installation on Steam Deck are not established.
 
 GitHub receives ordinary connection information during release checks. No game settings, account names or installer records are sent. See [security and privacy](SECURITY.md) and [acceptance details](ACCEPTANCE-SUMMARY.md).
