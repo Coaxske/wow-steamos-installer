@@ -15,7 +15,7 @@
 <h1>Deckhand</h1>
 <p class="lead">Play World of Warcraft on Steam Deck and Bazzite.</p>
 <p>Deckhand installs Blizzard's Battle.net app, adds one Battle.net button to your Steam library, and makes your game and addon folders easy to find. It is free, and its source code is public. Not affiliated with Blizzard or Valve.</p>
-<p class="notice"><strong>This is an early test version.</strong> [STATUS LINE]</p>
+<p class="notice"><strong>This is an early test version.</strong> So far it has been tested on a Steam Deck that already had Battle.net and WoW set up, and with a brand-new installation on a Bazzite PC. Please report problems on the <a href="https://github.com/Coaxske/wow-steamos-installer/issues">Issues page</a>.</p>
 <p><a class="download" href="https://github.com/Coaxske/wow-steamos-installer/releases/download/v0.2.0-alpha.10-candidate.49/WoW-SteamOS-Rust-Linux-x86_64">Download installer</a></p>
 <p class="filename">WoW-SteamOS-Rust-Linux-x86_64</p>
 </header>
@@ -38,12 +38,13 @@
 <li>Open it and follow the instructions. Steam may close and reopen during setup.</li>
 <li>Sign in only inside Battle.net. The installer never asks for your password or authenticator codes.</li>
 </ol>
+<p>If Battle.net shows "The application encountered an unexpected error" right after you sign in, close the message and open Battle.net again. In testing, it worked the second time.</p>
 <p>Setup asks you to approve Battle.net&#x27;s Close after Play setting. Before changing the setting, it backs up the original Battle.net settings. An already-enabled setting can be confirmed without changing it. This affects the selected installation in both Desktop and Gaming Mode.</p>
 </section>
 <section class="card" aria-labelledby="checks"><h2 id="checks">What was checked</h2>
 <ul>
 <li>Steam Deck with Battle.net and WoW already set up: checked in Game Mode and Desktop Mode (Candidate 48).</li>
-<li>Brand-new installation: [FRESH-INSTALL RESULT].</li>
+<li>Brand-new installation: worked on a Bazzite PC (Candidate 49). Battle.net and Classic Era installed from scratch, and the game reached the character screen. Battle.net crashed the first time after sign-in and worked when opened again. Not yet tested on Steam Deck.</li>
 <li>Updates from GitHub: installed correctly on Bazzite and Steam Deck (Candidate 49). On the Deck, the updated window later closed unexpectedly; the cause is not known.</li>
 </ul>
 <p>Read the <a href="https://github.com/Coaxske/wow-steamos-installer/blob/main/ACCEPTANCE-SUMMARY.md">detailed test records and limits</a>.</p>

@@ -2,7 +2,7 @@
 
 Play World of Warcraft on Steam Deck and Bazzite. Deckhand installs Blizzard's Battle.net app, adds one Battle.net button to your Steam library, and makes your game and addon folders easy to find. It is free, and its source code is public. Not affiliated with Blizzard or Valve.
 
-**This is an early test version.** [STATUS LINE]
+**This is an early test version.** So far it has been tested on a Steam Deck that already had Battle.net and WoW set up, and with a brand-new installation on a Bazzite PC. Please report problems on the [Issues page](https://github.com/Coaxske/wow-steamos-installer/issues).
 
 ## Is it safe?
 
@@ -22,6 +22,8 @@ You need Steam as it comes on Steam Deck or Bazzite (the Flatpak version of Stea
 5. Right-click the file, choose Properties, open the Permissions tab, check Is executable, then click OK.
 6. Open it and follow the instructions. Steam may close and reopen during setup.
 7. Sign in only inside Battle.net. The installer never asks for your password or authenticator codes.
+
+If Battle.net shows "The application encountered an unexpected error" right after you sign in, close the message and open Battle.net again. In testing, it worked the second time.
 
 Setup asks you to approve Battle.net's Close after Play setting. Before changing the setting, it backs up the original Battle.net settings. An already-enabled setting can be confirmed without changing it. This affects the selected installation in both Desktop and Gaming Mode.
 
@@ -80,7 +82,7 @@ Read the [install and removal guide](INSTALL-AND-REMOVE.md) for backup locations
 ## What was checked
 
 - Steam Deck with Battle.net and WoW already set up: checked in Game Mode and Desktop Mode (Candidate 48).
-- Brand-new installation: [FRESH-INSTALL RESULT].
+- Brand-new installation: worked on a Bazzite PC (Candidate 49). Battle.net and Classic Era installed from scratch, and the game reached the character screen. Battle.net crashed the first time after sign-in and worked when opened again. Not yet tested on Steam Deck.
 - Updates from GitHub: installed correctly on Bazzite and Steam Deck (Candidate 49). On the Deck, the updated window later closed unexpectedly; the cause is not known.
 
 On a Steam Deck that already had Battle.net and WoW set up, Candidate 49 found both. In a live test on that Deck, an older test copy of the installer found Candidate 49 on GitHub. After Update now was pressed, it downloaded and installed the signed update, kept the previous copy as a backup, and restarted as Candidate 49. That updated window later closed unexpectedly before it could be closed normally. The cause is not known, but the update had finished: Candidate 49 and the backup were still in place. In a separate check, Candidate 49 stayed open on the Deck through checks every two minutes for 30 minutes, then closed normally. The update on/off switch also worked on the Deck: after it was turned off, it stayed off when the installer was reopened.
