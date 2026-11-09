@@ -17,14 +17,35 @@ const API: &str = "https://api.github.com/repos/Coaxske/wow-steamos-installer/re
 struct Scratch(PathBuf, super::Artifact);
 impl Scratch {
     fn new(data: &Path, parent: &Path) -> Result<Self> {
-        let nonce = fsutil::unique();
+        Self::new_with_nonce(data, parent, &fsutil::unique())
+    }
+    fn new_with_nonce(data: &Path, parent: &Path, nonce: &str) -> Result<Self> {
+        if !super::artifact_hex(nonce) {
+            return Err("Invalid scratch nonce".into());
+        }
         let p = parent.join(format!(".wow-update-tmp-{nonce}"));
         fs::DirBuilder::new()
             .mode(0o700)
             .create(&p)
             .map_err(|e| e.to_string())?;
-        let tracked = super::Artifact::new(data, &p, "scratch", &nonce, None)?;
-        Ok(Self(p, tracked))
+        // Pin this attempt's new empty directory; never recurse on registration failure.
+        let owned = super::artifact_open_dir(&p)?;
+        let identity =
+            super::ArtifactIdentity::metadata(&owned.metadata().map_err(|e| e.to_string())?)?;
+        match super::Artifact::new(data, &p, "scratch", nonce, None) {
+            Ok(tracked) => Ok(Self(p, tracked)),
+            Err(error) => {
+                if super::ArtifactIdentity::metadata(&owned.metadata().map_err(|e| e.to_string())?)
+                    .ok()
+                    .as_ref()
+                    == Some(&identity)
+                    && super::ArtifactIdentity::read(&p).ok().as_ref() == Some(&identity)
+                {
+                    let _ = fs::remove_dir(&p);
+                }
+                Err(error)
+            }
+        }
     }
 }
 impl Drop for Scratch {
@@ -431,5 +452,37 @@ mod tests {
         );
         assert!(location(b"HTTP/2 302\nlocation: a\nLocation: b\n", 302).is_err());
         assert!(location(b"HTTP/2 200\n", 302).is_err());
+    }
+
+    fn registration_temp() -> PathBuf {
+        let p = std::env::temp_dir().join(format!("wow-updater-registration-{}", fsutil::unique()));
+        fsutil::private_dir(&p).unwrap();
+        p
+    }
+    #[test]
+    fn scratch_registration_collision_keeps_existing_record_and_removes_new_empty_directory() {
+        let data = registration_temp();
+        let nonce = fsutil::unique();
+        super::super::prepare_data(&super::super::artifact_store(&data)).unwrap();
+        let record = super::super::artifact_record_path(&data, &nonce);
+        super::super::write_new(&record, b"preexisting user record", 0o600).unwrap();
+        assert!(Scratch::new_with_nonce(&data, &data, &nonce).is_err());
+        assert!(!data.join(format!(".wow-update-tmp-{nonce}")).exists());
+        assert!(!super::super::artifact_lease_path(&data, &nonce).exists());
+        assert_eq!(fs::read(record).unwrap(), b"preexisting user record");
+        fs::remove_dir_all(data).unwrap();
+    }
+    #[test]
+    fn scratch_registration_collision_preserves_preexisting_lease() {
+        let data = registration_temp();
+        let nonce = fsutil::unique();
+        super::super::prepare_data(&super::super::artifact_store(&data)).unwrap();
+        let lease = super::super::artifact_lease_path(&data, &nonce);
+        super::super::write_new(&lease, b"preexisting lease", 0o600).unwrap();
+        assert!(Scratch::new_with_nonce(&data, &data, &nonce).is_err());
+        assert!(!data.join(format!(".wow-update-tmp-{nonce}")).exists());
+        assert_eq!(fs::read(lease).unwrap(), b"preexisting lease");
+        assert!(!super::super::artifact_record_path(&data, &nonce).exists());
+        fs::remove_dir_all(data).unwrap();
     }
 }

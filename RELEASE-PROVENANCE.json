@@ -9,22 +9,22 @@
     "developer_tools": false,
     "device_testing": "pending",
     "schema": 1,
-    "source_sha256": "b18cf27dd81bb33737c50f377b17a787efe34b37956293fb9ce52ca95d7eafd4",
+    "source_sha256": "8c385422a816086510bcb657eb69c744b44b965632d0f88e79ff596c79e3c6e5",
     "version": "0.2.0-alpha.10-candidate.50",
-    "native_pre_strip_sha256": "2a9958793577f3938813e9286722f082f59de77556881cfce45bf8a04d97e001",
-    "native_payload_sha256": "4e0a892c595a535928b397eab9adc199bacb81ad6e6a220c8db35323b6ae1903",
-    "binary_sha256": "0cb72df9ae462c51f78b8fa2fce856c1de59964165ffce50eef08a60b88090b7",
-    "portable_executable_sha256": "0cb72df9ae462c51f78b8fa2fce856c1de59964165ffce50eef08a60b88090b7",
-    "source_archive_sha256": "18704dc999f609b12dde6a020229928b3cbad32ca3e9bc781084633b12c41d62",
+    "native_pre_strip_sha256": "29af991e8bea4469ce86a1b38571338b024c0acd4ca7f047eca52c70788f8bf2",
+    "native_payload_sha256": "3f4542dfad66243037aed44bf52ae68602749ff1f26abeab3cc111a884517aef",
+    "binary_sha256": "875679a07dbd036a410f9f8320cefd5a670688f4be1e82292581271ff2b870ce",
+    "portable_executable_sha256": "875679a07dbd036a410f9f8320cefd5a670688f4be1e82292581271ff2b870ce",
+    "source_archive_sha256": "a1daf6247f87a8825649e3323b91c1a8feea4c77819888b8e172072b83cac2ce",
     "libc": "glibc 2.36",
     "final_release": false
   },
   "production_public_key_ed25519_hex": "e6007a9ad0bfa1f9cdf1a87fb900156aa697224b800c55fef9630e34d77e06f8",
   "checks": {
-    "public_offline": "287 library +41 regression +1 public refusal PASS",
-    "developer_offline": "287 library +41 regression PASS",
-    "portable_handoff": "14 PASS",
-    "private_packaged": "12 PASS; simulated feed/Qt/failures, actual packaged crypto/file/restart paths with separate synthetic keys",
+    "public_offline": "293 library +41 regression +1 public refusal PASS",
+    "developer_offline": "293 library +41 regression PASS",
+    "portable_handoff": "16 PASS",
+    "private_packaged": "17 PASS; simulated feed/Qt/failures, actual packaged crypto/file/restart and normal-entry paths with separate synthetic keys",
     "strict_clippy": "PASS public and developer modes",
     "native_and_source": "PASS both modes; public packaged hint/name/preference checks PASS",
     "licenses": "No new dependencies; 87 runtime inventory entries match C49; retained source/notices CRC PASS",
@@ -116,5 +116,14 @@
       "preservation_limit": "Real profile was not targeted; sampled real update-history bytes matched. No full filesystem audit. Raw captures, logs, identifiers, settings, backups and private QA material remain private.",
       "scope": "C48 gameplay evidence remains C48. No new game/controller, fresh-setup or removal result. Cleanup E remains deferred."
     }
-  }
+  },
+  "review_fixes": {
+    "optional_logging": "All diagnostic errors allow native startup except a genuinely held startup flock. Later diagnostic writes and stderr duplication are best effort.",
+    "unrelated_PID_normal_entry": "Public no-argument launcher reached native Home and closed normally; both logs byte-identical.",
+    "unverifiable_window_lock": "Native Qt itself refused; not a Home pass. Both logs byte-identical, no early logging refusal.",
+    "symlinked_parent": "Actual packaged updater_check selected newer private-feed candidate; no scratch directory or lease left. Final data-leaf symlinks remain refused.",
+    "registration_failure": "Packaged pre-lease denial left no scratch/lease or network call; separate unit tests cover post-lease/post-record failures and preserve collisions/replacements.",
+    "public_wording": "Requested strings corrected; developer UI and existing user-data naming formats unchanged."
+  },
+  "later_live_plan": "After reviewed publication, actual published Candidate 49 detached in a disposable profile; Bazzite first then Steam Deck. Same profile: Not now, reopen, Update now, production signature, backup and replacement hashes, Candidate 50 restart; both startup logs mode600 and update-cleanup.json error:null; sampled same-window/process survival over30minutes and normal close. Deck input automated unless a specific physical step cannot be confirmed."
 }

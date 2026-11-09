@@ -45,7 +45,7 @@ The GitHub check requests this repository's public release list. It does not sen
 
 Candidate 50 can remove abandoned temporary update files only when its private records prove that it created them and that their identities still match. Files used by an active update or unresolved recovery, backups and unrelated or changed files stay in place. Older leftovers without trustworthy ownership records may remain.
 
-Normal startup keeps the previous private diagnostic in startup.previous.log before writing startup.log. Helpers leave these logs alone, and Candidate 50 refuses another window for the same profile while its existing window is active. Keep both logs private. They may help investigate an unexpected exit, but they do not guarantee its cause can be found.
+Normal startup attempts to keep the previous private diagnostic in startup.previous.log before writing startup.log. Logging is optional, so a logging error does not by itself stop startup. If an existing window lock looks live or uncertain, the logs stay untouched and the normal window check decides whether another installer can open. A genuinely held startup lock still refuses another launcher. Helpers leave these logs alone. Keep both logs private. They may help investigate an unexpected exit, but they do not guarantee its cause can be found.
 
 ## Already have Battle.net or WoW?
 
@@ -87,7 +87,7 @@ Read the [install and removal guide](INSTALL-AND-REMOVE.md) for backup locations
 
 ## What was checked
 
-Candidate 50 checks cover its name, setup hint, guarded update-file cleanup and startup logs using isolated profiles and private fixtures on the Bazzite build machine. Network replies, interface actions and failures were simulated; packaged signature checks, file replacement, restart and rollback used real programs with separate test keys. No C50 game, controller, Steam Deck or live GitHub update result is claimed. The C49-to-C50 live update check follows review and publication.
+Candidate 50 checks cover its name, setup hint, guarded update-file cleanup and startup logs using isolated profiles and private fixtures on the Bazzite build machine. Network replies, interface actions and failures were simulated; packaged signature checks, file replacement, restart and rollback used real programs with separate test keys. No Candidate 50 game, controller, Steam Deck or live GitHub update result is claimed. The Candidate 49 to Candidate 50 live update check follows review and publication.
 
 The following device results belong to earlier versions:
 

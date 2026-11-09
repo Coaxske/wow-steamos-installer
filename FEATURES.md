@@ -22,5 +22,5 @@
 - Candidate 50 changes the visible installer name to Deckhand without moving its existing records, settings, games or Proton environment.
 - The game-download step includes a first-sign-in retry hint beside Open Battle.net. It does not change Battle.net launch behavior or diagnose the earlier crash.
 - Ownership-checked cleanup targets abandoned update temporary files, while retaining active, recovery-referenced, unrecognized or changed files and backups.
-- Normal startup retains one previous private startup log. Restarted copies write their own diagnostics; helpers and another window must not erase them.
+- Normal startup attempts to retain one previous private startup log. Logging failures do not by themselves block startup. Restarted copies write their own diagnostics when available; helpers and uncertain native window locks leave the logs untouched.
 - Candidate 50 live GitHub updating and Steam Deck acceptance are not yet established. The release review separates automated and private simulated checks from earlier actual-device evidence.

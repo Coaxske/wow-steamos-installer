@@ -153,8 +153,10 @@ fn run(diagnostics: &mut Option<updater_wrapper::StartupLog>) -> Result<i32, Str
             session.configure(&mut cmd);
         }
         if let Some(log) = diagnostics.as_ref() {
-            log.record("Starting Deckhand interface.")?;
-            cmd.stderr(log.child_stderr()?);
+            let _ = log.record("Starting Deckhand interface.");
+            if let Ok(stderr) = log.child_stderr() {
+                cmd.stderr(stderr);
+            }
         }
         let mut child = cmd
             .spawn()
@@ -166,7 +168,7 @@ fn run(diagnostics: &mut Option<updater_wrapper::StartupLog>) -> Result<i32, Str
         .map_err(|e| e.to_string())?;
         let status = updater_wrapper::wait_native(&mut child, startup.as_ref())?;
         if let Some(log) = diagnostics.as_ref() {
-            log.record(&format!("Native interface exited: {status}."))?;
+            let _ = log.record(&format!("Native interface exited: {status}."));
         }
         if updater_wrapper::is_update_exit(status.code()) {
             let session = updater
@@ -176,7 +178,7 @@ fn run(diagnostics: &mut Option<updater_wrapper::StartupLog>) -> Result<i32, Str
                 return Err("Verified update restart had no owned request. The current portable is unchanged.".into());
             }
             if let Some(log) = diagnostics.as_mut() {
-                log.record("Verified update restart requested.")?;
+                let _ = log.record("Verified update restart requested.");
                 log.release_for_update();
             }
             update_finished = session.finish()?;
@@ -220,6 +222,7 @@ fn run(diagnostics: &mut Option<updater_wrapper::StartupLog>) -> Result<i32, Str
 }
 fn main() {
     let mut diagnostics = None;
+    // Logging is optional; only an actually held startup flock refuses here.
     let result = match updater_wrapper::StartupLog::open(std::env::args_os().nth(1).is_none()) {
         Ok(log) => {
             diagnostics = log;

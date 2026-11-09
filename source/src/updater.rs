@@ -147,6 +147,19 @@ fn prepare_data(data: &Path) -> Result<()> {
     }
     Ok(())
 }
+fn canonical_data(data: &Path) -> Result<PathBuf> {
+    prepare_data(data)?;
+    let before = ArtifactIdentity::read(data)?;
+    let resolved = data.canonicalize().map_err(|e| e.to_string())?;
+    if !before.directory
+        || ArtifactIdentity::read(&resolved)? != before
+        || ArtifactIdentity::read(data)? != before
+    {
+        return Err("Update settings directory changed during resolution".into());
+    }
+    Ok(resolved)
+}
+
 fn workflow_readiness(data: &Path) -> Result<bool> {
     let mut ready = true;
     for name in [
@@ -197,6 +210,8 @@ fn idle_lock(data: &Path) -> Result<fsutil::Lock> {
 }
 pub fn dispatch(data: &Path, request: &Value) -> Result<Value> {
     let action = request["action"].as_str().ok_or("Missing update action")?;
+    let resolved_data = canonical_data(data)?;
+    let data = resolved_data.as_path();
     if [
         "updater_bind",
         "updater_commit",
@@ -212,7 +227,6 @@ pub fn dispatch(data: &Path, request: &Value) -> Result<Value> {
     if action == "updater_status" {
         return load(data).map(|s| status(data, &s));
     }
-    prepare_data(data)?;
     let _update_lock = match fsutil::Lock::acquire(&data.join("updates.lock")) {
         Ok(lock) => lock,
         Err(_) if action == "updater_check" => return Ok(status(data, &load(data)?)),
@@ -802,6 +816,53 @@ fn artifact_lease_path(data: &Path, nonce: &str) -> PathBuf {
 fn artifact_hex(s: &str) -> bool {
     s.len() == 32 && s.bytes().all(|x| x.is_ascii_hexdigit())
 }
+#[derive(Default)]
+struct ArtifactRegistration {
+    files: Vec<(PathBuf, File, ArtifactIdentity, Option<String>)>,
+    committed: bool,
+}
+impl ArtifactRegistration {
+    fn track(&mut self, path: &Path, file: &File, hash: Option<String>) -> Result<()> {
+        let opened = file.metadata().map_err(|e| e.to_string())?;
+        let identity = ArtifactIdentity::metadata(&opened)?;
+        if ArtifactIdentity::read(path)? != identity {
+            return Err("Registration file identity changed".into());
+        }
+        let held = match file.try_clone() {
+            Ok(held) => held,
+            Err(error) => {
+                let _ = cleanup_owned(path, Some(&opened), hash.as_deref());
+                return Err(error.to_string());
+            }
+        };
+        self.files.push((path.into(), held, identity, hash));
+        Ok(())
+    }
+    fn seal(&mut self, path: &Path, hash: String) {
+        if let Some(entry) = self.files.iter_mut().find(|entry| entry.0 == path) {
+            entry.3 = Some(hash);
+        }
+    }
+}
+impl Drop for ArtifactRegistration {
+    fn drop(&mut self) {
+        if self.committed {
+            return;
+        }
+        for (path, file, identity, hash) in self.files.iter().rev() {
+            let Ok(opened) = file.metadata() else {
+                continue;
+            };
+            if ArtifactIdentity::metadata(&opened).ok().as_ref() != Some(identity)
+                || ArtifactIdentity::read(path).ok().as_ref() != Some(identity)
+            {
+                continue;
+            }
+            let _ = cleanup_owned(path, Some(&opened), hash.as_deref());
+        }
+    }
+}
+
 impl Artifact {
     fn new(
         data: &Path,
@@ -810,12 +871,27 @@ impl Artifact {
         nonce: &str,
         handoff: Option<&Path>,
     ) -> Result<Self> {
+        Self::new_with_sync(data, root, kind, nonce, handoff, |store| {
+            File::open(store)
+                .and_then(|f| f.sync_all())
+                .map_err(|e| e.to_string())
+        })
+    }
+    fn new_with_sync(
+        data: &Path,
+        root: &Path,
+        kind: &str,
+        nonce: &str,
+        handoff: Option<&Path>,
+        sync: impl FnOnce(&Path) -> Result<()>,
+    ) -> Result<Self> {
         if !artifact_hex(nonce) {
             return Err("Invalid update artifact nonce".into());
         }
         let store = artifact_store(data);
         prepare_data(&store)?;
         let lp = artifact_lease_path(data, nonce);
+        let mut registration = ArtifactRegistration::default();
         let lease = OpenOptions::new()
             .read(true)
             .write(true)
@@ -824,6 +900,7 @@ impl Artifact {
             .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
             .open(&lp)
             .map_err(|e| e.to_string())?;
+        registration.track(&lp, &lease, Some(fsutil::hash(b"")))?;
         if unsafe { libc::flock(lease.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
             return Err("Update artifact is active".into());
         }
@@ -869,14 +946,49 @@ impl Artifact {
             lease,
         };
         validate_artifact(&value.record)?;
-        write_new(
-            &artifact_record_path(data, nonce),
-            &serde_json::to_vec_pretty(&value.record).map_err(|e| e.to_string())?,
-            0o600,
-        )?;
-        File::open(&store)
-            .and_then(|f| f.sync_all())
+        let record_path = artifact_record_path(data, nonce);
+        let bytes = serde_json::to_vec_pretty(&value.record).map_err(|e| e.to_string())?;
+        let mut record_file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+            .open(&record_path)
             .map_err(|e| e.to_string())?;
+        registration.track(&record_path, &record_file, None)?;
+        let record_identity =
+            ArtifactIdentity::metadata(&record_file.metadata().map_err(|e| e.to_string())?)?;
+        record_file
+            .write_all(&bytes)
+            .and_then(|_| record_file.sync_all())
+            .map_err(|e| e.to_string())?;
+        registration.seal(&record_path, fsutil::hash(&bytes));
+        let expected_record = FilePin {
+            device: record_identity.device,
+            inode: record_identity.inode,
+            size: bytes.len() as u64,
+            mode: record_identity.mode,
+            uid: record_identity.uid,
+            sha256: fsutil::hash(&bytes),
+        };
+        let verify_registration = || -> Result<()> {
+            let opened = record_file.metadata().map_err(|e| e.to_string())?;
+            if !metadata_same(
+                &opened,
+                &fs::symlink_metadata(&record_path).map_err(|e| e.to_string())?,
+            ) || pin(&record_path)? != expected_record
+                || ArtifactIdentity::metadata(&value.lease.metadata().map_err(|e| e.to_string())?)?
+                    != value.record.lease
+                || ArtifactIdentity::read(&lp)? != value.record.lease
+            {
+                return Err("Update registration changed before commit".into());
+            }
+            Ok(())
+        };
+        verify_registration()?;
+        sync(&store)?;
+        verify_registration()?;
+        registration.committed = true;
         Ok(value)
     }
     fn save(&self) -> Result<()> {
@@ -2019,5 +2131,85 @@ mod tests {
         assert!(root.exists());
         fs::remove_dir_all(data).unwrap();
         fs::remove_dir_all(parent).unwrap();
+    }
+
+    #[test]
+    fn updater_dispatch_resolves_data_parent_alias_once() {
+        use std::os::unix::fs::symlink;
+        let base = temp();
+        let real = base.join("actual");
+        fsutil::private_dir(&real).unwrap();
+        let alias = base.join("alias");
+        symlink(&real, &alias).unwrap();
+        let data_alias = alias.join("profile");
+        let resolved = canonical_data(&data_alias).unwrap();
+        assert_eq!(resolved, real.join("profile"));
+        dispatch(
+            &data_alias,
+            &json!({"action":"updater_enabled","enabled":false}),
+        )
+        .unwrap();
+        assert!(!load(&resolved).unwrap().enabled);
+        assert_eq!(
+            dispatch(&data_alias, &json!({"action":"updater_status"})).unwrap()["enabled"],
+            false
+        );
+        let mut artifact = scratch_fixture(&resolved);
+        let root = artifact.record.root.clone();
+        abandon_fixture(&mut artifact);
+        drop(artifact);
+        dispatch(&data_alias, &json!({"action":"updater_check"})).unwrap();
+        assert!(!root.exists());
+        assert!(load(&resolved).unwrap().last_attempt.is_none());
+        fs::remove_dir_all(base).unwrap();
+    }
+    #[test]
+    fn updater_data_leaf_symlink_is_rejected_without_touching_target() {
+        use std::os::unix::fs::symlink;
+        let base = temp();
+        let data = base.join("actual-profile");
+        fsutil::private_dir(&data).unwrap();
+        fs::write(data.join("sentinel"), b"keep").unwrap();
+        let alias = base.join("profile-link");
+        symlink(&data, &alias).unwrap();
+        assert!(dispatch(&alias, &json!({"action":"updater_status"})).is_err());
+        assert_eq!(fs::read(data.join("sentinel")).unwrap(), b"keep");
+        assert_eq!(fs::read_dir(&data).unwrap().count(), 1);
+        fs::remove_dir_all(base).unwrap();
+    }
+    #[test]
+    fn failed_artifact_registration_rolls_back_only_attempt_owned_files() {
+        let data = temp();
+        let nonce = fsutil::unique();
+        let root = data.join(format!(".wow-update-tmp-{nonce}"));
+        fsutil::private_dir(&root).unwrap();
+        let failed = Artifact::new_with_sync(&data, &root, "scratch", &nonce, None, |_| {
+            Err("simulated registration sync failure".into())
+        });
+        assert!(failed.is_err());
+        assert!(!artifact_record_path(&data, &nonce).exists());
+        assert!(!artifact_lease_path(&data, &nonce).exists());
+        assert!(root.is_dir());
+        fs::remove_dir_all(data).unwrap();
+    }
+    #[test]
+    fn registration_failure_preserves_replaced_record_and_lease() {
+        let data = temp();
+        let nonce = fsutil::unique();
+        let root = data.join(format!(".wow-update-tmp-{nonce}"));
+        fsutil::private_dir(&root).unwrap();
+        let record = artifact_record_path(&data, &nonce);
+        let lease = artifact_lease_path(&data, &nonce);
+        let failed = Artifact::new_with_sync(&data, &root, "scratch", &nonce, None, |_| {
+            fs::rename(&record, data.join("moved-owned-record")).unwrap();
+            fs::rename(&lease, data.join("moved-owned-lease")).unwrap();
+            write_new(&record, b"unrelated record replacement", 0o600).unwrap();
+            write_new(&lease, b"unrelated lease replacement", 0o600).unwrap();
+            Err("simulated final registration failure".into())
+        });
+        assert!(failed.is_err());
+        assert_eq!(fs::read(record).unwrap(), b"unrelated record replacement");
+        assert_eq!(fs::read(lease).unwrap(), b"unrelated lease replacement");
+        fs::remove_dir_all(data).unwrap();
     }
 }

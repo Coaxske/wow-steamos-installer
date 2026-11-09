@@ -52,3 +52,5 @@ Do not upload Steam or Battle.net settings, tokens, passwords, logs, captures, d
 ## Report a security problem
 
 On the project's GitHub page, open Security and choose Report a vulnerability. Please report security issues privately rather than in a public Issue.
+
+Startup diagnostics are optional. If a native window lock is live or unverifiable, existing logs are preserved and the native window check decides whether startup can continue. Other logging failures do not by themselves prevent startup. An actually held startup logging lock still refuses a concurrent launcher.

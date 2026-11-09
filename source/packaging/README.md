@@ -16,4 +16,6 @@ The portable uses a private 0700 cache directory, does not require FUSE, and con
 
 ## Private startup diagnostics
 
-Normal launches use the existing wow-steamos-rust profile. Candidate 50 keeps one previous startup diagnostic as startup.previous.log before creating startup.log. Helper invocations do not rotate these logs. A separate normal window must not replace the active window's diagnostic. A verified update successor starts its own diagnostic in the same profile. Keep both logs private; their presence alone does not explain a process exit.
+Normal launches use the existing wow-steamos-rust profile. Candidate 50 attempts to keep one previous startup diagnostic as startup.previous.log before creating startup.log. Helper invocations do not rotate these logs. A separate normal window must not replace the active window's diagnostic. A verified update successor attempts to start its own diagnostic in the same profile. Keep both logs private; their presence alone does not explain a process exit.
+
+Startup diagnostics are best effort. If the native window lock looks live or cannot be verified, both existing logs stay untouched and native Qt decides whether startup can proceed. Other diagnostic errors also allow startup; only an actually held startup.lock flock refuses a concurrent portable launcher. Log writes and stderr duplication are best effort too.

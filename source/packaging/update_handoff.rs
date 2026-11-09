@@ -143,6 +143,22 @@ fn no_live_window_lock(data: &Path) -> Result<(), String> {
  }
 }
 
+#[derive(Debug)]
+enum StartupLogError {
+    AlreadyOpen,
+    Unavailable(String),
+}
+impl From<String> for StartupLogError {
+    fn from(message: String) -> Self {
+        Self::Unavailable(message)
+    }
+}
+impl From<&str> for StartupLogError {
+    fn from(message: &str) -> Self {
+        Self::Unavailable(message.into())
+    }
+}
+
 // Normal windows own a private diagnostic lifetime. Helpers do not rotate it.
 pub struct StartupLog {
     path: PathBuf,
@@ -161,9 +177,21 @@ impl StartupLog {
                 PathBuf::from(env::var_os("HOME").unwrap_or_default()).join(".local/share")
             })
             .join("wow-steamos-rust");
-        Self::open_at(&data).map(Some)
+        Self::optional_at(&data)
     }
-    fn open_at(data: &Path) -> Result<Self, String> {
+    fn optional_at(data: &Path) -> Result<Option<Self>, String> {
+        match Self::open_at(data) {
+            Ok(log) => Ok(Some(log)),
+            Err(StartupLogError::AlreadyOpen) => Err(
+                "Deckhand is already open for this profile. Close its other window first.".into(),
+            ),
+            Err(StartupLogError::Unavailable(message)) => {
+                eprintln!("Startup diagnostics unavailable: {message}");
+                Ok(None)
+            }
+        }
+    }
+    fn open_at(data: &Path) -> Result<Self, StartupLogError> {
         if !data.is_absolute() {
             return Err("HOME or XDG_DATA_HOME must identify an absolute folder".into());
         }
@@ -190,9 +218,11 @@ impl StartupLog {
             .map_err(|e| e.to_string())?;
         checked_log_file(&lock, &lockpath)?;
         if unsafe { flock(lock.as_raw_fd(), 2 | 4) } != 0 {
-            return Err(
-                "Deckhand is already open for this profile. Close its other window first.".into(),
-            );
+            let error = std::io::Error::last_os_error();
+            if error.kind() == std::io::ErrorKind::WouldBlock {
+                return Err(StartupLogError::AlreadyOpen);
+            }
+            return Err(error.to_string().into());
         }
         checked_log_file(&lock, &lockpath)?;
         no_live_window_lock(&data)?;
@@ -1146,28 +1176,68 @@ mod tests {
     }
 
     #[test]
-    fn legacy_window_lock_preserves_diagnostics_until_owner_exits() {
+    fn live_or_unverifiable_window_lock_preserves_logs_and_defers_to_qt() {
         let p = log_dir("legacy");
         write_private(&p.join("startup.log"), b"legacy current").unwrap();
         write_private(&p.join("startup.previous.log"), b"legacy previous").unwrap();
-        write_private(
-            &p.join("window.lock"),
-            format!("{}\nfixture\nfixture\n", std::process::id()).as_bytes(),
-        )
-        .unwrap();
-        assert!(StartupLog::open_at(&p).is_err());
-        assert_eq!(fs::read(p.join("startup.log")).unwrap(), b"legacy current");
-        assert_eq!(
-            fs::read(p.join("startup.previous.log")).unwrap(),
-            b"legacy previous"
-        );
+        for bytes in [
+            format!("{}\nfixture\nfixture\n", std::process::id()).into_bytes(),
+            b"unverifiable window lock\n".to_vec(),
+        ] {
+            fs::write(p.join("window.lock"), bytes).unwrap();
+            fs::set_permissions(p.join("window.lock"), fs::Permissions::from_mode(0o600)).unwrap();
+            assert!(StartupLog::optional_at(&p).unwrap().is_none());
+            assert_eq!(fs::read(p.join("startup.log")).unwrap(), b"legacy current");
+            assert_eq!(
+                fs::read(p.join("startup.previous.log")).unwrap(),
+                b"legacy previous"
+            );
+        }
         fs::remove_file(p.join("window.lock")).unwrap();
-        let log = StartupLog::open_at(&p).unwrap();
+        let log = StartupLog::optional_at(&p).unwrap().unwrap();
         assert_eq!(
             fs::read(p.join("startup.previous.log")).unwrap(),
             b"legacy current"
         );
         drop(log);
+        fs::remove_dir_all(p).unwrap();
+    }
+    #[test]
+    fn held_startup_lock_remains_a_real_refusal() {
+        let p = log_dir("held");
+        let first = StartupLog::optional_at(&p).unwrap().unwrap();
+        let before = fs::read(p.join("startup.log")).unwrap();
+        assert!(matches!(
+            StartupLog::open_at(&p),
+            Err(StartupLogError::AlreadyOpen)
+        ));
+        assert!(StartupLog::optional_at(&p).is_err());
+        assert_eq!(fs::read(p.join("startup.log")).unwrap(), before);
+        assert!(!p.join("startup.previous.log").exists());
+        drop(first);
+        fs::remove_dir_all(p).unwrap();
+    }
+    #[test]
+    fn optional_log_path_errors_do_not_refuse_normal_startup() {
+        let p = log_dir("optional");
+        let unrelated = p.join("unrelated");
+        write_private(&unrelated, b"leave this file alone").unwrap();
+        write_private(&p.join("startup.previous.log"), b"previous diagnostic").unwrap();
+        std::os::unix::fs::symlink(&unrelated, p.join("startup.log")).unwrap();
+        assert!(StartupLog::optional_at(&p).unwrap().is_none());
+        assert_eq!(fs::read(&unrelated).unwrap(), b"leave this file alone");
+        assert_eq!(
+            fs::read(p.join("startup.previous.log")).unwrap(),
+            b"previous diagnostic"
+        );
+        fs::remove_file(p.join("startup.log")).unwrap();
+        fs::create_dir(p.join("startup.log")).unwrap();
+        assert!(StartupLog::optional_at(&p).unwrap().is_none());
+        assert!(p.join("startup.log").is_dir());
+        assert_eq!(
+            fs::read(p.join("startup.previous.log")).unwrap(),
+            b"previous diagnostic"
+        );
         fs::remove_dir_all(p).unwrap();
     }
 }

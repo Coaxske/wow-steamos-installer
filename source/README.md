@@ -18,7 +18,7 @@ Updates require explicit Update now consent, the published checksum and the sign
 
 Candidate 50 tracks updater-created temporary files so abandoned files can be removed only when their ownership and identities remain verified. Active work, recovery-referenced files, backups and changed or unrecognized files stay protected. Older unrecorded leftovers may remain.
 
-Normal startup keeps one previous private diagnostic as startup.previous.log before writing startup.log. Helper calls and another window must not erase the saved diagnostic. These logs can contain local details and must stay private.
+Normal startup attempts to keep one previous private diagnostic as startup.previous.log before writing startup.log. Logging failures are optional and do not by themselves stop startup. A live or unverifiable native window lock skips logging and leaves Qt to decide whether another window can open. A genuinely held startup.lock still refuses a concurrent launcher. Helper calls leave the saved diagnostic unchanged. These logs can contain local details and must stay private.
 
 ## Verification scope
 

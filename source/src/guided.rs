@@ -188,7 +188,7 @@ fn proton_install(ctx: &Context,req:&Json) -> Result<Json> {
     let uri=format!("steam://install/{app}");
     command.arg(uri);
     send_proton_request(command)?;
-    Ok(json!({"steam":root,"ready":false,"requested":true,"message":"Installation requested in Steam—not yet complete. If Steam was closed, let it open and sign in privately if needed. Confirm Install in Steam; if no install window appears, choose Get Proton in Steam again. Your choices are kept while we check completion."}))
+    Ok(json!({"steam":root,"ready":false,"requested":true,"message":"Installation requested in Steam but not yet complete. If Steam was closed, let it open and sign in privately if needed. Confirm Install in Steam; if no install window appears, choose Get Proton in Steam again. Your choices are kept while we check completion."}))
 }
 fn proton_install_target(status: &Json, install_runtime: bool) -> Result<&str> {
     if install_runtime {
