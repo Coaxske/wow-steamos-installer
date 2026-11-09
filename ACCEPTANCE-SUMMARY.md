@@ -1,6 +1,6 @@
 # Candidate 50 acceptance
 
-Candidate 50 is prepared for commit-specific review. It is not published. These checks ran on the Bazzite build machine in an isolated container with disposable profiles. No C50 Steam Deck, live GitHub update, game-session or physical-controller result is claimed.
+Candidate 50 is a published pre-release. Its automated checks ran on the Bazzite build machine in an isolated container with disposable profiles. Post-publication live update results are recorded separately below for Bazzite and Steam Deck. No new Candidate 50 game, physical-controller, fresh-installation or performance result is claimed.
 
 ## C50 automated checks
 
@@ -36,7 +36,7 @@ Candidate 50 is prepared for commit-specific review. It is not published. These 
 
 The private test fixtures have different hashes and remain outside public files. No production private key was used for these checks. The production verifier is unchanged.
 
-## C50 limits and later live test
+## C50 limits
 
 Cleanup requires durable ownership records and matching file identities. Legacy files, an interruption before ownership registration, unknown helper-created cache content and uncertain records may leave leftovers. No name-only cleanup is attempted. Files still needed by active work or unresolved recovery are kept.
 
@@ -44,9 +44,33 @@ Candidate 50 prevents its own helper and duplicate-window paths from erasing dia
 
 The sign-in hint is wording only. The C49 first-sign-in crash and later Deck updater-window closure remain unexplained. Log preservation does not establish a cause or guarantee a fix.
 
-After review and publication, use the actual published C49 in one disposable profile per device with the normal GitHub feed: Bazzite first, then Steam Deck. Check Not now, normal close/reopen, Update now, production signature, previous and replacement hashes, restart, sampled survival over 30 minutes and ordinary close. This has not run for C50. Verify both startup logs have mode 600 and update-cleanup.json has "error": null. If the window disappears, preserve both logs and last-seen/first-absent times before reopening. No repeated gameplay or controller check is part of that plan.
+Post-publication checks used the actual published Candidate 49 executable, a separate disposable profile on each device and the normal GitHub feed. The device results below distinguish the initial Deck update, its failed observer and the later continuation. No gameplay or controller check was repeated.
 
 Private QA code, raw logs, captures, settings, backups, device identifiers and handoffs are excluded from this repository and public release files. Existing games, Steam metadata, layouts and display settings were not changed by these isolated checks.
+
+## C50 post-publication device checks
+
+These checks ran on November 9, 2026. Both devices started with the published Candidate 49 executable and updated to the published, production-signed Candidate 50 executable. The earlier private-feed fixtures remain separate evidence.
+
+| Check | Result and limits |
+| --- | --- |
+| Bazzite live update | PASS: the owner chose Not now and Update now. Recorded interface and file checks established that Not now left Candidate 49 unchanged, and the notice returned after normal close and reopening with the same disposable profile. The update verified the production signature, retained the exact Candidate 49 executable as a backup and restarted the exact published Candidate 50. Both startup logs existed at mode 600; the previous Candidate 49 log was empty. The cleanup report explicitly contained `"error": null`. The same restarted window and pinned wrapper/native processes were present at 31 one-minute samples through at least 1800 monotonic seconds after the first observed window appearance. An automated ordinary close was followed by window absence and both process lifetimes ending. These were sampled observations; independently reaped numeric exit statuses were unavailable. |
+| Initial Steam Deck update | PASS for the update stage; the initial overall result was PARTIAL. The owner chose Not now and Update now. Recorded checks established unchanged Candidate 49 after deferral, normal Candidate 49 close, same-profile reopening with the returned notice, production-signature verification, the exact retained Candidate 49 backup and the published Candidate 50 replacement and restart. Fresh process/profile and captured window evidence identified Deckhand Candidate 50. Both startup logs were nonempty and mode 600, and cleanup explicitly contained `"error": null`. Exact physical-button onset times were not instrumented. |
+| Initial Steam Deck observer | BLOCKED by the testing tool: it searched for the installer's old application name and established no accepted timing anchor. It recorded zero periodic samples and no final result. A later read-only generic query also encountered duplicate entries and stopped before input or a signal. Only the erroneous observer was stopped; Candidate 50 remained running at that stage. No initial 30-minute or normal-close pass is inferred, and the failed attempt remains recorded. |
+| Steam Deck existing-instance continuation | PASS with the method limits below. A later probe matched the original wrapper/native process, start-time, executable, profile and session identities and the previously recorded window. Without relaunching the application or repeating the update, a fresh interval recorded 31 matching one-minute samples over 1800.056549112 monotonic seconds, from 19:55:20 to 20:25:20 UTC. One ordinary exact-window close was acknowledged, followed by observed window and original-process absence. No owner action was requested or performed during this continuation. |
+| Post-publication page checks | On November 9, 2026, after publication, the owner checked the live site in a private browser tab and reported that the page and its download links worked. Separately, ChatGPT checked the anonymous live page and downloaded and hashed the installer through both links. Those downloads matched the published Candidate 50 executable hash. The owner's page observation is not credited with ChatGPT's download-hash checks. |
+
+### Steam Deck continuation limits
+
+The continuation used external power and a temporary sleep and idle inhibitor. The inhibitor was released afterward and its remaining owned count was verified as zero. Selected saved power and lock configuration files matched before and after; this was a scoped comparison, not a global policy audit. The result does not establish uninhibited idle or sleep behavior, physical-panel visibility, brightness, DPMS or lock state.
+
+The identity matches support continuity of the original processes across the earlier observation gap. They do not establish continuous window visibility during that gap. Exact successor restart and window-opening wall times were not recorded, and exact restart-to-close uptime is not claimed. The fresh 30-minute continuation does not reconstruct or replace the missing initial samples.
+
+After the last continuation sample, the ordinary close request was acknowledged at 20:25:20.754342 UTC. Window absence was observed at 20:25:20.810953 UTC, and both original processes were absent by 20:25:21.817564 UTC. These are observed bounds, not exact individual exit times. The close helper returned zero, which is helper status rather than an independently reaped application wait status. Separately, the application-owned startup log reported native exit status zero.
+
+Both startup logs and the cleanup report were mode 600 at the initial and final checks. The application appended its 41-byte native-exit line to the original startup-log prefix; the previous log and cleanup bytes were unchanged. Raw logs, screenshots, process and window identifiers, settings, transaction records and private test tools remain private.
+
+The earlier Candidate 49 closure, initial observer failures, Error134 and WOW51900319 remain recorded and unexplained. The successful continuation does not establish their causes or rule out a future closure. No new game, controller, setup, removal or performance check was performed.
 
 ---
 
