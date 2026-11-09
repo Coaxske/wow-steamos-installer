@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
     return wowDeveloperMain(argc, argv);
 #else
     if (args.contains("--help")) {
-        std::cout << "WoW SteamOS Installer: open normally for setup; --demo previews without changes; --self-check checks the basic interface; --build-info prints build identity.\n";
+        std::cout << "Deckhand: open normally for setup; --demo previews without changes; --self-check checks the basic interface; --build-info prints build identity.\n";
         return 0;
     }
     if (args.contains("--version")) { std::cout << wow_version() << std::endl; return 0; }
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
     }
     QQuickWindow::setSceneGraphBackend("software");
     QApplication app(argc, argv);
-    app.setApplicationName("WoW SteamOS Installer");
+    app.setApplicationName("Deckhand");
     app.setOrganizationName("WoWSteamOSRust");
     app.setDesktopFileName("org.wowsteamos.Installer");
     app.setApplicationVersion(QString::fromUtf8(wow_version()));
@@ -122,6 +122,10 @@ int main(int argc, char **argv) {
             std::cerr << "Guided flow checks failed\n"; return 10;
         }
         QTimer::singleShot(1200, &app, [window, &app] {
+            QVariant signInHint;
+            if (!QMetaObject::invokeMethod(window, "checkFirstSignInHint", Q_RETURN_ARG(QVariant, signInHint)) || !signInHint.toBool()) {
+                std::cerr << "First-sign-in hint screen check failed\n"; app.exit(11); return;
+            }
             auto *back = window->findChild<QObject *>("backButton");
             auto *footer = window->findChild<QQuickItem *>("footerBar");
             if (!back || !footer) { app.exit(5); return; }
@@ -129,8 +133,8 @@ int main(int argc, char **argv) {
                 std::cerr << "Footer is outside window\n"; app.exit(8); return;
             }
             std::cout << QJsonDocument(QJsonObject{
-                {"version", QString::fromUtf8(wow_version())}, {"qml_loaded", true},
-                {"footer_present", true}, {"demo", true}, {"hardware_tested", false}
+                {"version", QString::fromUtf8(wow_version())}, {"application_name", QCoreApplication::applicationName()}, {"window_title", window->title()}, {"qml_loaded", true},
+                {"footer_present", true}, {"first_sign_in_hint", true}, {"classic_guide_mode", window->property("classicMode").toString()}, {"demo", true}, {"hardware_tested", false}
             }).toJson(QJsonDocument::Compact).constData() << std::endl;
             app.quit();
         });

@@ -1,4 +1,53 @@
-# Candidate 49 acceptance
+# Candidate 50 acceptance
+
+Candidate 50 is prepared for commit-specific review. It is not published. These checks ran on the Bazzite build machine in an isolated container with disposable profiles. No C50 Steam Deck, live GitHub update, game-session or physical-controller result is claimed.
+
+## C50 automated checks
+
+| Check | Result and limits |
+| --- | --- |
+| Formatting | PASS: cargo fmt and standalone packaging rustfmt checks. |
+| Public offline suite | PASS: 287 library tests, 41 regression tests and one public-build refusal test. |
+| Private developer offline suite | PASS: 287 library tests and 41 regression tests. |
+| Static checks and native builds | PASS: strict clippy and native compilation in both modes; source correspondence and offscreen self-checks. |
+| Portable wrapper | PASS: 14 serial checks, including five new startup-log rotation, active-window, link and lifetime checks. |
+| Public identity and setup hint | PASS: the packaged preview reports version 0.2.0-alpha.10-candidate.50, Deckhand and the exact first-sign-in hint on the game-download screen beside Open Battle.net. The hint is hidden on the install step and Home. No launcher was opened by this check. |
+| Saved guide preference | PASS: a disposable profile using the earlier application-name namespace retained its guide choice. The renamed app did not create a different preference file. |
+| Abandoned updater files | PASS in nine new focused simulated unit tests and packaged interruption checks. Owned partial downloads and staged files were removed after abandonment; repeated cleanup was harmless. Active owners or child-held activity locks, unresolved handoff/recovery files, backups, current executables, unknown content, unrelated lookalikes, replaced identities and edited sealed files were preserved. Cleanup also ran with daily checks off, without consuming the daily attempt, and deferred for an active operation. |
+| Packaged update compatibility | PASS: private C49-to-C50 and C50-to-higher-version fixtures verified signatures/checksums, retained the previous executable and restarted. These fixtures replace only the production public verifier with a separate synthetic test verifier; the higher-version fixture also changes its version. They are not live GitHub updates or the published C49 executable. |
+| Packaged recovery | PASS: a controlled pre-readiness failure restored and reopened the prior copy. An unconfirmed-successor fixture retained the verified backup and recovery records and named that backup in captured error-dialog arguments. |
+| Startup diagnostics | PASS: normal rotation, helper calls, duplicate C50 windows, an active legacy C49 window, update restart, rollback and an injected early extraction failure. The real packaged launcher recorded the injected early failure even with its outer standard error discarded. Separate current/previous logs survived. |
+| Public trust and exclusions | PASS: the actual public portable rejects the private feed's otherwise valid wrong-key signature. The existing production verifier is retained, with developer tools disabled. URL boundaries, consent, checksum/signature, no-downgrade, throttle and unfinished/active-operation checks remain in the offline suite. |
+| Source and licenses | PASS: Source.zip CRC and 1396 entries match the packaged source inputs. No dependency or runtime-component version changed. The 87-entry runtime license inventory matches the previously reviewed C49 inventory; retained runtime source/notices archives passed CRC checks. |
+| Packaged scenario total | PASS: 12 private scenarios. Network replies, Qt actions, keys and failures were simulated; file identity, locking, cryptography, replacement, restart and rollback used actual packaged programs. |
+
+## C50 build identity
+
+- Portable SHA-256: **0cb72df9ae462c51f78b8fa2fce856c1de59964165ffce50eef08a60b88090b7**
+- Source.zip SHA-256: **18704dc999f609b12dde6a020229928b3cbad32ca3e9bc781084633b12c41d62**
+- Source fingerprint: **b18cf27dd81bb33737c50f377b17a787efe34b37956293fb9ce52ca95d7eafd4**
+- Native payload SHA-256: **4e0a892c595a535928b397eab9adc199bacb81ad6e6a220c8db35323b6ae1903**
+- Build mode: public; developer tools disabled.
+
+The private test fixtures have different hashes and remain outside public files. No production private key was used for these checks. The production verifier is unchanged.
+
+## C50 limits and later live test
+
+Cleanup requires durable ownership records and matching file identities. Legacy files, an interruption before ownership registration, unknown helper-created cache content and uncertain records may leave leftovers. No name-only cleanup is attempted. Files still needed by active work or unresolved recovery are kept.
+
+Candidate 50 prevents its own helper and duplicate-window paths from erasing diagnostics and checks the existing native window lock before rotating a legacy window's log. It cannot retrofit the older Candidate 49 launcher: a rollback into C49 still uses C49's logging behavior. An unwritable or invalid profile may prevent any log from being created.
+
+The sign-in hint is wording only. The C49 first-sign-in crash and later Deck updater-window closure remain unexplained. Log preservation does not establish a cause or guarantee a fix.
+
+After review and publication, use the actual published C49 in one disposable profile per device with the normal GitHub feed: Bazzite first, then Steam Deck. Check Not now, normal close/reopen, Update now, production signature, previous and replacement hashes, restart, sampled survival over 30 minutes and ordinary close. This has not run for C50. If the window disappears, preserve both logs and last-seen/first-absent times before reopening. No repeated gameplay or controller check is part of that plan.
+
+Private QA code, raw logs, captures, settings, backups, device identifiers and handoffs are excluded from this repository and public release files. Existing games, Steam metadata, layouts and display settings were not changed by these isolated checks.
+
+---
+
+## Historical Candidate 49 acceptance
+
+The following earlier records retain their original build and method limits.
 
 Candidate 49 is a published pre-release. The production public verifier is included; the private key remains outside the project.
 

@@ -320,7 +320,7 @@ checksum = "ccf3ec651a847eb01de73ccad15eb7d99f80485de043efb2f370cd654f4ea44b"
 
 [[package]]
 name = "wow-steamos-core"
-version = "0.2.0-alpha.10-candidate.49"
+version = "0.2.0-alpha.10-candidate.50"
 dependencies = [
  "curve25519-dalek",
  "ed25519-dalek",

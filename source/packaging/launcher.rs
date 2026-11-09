@@ -2,14 +2,14 @@
 use std::{
     fs,
     io::{Read, Write},
-    os::unix::fs::{MetadataExt, OpenOptionsExt, PermissionsExt},
+    os::unix::fs::{MetadataExt, PermissionsExt},
     path::PathBuf,
     process::{Command, Stdio},
 };
 #[path = "update_handoff.rs"]
 mod updater_wrapper;
 static PAYLOAD: &[u8] = include_bytes!(env!("WOW_PAYLOAD"));
-fn run() -> Result<i32, String> {
+fn run(diagnostics: &mut Option<updater_wrapper::StartupLog>) -> Result<i32, String> {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     let portable_pin = if args.is_empty() {
         updater_wrapper::PortablePin::capture()
@@ -119,44 +119,7 @@ fn run() -> Result<i32, String> {
             println!("Runtime extracted to {}", destination.display());
             return Ok(0);
         }
-        let logdir = std::env::var_os("XDG_DATA_HOME")
-            .map(PathBuf::from)
-            .filter(|p| p.is_absolute())
-            .unwrap_or_else(|| {
-                PathBuf::from(std::env::var_os("HOME").unwrap_or_default()).join(".local/share")
-            })
-            .join("wow-steamos-rust");
         let preview = args.iter().any(|a| a == "--demo" || a == "--self-check");
-        let logpath = logdir.join("startup.log");
-        let logfile = if preview {
-            None
-        } else {
-            if !logdir.is_absolute() {
-                return Err("HOME or XDG_DATA_HOME must identify an absolute folder".into());
-            }
-            fs::create_dir_all(&logdir).map_err(|e| e.to_string())?;
-            if fs::symlink_metadata(&logdir)
-                .map_err(|e| e.to_string())?
-                .file_type()
-                .is_symlink()
-            {
-                return Err("Setup data folder must not be a symbolic link".into());
-            }
-            fs::set_permissions(&logdir, fs::Permissions::from_mode(0o700))
-                .map_err(|e| e.to_string())?;
-            // O_NOFOLLOW on Linux: never truncate a file reached through a log symlink.
-            let file = fs::OpenOptions::new()
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .mode(0o600)
-                .custom_flags(0x20000)
-                .open(&logpath)
-                .map_err(|e| e.to_string())?;
-            file.set_permissions(fs::Permissions::from_mode(0o600))
-                .map_err(|e| e.to_string())?;
-            Some(file)
-        };
         if startup.as_ref().is_some_and(|s| s.aborted()) {
             return Err("Update startup was cancelled before the interface opened".into());
         }
@@ -189,8 +152,9 @@ fn run() -> Result<i32, String> {
         if let Some(session) = &updater {
             session.configure(&mut cmd);
         }
-        if let Some(file) = logfile {
-            cmd.stderr(file);
+        if let Some(log) = diagnostics.as_ref() {
+            log.record("Starting Deckhand interface.")?;
+            cmd.stderr(log.child_stderr()?);
         }
         let mut child = cmd
             .spawn()
@@ -201,12 +165,19 @@ fn run() -> Result<i32, String> {
         )
         .map_err(|e| e.to_string())?;
         let status = updater_wrapper::wait_native(&mut child, startup.as_ref())?;
+        if let Some(log) = diagnostics.as_ref() {
+            log.record(&format!("Native interface exited: {status}."))?;
+        }
         if updater_wrapper::is_update_exit(status.code()) {
             let session = updater
                 .as_ref()
                 .ok_or("Verified update restart had no bound portable session")?;
             if !session.has_request()? {
                 return Err("Verified update restart had no owned request. The current portable is unchanged.".into());
+            }
+            if let Some(log) = diagnostics.as_mut() {
+                log.record("Verified update restart requested.")?;
+                log.release_for_update();
             }
             update_finished = session.finish()?;
             return Ok(0);
@@ -221,12 +192,14 @@ fn run() -> Result<i32, String> {
             if preview {
                 return Err("Preview/self-check failed. See terminal output.".into());
             }
-            let details = fs::read_to_string(&logpath).unwrap_or_default();
-            return Err(format!(
-                "Setup could not start or stopped unexpectedly.\n\n{}\n\nStartup log: {}",
-                details.chars().take(1500).collect::<String>(),
-                logpath.display()
-            ));
+            if let Some(log) = diagnostics.as_ref() {
+                return Err(format!(
+                    "Setup could not start or stopped unexpectedly.\n\n{}\n\nStartup log: {}",
+                    log.excerpt(),
+                    log.path().display()
+                ));
+            }
+            return Err("The application stopped unexpectedly. See terminal output.".into());
         }
         Ok(0)
     })();
@@ -246,9 +219,20 @@ fn run() -> Result<i32, String> {
     }
 }
 fn main() {
-    match run() {
+    let mut diagnostics = None;
+    let result = match updater_wrapper::StartupLog::open(std::env::args_os().nth(1).is_none()) {
+        Ok(log) => {
+            diagnostics = log;
+            run(&mut diagnostics)
+        }
+        Err(e) => Err(e),
+    };
+    match result {
         Ok(code) => std::process::exit(code),
         Err(message) => {
+            if let Some(log) = diagnostics.as_ref() {
+                let _ = log.record(&message);
+            }
             eprintln!("{message}");
             if std::env::args_os()
                 .nth(1)
@@ -266,18 +250,13 @@ fn main() {
                 std::process::exit(1);
             }
             let shown = Command::new("kdialog")
-                .args(["--title", "WoW SteamOS Installer", "--error", &message])
+                .args(["--title", "Deckhand", "--error", &message])
                 .status()
                 .map(|s| s.success())
                 .unwrap_or(false);
             if !shown {
                 let _ = Command::new("zenity")
-                    .args([
-                        "--error",
-                        "--title=WoW SteamOS Installer",
-                        "--text",
-                        &message,
-                    ])
+                    .args(["--error", "--title=Deckhand", "--text", &message])
                     .status();
             }
             std::process::exit(1);

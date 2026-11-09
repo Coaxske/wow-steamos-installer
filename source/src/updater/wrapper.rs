@@ -361,7 +361,7 @@ fn commit(data: &Path, ctx: &Context, key: [u8; 32]) -> Result<Value> {
     if pin(&staged_path)? != r.staged.pin {
         return Err("Staged portable changed before build query".into());
     }
-    let info = super::transport::build_info(&r.staged.path)?;
+    let info = super::transport::build_info(data, &r.staged.path)?;
     ctx.parent_unchanged()?;
     if pin(&staged_path)? != r.staged.pin {
         return Err("Staged portable changed after build query".into());

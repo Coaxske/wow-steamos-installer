@@ -10,7 +10,7 @@ ApplicationWindow {
     width: 1100; height: 740
     minimumWidth: 780; minimumHeight: 540
     color: "#101825"
-    title: "WoW SteamOS Installer · " + Qt.application.version
+    title: "Deckhand · " + Qt.application.version
     font.family: "Sans Serif"
     font.pixelSize: 16
     palette.window: "#101825"
@@ -195,6 +195,24 @@ ApplicationWindow {
             return null;
         }
         var target=seek(root);if(target)target.forceActiveFocus();else backButton.forceActiveFocus();
+    }
+    function checkFirstSignInHint() {
+        // The normal packaged self-check exercises this actual setup screen in
+        // preview mode only. It never opens Battle.net or applies setup.
+        if(!backend.demo)return false;
+        var savedSession=session,savedId=selectedId,savedPage=page;
+        session=({state:{installations:[{id:"hint-check",stage:"games",editions:["era"]}]}});
+        selectedId="hint-check";page="games";
+        var shown=setupStep==="download" && firstSignInHint.visible
+            && setupBattleNetAction.visible && setupBattleNetAction.text==="Open Battle.net"
+            && firstSignInHint.text==="If Battle.net shows \"The application encountered an unexpected error\" right after you sign in, close the message and choose Open Battle.net again. This can happen the first time.";
+        session=({state:{installations:[{id:"hint-check",stage:"launcher_install",editions:["era"]}]}});
+        var hiddenDuringInstall=setupStep==="launcher" && !firstSignInHint.visible;
+        session=({state:{installations:[{id:"hint-check",stage:"games",editions:["era"]}]}});
+        page="home";
+        var hiddenAtHome=!firstSignInHint.visible;
+        session=savedSession;selectedId=savedId;page=savedPage;
+        return shown && hiddenDuringInstall && hiddenAtHome;
     }
     function checkGuidance(){
         return Guide.defaultProton([{name:"Cachy-Proton"},{name:"proton_11"}])==="proton_11"
@@ -422,7 +440,7 @@ ApplicationWindow {
     header: Rectangle {
         height:62;visible:height>0;color:"#18212c"
         RowLayout{anchors.fill:parent;anchors.margins:18
-            Label{text:"WoW SteamOS Installer";color:"#f1f5fb";font.pixelSize:22;font.bold:true}
+            Label{text:"Deckhand";color:"#f1f5fb";font.pixelSize:22;font.bold:true}
             Item{Layout.fillWidth:true}
             Label{text:backend.demo?"Preview":Qt.application.version;color:"#a7b5c5";font.pixelSize:13}
         }
@@ -615,7 +633,8 @@ ApplicationWindow {
                         Label{text:setupStep==="launcher"?"Install Battle.net":setupStep==="download"?"Install your games":setupStep==="restore"?"Restore your settings":setupStep==="complete"?"Your games":"Your Battle.net Steam tile";font.pixelSize:28;font.bold:true;color:"#f2f6fc"}
                         InfoText{Layout.fillWidth:true;text:setupStep==="launcher"?"Open the installer below. Finish installing Battle.net, then close Battle.net and return here.":setupStep==="download"?(games.length?"Installed games were found. Check them below to prepare your Steam shortcuts. Open Battle.net if you need updates or another edition.":"Open Battle.net, sign in, and download the editions you chose. Use the default install folder. When downloads finish, close Battle.net and return here."):setupStep==="restore"?"Your addon and game settings were saved before reinstalling. Restore them before opening the games, or start with new settings and keep the backup for later.":setupStep==="complete"?"Open Battle.net below, choose an installed edition and press Play.":"Open Battle.net from Steam. Choose the installed edition in Battle.net and press Play. Addon-manager integration is deferred for this one-tile release. Existing addons and managers are preserved."}
                         InfoText{visible:setupStep==="launcher"||setupStep==="download";Layout.fillWidth:true;text:"Keep Steam open for Deck trackpad and keyboard controls. Battle.net uses mouse/touch input. In Gaming Mode use Gaming Mode pointer setup for ordinary trackpad mouse/click; Steam-held pointer is only a temporary workaround. KDE Connect also works for text. Sign in only inside Battle.net; remembered sign-in is optional there. If Battle.net lists multiple WoW accounts, select the account that owns the intended edition before pressing Play. This installer never asks for passwords or authentication codes.";font.pixelSize:14}
-                        ActionButton{visible:setupStep==="launcher"||setupStep==="download";text:setupStep==="launcher"?"Open Battle.net installer":"Open Battle.net";Layout.fillWidth:true;primary:true;enabled:!backend.busy&&!!launcherTile();onClicked:launchBattleNet()}
+                        ActionButton{id:setupBattleNetAction;objectName:"setupBattleNetAction";visible:setupStep==="launcher"||setupStep==="download";text:setupStep==="launcher"?"Open Battle.net installer":"Open Battle.net";Layout.fillWidth:true;primary:true;enabled:!backend.busy&&!!launcherTile();onClicked:launchBattleNet()}
+                        InfoText{id:firstSignInHint;objectName:"firstSignInHint";visible:setupStep==="download";Layout.fillWidth:true;text:"If Battle.net shows \"The application encountered an unexpected error\" right after you sign in, close the message and choose Open Battle.net again. This can happen the first time."}
                         ActionButton{visible:setupStep==="launcher";text:"Battle.net is installed — continue";Layout.fillWidth:true;enabled:!backend.busy;onClicked:call("review_launcher",{id:selectedId})}
                         ActionButton{visible:setupStep==="download";text:downloadsChecked?"Continue with these games":games.length?"Check games and add Steam shortcuts":"Downloads finished — check games";Layout.fillWidth:true;enabled:!backend.busy;onClicked:checkDownloads()}
                         InfoText{visible:setupStep==="download"&&downloadsChecked&&missingDownloads.length>0;Layout.fillWidth:true;text:"Still missing: "+missingDownloads.map(editionName).join(", ")+". Finish these downloads, or continue with the games already installed."}

@@ -13,3 +13,7 @@ Only developer mode packages GStreamer capture plugins/scanner and the English O
 The portable uses a private 0700 cache directory, does not require FUSE, and contains no Python runtime. Child Steam/browser launches restore the original library/plugin environment. Preserve matching source, dependency sources, licenses, notices, version, mode and checksums. Exclude device settings, credentials, logs, captures, private helpers and backups.
 
 --self-check renders a labeled installer preview; it does not establish live Steam, device controls or gameplay acceptance. --demo also uses preview state. Developer-only detailed checks and screenshots require an explicit developer build.
+
+## Private startup diagnostics
+
+Normal launches use the existing wow-steamos-rust profile. Candidate 50 keeps one previous startup diagnostic as startup.previous.log before creating startup.log. Helper invocations do not rotate these logs. A separate normal window must not replace the active window's diagnostic. A verified update successor starts its own diagnostic in the same profile. Keep both logs private; their presence alone does not explain a process exit.
