@@ -23,4 +23,4 @@
 - The game-download step includes a first-sign-in retry hint beside Open Battle.net. It does not change Battle.net launch behavior or diagnose the earlier crash.
 - Ownership-checked cleanup targets abandoned update temporary files, while retaining active, recovery-referenced, unrecognized or changed files and backups.
 - Normal startup attempts to retain one previous private startup log. Logging failures do not by themselves block startup. Restarted copies write their own diagnostics when available; helpers and uncertain native window locks leave the logs untouched.
-- Candidate 50 live GitHub updating and Steam Deck acceptance are not yet established. The release review separates automated and private simulated checks from earlier actual-device evidence.
+- Updating from Candidate 49 to Candidate 50 was tested on Bazzite and Steam Deck and worked on both. The restarted window stayed open through a 30-minute check and closed normally. Candidate 50 game and controller checks have not been run. Details and limits are in ACCEPTANCE-SUMMARY.md.
