@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Play World of Warcraft on Steam Deck and Bazzite.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Deckhand | World of Warcraft on Steam Deck and Bazzite</title>
+<style>:root{color-scheme:light dark;--bg:#f4f7fa;--card:#fff;--ink:#142334;--muted:#46566a;--link:#075785;--accent:#006b60;--line:#d5dfe8}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:1rem/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow-wrap:anywhere}main,footer{width:min(70rem,calc(100% - 2rem));margin:auto}main{padding:3rem 0 1rem}.intro{display:grid;gap:1.5rem;align-items:start}h1{font-size:clamp(2.8rem,7vw,4.5rem);letter-spacing:-.045em;line-height:1.05;margin:0 0 1rem}h2{font-size:1.5rem;line-height:1.3;margin:0 0 1rem}p{margin:.7rem 0 1rem}a{color:var(--link)}a:focus-visible{outline:3px solid #bd6900;outline-offset:4px}.card{background:var(--card);border:1px solid var(--line);border-radius:1rem;padding:clamp(1.1rem,3vw,2rem)}section.card{margin-top:1.5rem}.intro>.card{margin-top:0}.lead{font-size:1.25rem}.notice{color:var(--muted)}.download{display:inline-flex;align-items:center;justify-content:center;min-height:3rem;padding:.8rem 1.5rem;border-radius:.65rem;background:var(--accent);color:#fff;font-weight:700;text-decoration:none}.filename{font-size:.9rem;color:var(--muted)}li{padding-left:.25rem;margin:.65rem 0}ul,ol{padding-left:1.35rem}footer{padding:1rem 0 3rem;color:var(--muted)}@media(min-width:52rem){.intro{grid-template-columns:1.15fr 1fr;gap:2.5rem}}@media(prefers-color-scheme:dark){:root{--bg:#101923;--card:#182635;--ink:#f0f5fa;--muted:#becbd8;--link:#94d8ff;--accent:#087d70;--line:#35495d}}</style>
+</head>
+<body>
+<main>
+<div class="intro">
+<header>
+<h1>Deckhand</h1>
+<p class="lead">Play World of Warcraft on Steam Deck and Bazzite.</p>
+<p>Deckhand installs Blizzard's Battle.net app, adds one Battle.net button to your Steam library, and makes your game and addon folders easy to find. It is free, and its source code is public. Not affiliated with Blizzard or Valve.</p>
+<p class="notice"><strong>This is an early test version.</strong> [STATUS LINE]</p>
+<p><a class="download" href="https://github.com/Coaxske/wow-steamos-installer/releases/download/v0.2.0-alpha.10-candidate.49/WoW-SteamOS-Rust-Linux-x86_64">Download installer</a></p>
+<p class="filename">WoW-SteamOS-Rust-Linux-x86_64</p>
+</header>
+<section class="card" aria-labelledby="safety"><h2 id="safety">Is it safe?</h2>
+<ul>
+<li>You sign in only inside Battle.net. Deckhand never asks for your password or authenticator codes.</li>
+<li>It backs up Battle.net&#x27;s settings before changing them. It can also remove what it set up, keeping a backup of your addon and game settings.</li>
+<li>It checks for its own updates at most once a day. You can turn that off. An update installs only when you choose Update now, after its digital signature is verified.</li>
+<li>Its update check does not send your game settings, account names or installer records.</li>
+</ul></section>
+</div>
+<section class="card" aria-labelledby="install"><h2 id="install">Download and install</h2>
+<p>You need Steam as it comes on Steam Deck or Bazzite (the Flatpak version of Steam is not supported), an internet connection, and a Blizzard account with access to the game you want to play.</p>
+<ol>
+<li>On Steam Deck, press the Steam button, choose Power, then Switch to Desktop. On Bazzite, use the desktop.</li>
+<li>Open Steam and sign in.</li>
+<li><a href="https://github.com/Coaxske/wow-steamos-installer/releases/download/v0.2.0-alpha.10-candidate.49/WoW-SteamOS-Rust-Linux-x86_64">Download WoW-SteamOS-Rust-Linux-x86_64</a>. This is the only file you need to run. The other release files contain instructions, checksums, licenses and source code.</li>
+<li>Keep the file somewhere permanent so you can reopen it for repair or removal.</li>
+<li>Right-click the file, choose Properties, open the Permissions tab, check Is executable, then click OK.</li>
+<li>Open it and follow the instructions. Steam may close and reopen during setup.</li>
+<li>Sign in only inside Battle.net. The installer never asks for your password or authenticator codes.</li>
+</ol>
+<p>Setup asks you to approve Battle.net&#x27;s Close after Play setting. Before changing the setting, it backs up the original Battle.net settings. An already-enabled setting can be confirmed without changing it. This affects the selected installation in both Desktop and Gaming Mode.</p>
+</section>
+<section class="card" aria-labelledby="checks"><h2 id="checks">What was checked</h2>
+<ul>
+<li>Steam Deck with Battle.net and WoW already set up: checked in Game Mode and Desktop Mode (Candidate 48).</li>
+<li>Brand-new installation: [FRESH-INSTALL RESULT].</li>
+<li>Updates from GitHub: installed correctly on Bazzite and Steam Deck (Candidate 49). On the Deck, the updated window later closed unexpectedly; the cause is not known.</li>
+</ul>
+<p>Read the <a href="https://github.com/Coaxske/wow-steamos-installer/blob/main/ACCEPTANCE-SUMMARY.md">detailed test records and limits</a>.</p>
+</section>
+</main>
+<footer><a href="https://github.com/Coaxske/wow-steamos-installer">View the repository and source code</a></footer>
+</body>
+</html>
