@@ -1,3 +1,54 @@
+# Candidate 49 development acceptance
+
+Candidate 49 is not released. The production public verifier is configured; the private key is outside the project.
+
+On a Steam Deck that already had Battle.net and WoW set up, Candidate 49 found both. These have not been checked on a Steam Deck yet: the new update buttons, the update on/off switch, and closing the installer normally. Updating automatically from GitHub has not been confirmed yet. No Candidate 49 game-session or physical-controller pass is claimed.
+
+## Automated development checks
+
+These checks ran on the Bazzite build machine in an isolated container, using disposable files and records. They did not use the working Steam installation, game prefix or Blizzard account.
+
+| Check | Result and limits |
+| --- | --- |
+| Required formatting and offline tests | PASS: 278 library tests, 41 regression tests and one public-build refusal test. |
+| Public native build | PASS: strict clippy in both public and developer modes, both native builds, source correspondence and offscreen native self-check. |
+| Portable handoff checks | PASS: nine serial checks, including READY/exit binding, retained recovery, cache-parent aliases and refusal of a final runtime symlink. |
+| Packaged private-feed update | PASS: simulated feed and synthetic compiled test key; actual checksum/signature, staging, atomic replacement, restart and prior-version backup. A second case used an aliased cache parent. |
+| Packaged failed-start rollback | PASS: controlled candidate exit before readiness restored the original executable and inode, then reopened it. No real service or game was stopped. |
+| Packaged refusal paths | PASS: incorrect checksum, incorrect signature, interrupted download and unwritable portable directory kept the original usable. |
+| Newer releases with missing verification files | PASS in simulated packaged checks: missing signature or checksum kept the newer-release notice and canonical page available, disabled Update now and made no asset download. Offline checks also cover foreign or duplicate asset metadata and manual-only cache defaults. |
+| Packaged ordinary choices | PASS: Not now kept Home usable; opt-out persisted after reopening; offline failure remained silent and did not repeat within the day. |
+| URL and release policy | Offline checks cover numeric ordering, prereleases, drafts, no downgrade, daily throttling, opt-out, busy or unfinished workflows, repository URL boundaries and redirect/header rejection. No live GitHub transport test is claimed. |
+| New dependencies | Eighteen exact-version additions were checked against official archive metadata and complete per-file manifests. The original nineteen packages remain unchanged from the verified C48 baseline; their sparse inherited manifests are not a new complete upstream-file audit. Notices are included. |
+| A: newest previous-installer retention | PASS: two successive authenticated private updates used the same Home and target. The newest verified previous copy and record remained; the older completed pair was removed. An unrelated lookalike pair retained its bytes, inode and mode. Offline tests preserve changed-inode backups and reject missing or wrong-nonce readiness. |
+| B: unconfirmed startup recovery | PASS in a private proof-collision fixture: rollback stayed blocked, the current and previous portable bytes remained, and the requested error-dialog arguments named the actual verified backup path with safe recovery steps and the canonical releases URL. This is simulated dialog capture, not physical display acceptance. |
+| C: failed Off save | PASS: a read-only fixture settings directory made the ordinary checkbox save fail. A fresh readback restored the visible persisted setting, showed a short error and left the notice undiscarded. A later ordinary Off save and reopening agreed on disabled checks. |
+| D: unfinished versus active work | PASS: a held operation lock blocked the check and installation, with no network request or daily-attempt consumption. Reopening the same idle unfinished fixture fetched metadata once, kept the release-page link, disabled Update now and returned the exact required backend refusal. A simulated saved-stage completion followed by normal init/status handlers refreshed readiness without another feed request. |
+| Configured public verifier | PASS: the intended production public key is present in the actual packaged native executable; the test verifier is absent. The actual public portable rejects the private feed's otherwise valid test-key signature and keeps its original bytes. Missing signatures, tampered bytes and wrong-key files remain refused. The production private key was not used in these checks. |
+| Actual C49 Deck command-line identity and discovery | Partial scoped check: verified public-mode build and backend discovery of the existing Battle.net/WoW files. This is not Home/control evidence. |
+| Actual C49 normal invocation and window | One normal no-argument invocation and one matching desktop window were recorded. Process and KWin window metadata only; no Home-render or switch proof. No person observed. |
+| Actual C49 update attempt | A genuine saved attempt appeared with enabled=true and no candidate. Attempt/budget evidence only; successful HTTP, notice and live updating are unverified. History is preserved. |
+| Actual C49 Home controls, preference persistence and normal exit | UNVERIFIED. The existing accessibility route did not identify native-owned controls; no switch action or reopen test ran. The report ended with one owned window open. Hand check is deferred; no tests queued. |
+| Actual C49 preservation | Earlier bounded comparison: 52 of 54 files byte-identical, with wrapper startup-log truncation and an app-info-only Steam metadata change as exceptions; writer/cause of that metadata change unknown. No new full comparison after the window launch, full game-tree equality or live layout proof. |
+| Actual C49 games or physical input | NOT RUN. Earlier C48 results below remain labeled C48. |
+| Production signing and final release package | Public verifier configured. Live signed-release testing and final release approval are pending. No private key is included in the build or source. These development snapshots are not final release artifacts. |
+
+The positive update and rollback checks start from a copy of this candidate with a separate known test public key compiled in. The C50 and C51 targets are retained private fixtures from the earlier updater checks, with their original source and method limits. The actual public candidate is separately checked for rejection of those test-key signatures. Their hashes differ from the public-mode development snapshot. Network replies and Qt actions were simulated privately. The two-update fixture advanced only its test processes' realtime clock; it did not edit saved throttle records or change the host clock. No private feed override, synthetic key, QA driver, log, capture, settings or backup is part of the public build.
+
+Daily checks and the release-page link remain available for idle unfinished saved setups, including older copies. Update now stays disabled and the backend refuses installation until the setup is finished or removed. Active operation locks block both checks and installation without consuming the daily attempt. Unverified child exit prevents automatic rollback; the backup and recovery records are retained for manual reopening. Normal display and sleep policy is unchanged.
+
+## Public-mode development snapshot, not a release
+
+Portable SHA-256: **d17151020ccce00d7fd2e384b33e7ec7c437549552795079a50bf2084a71fd5d**.
+
+Matching Source.zip SHA-256: **1c03e2443d4ae8f8802ad418e443d968836037bc3ec6a6811846a214528b8e7f**.
+
+Source fingerprint: **7f137a4546a3101b799e923927d4335e9bde993cf76c48d18d5feb7e0d721775**.
+
+These identify the private development snapshot containing the production public verifier. It has not been signed with the production private key and is not a released Candidate 49 installer. A recovery-test fixture was corrected after CI exposed an inode-reuse assumption. The replacement is now created before the original is replaced. Production recovery code is unchanged, and the corrected full suite passes. Earlier private packaged results retain their original simulation limits.
+
+---
+
 # Candidate 48 acceptance
 
 Candidate 48 was tested on a Steam Deck that already had Battle.net and WoW set up. A brand-new installation has not been tested with this version yet. Bazzite testing is in progress.

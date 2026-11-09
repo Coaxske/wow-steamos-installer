@@ -1643,6 +1643,15 @@ pub(crate) fn host_command(program: &str) -> Command {
         }
     }
     opener.env_remove("WOW_BUNDLED");
+    for (key, _) in std::env::vars_os() {
+        if key
+            .to_str()
+            .map(|k| k.starts_with("WOW_UPDATE_") || k.starts_with("WOW_PORTABLE_"))
+            .unwrap_or(false)
+        {
+            opener.env_remove(key);
+        }
+    }
     opener
 }
 fn launch(ctx: &Context, req: &Json) -> Result<Json> {
@@ -1816,6 +1825,17 @@ fn dispatch_inner(req: Json) -> Result<Json> {
     #[cfg(any(test, feature = "developer-tools"))]
     if ["device_run", "device_result", "device_mark"].contains(&action) {
         return crate::device_tests::dispatch(&req);
+    }
+    if action.starts_with("updater_") {
+        let home = std::env::var_os("HOME")
+            .map(PathBuf::from)
+            .ok_or("HOME is not set")?;
+        let data = std::env::var_os("XDG_DATA_HOME")
+            .map(PathBuf::from)
+            .filter(|p| p.is_absolute())
+            .unwrap_or_else(|| home.join(".local/share"))
+            .join("wow-steamos-rust");
+        return crate::updater::dispatch(&data, &req);
     }
     let mut ctx = Context::open()?;
     #[cfg(any(test, feature = "developer-tools"))]

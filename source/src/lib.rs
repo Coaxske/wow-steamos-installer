@@ -15,6 +15,7 @@ mod state_merge;
 pub mod steam;
 mod steam_process;
 pub mod transaction;
+pub mod updater;
 pub mod vdf;
 pub mod workflow;
 
@@ -38,7 +39,7 @@ pub fn cancelled() -> Result<()> {
 /// # Safety
 /// `request` must be null or point to a readable NUL-terminated UTF-8 buffer
 /// that remains valid for this synchronous call. Free the result exactly once
-/// using `wow_free`. The caller serializes requests.
+/// using `wow_free`. Ordinary setup requests are serialized; the separately locked updater uses its own cancellation state.
 #[no_mangle]
 pub unsafe extern "C" fn wow_request(request: *const c_char) -> *mut c_char {
     let result = std::panic::catch_unwind(|| {
@@ -72,6 +73,15 @@ pub unsafe extern "C" fn wow_free(value: *mut c_char) {
         drop(CString::from_raw(value));
     }
 }
+#[no_mangle]
+pub extern "C" fn wow_update_cancel() -> i32 {
+    i32::from(updater::cancel())
+}
+#[no_mangle]
+pub extern "C" fn wow_update_reset_cancel() {
+    updater::reset_cancel();
+}
+
 #[no_mangle]
 pub extern "C" fn wow_cancel() {
     CANCEL.store(true, Ordering::Relaxed);

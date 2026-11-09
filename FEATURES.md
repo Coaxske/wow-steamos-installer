@@ -1,4 +1,4 @@
-# Candidate 48 features and limits
+# Candidate 49 development features and limits
 
 - One installer-managed Battle.net button per selected installation. Choose Retail, Classic Era or experimental Forever inside Battle.net.
 - Guided setup, missing-button repair, reviewed reuse of an existing setup, and removal with separately verified settings backups.
@@ -13,5 +13,8 @@
 - No automatic edition routing, extra edition buttons, addon installation or addon updates.
 - Published Candidate 48 was tested on an existing Steam Deck setup in Game Mode: Retail and Classic Era automatic main-launcher exit while the same game survived, physical pointer/menu input and normal quit to the same Battle.net button. Desktop discovery, Repair and access-link removal/recreation were checked with recorded limits.
 - Forever was personally observed working correctly. Its initial automatic launcher-exit point and interrupted later session are separate evidence, not one uninterrupted instrumented cycle. It remains experimental.
-- Optional fresh setup was not run. Bazzite checks used a read-only scan and simulated interface tests before Apply; Bazzite gameplay testing remains in progress.
+- Fresh installation was not part of the device check. Bazzite checks used a read-only scan and simulated interface tests before Apply; Bazzite gameplay testing remains in progress.
 - Exact build identities, earlier results and method limits are listed in ACCEPTANCE-SUMMARY.md.
+
+- Installer update checks, explicit Update now consent, checksum and signature verification, and backup/rollback passed offline and simulated private-feed checks. The production public verifier is configured; private checks use separate test keys. Idle unfinished setups permit release checks and manual downloads; automatic installation waits until they are finished or removed. A live automatic update from GitHub remains unconfirmed.
+- On a Steam Deck that already had Battle.net and WoW set up, Candidate 49 found both. These have not been checked on a Steam Deck yet: the new update buttons, the update on/off switch, and closing the installer normally. Updating automatically from GitHub has not been confirmed yet. The gameplay and controller results above remain Candidate 48 evidence.

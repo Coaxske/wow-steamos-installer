@@ -6,9 +6,16 @@ use std::{
     path::PathBuf,
     process::{Command, Stdio},
 };
+#[path = "update_handoff.rs"]
+mod updater_wrapper;
 static PAYLOAD: &[u8] = include_bytes!(env!("WOW_PAYLOAD"));
 fn run() -> Result<i32, String> {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
+    let portable_pin = if args.is_empty() {
+        updater_wrapper::PortablePin::capture()
+    } else {
+        None
+    };
     let mut random = [0; 16];
     fs::File::open("/dev/urandom")
         .and_then(|mut f| f.read_exact(&mut random))
@@ -35,6 +42,11 @@ fn run() -> Result<i32, String> {
         return Err("Runtime cache must not be a symbolic link".into());
     }
     fs::set_permissions(&base, fs::Permissions::from_mode(0o700)).map_err(|e| e.to_string())?;
+    let startup = if args.is_empty() {
+        updater_wrapper::Startup::read(&base)?
+    } else {
+        None
+    };
     let uid = fs::metadata(&base).map_err(|e| e.to_string())?.uid();
     for entry in fs::read_dir(&base).map_err(|e| e.to_string())?.flatten() {
         let p = entry.path();
@@ -45,6 +57,9 @@ fn run() -> Result<i32, String> {
             || meta.uid() != uid
             || !entry.file_name().to_string_lossy().starts_with("run-")
         {
+            continue;
+        }
+        if updater_wrapper::retained_recovery(&p) {
             continue;
         }
         if let Ok(text) = fs::read_to_string(p.join("processes")) {
@@ -65,6 +80,7 @@ fn run() -> Result<i32, String> {
     fs::create_dir(&dir).map_err(|e| e.to_string())?;
     fs::set_permissions(&dir, fs::Permissions::from_mode(0o700)).map_err(|e| e.to_string())?;
     fs::write(dir.join("processes"), std::process::id().to_string()).map_err(|e| e.to_string())?;
+    let mut update_finished = false;
     let result = (|| {
         let mut tar = Command::new("tar")
             .args(["-xzf", "-", "--no-same-owner", "-C"])
@@ -141,6 +157,17 @@ fn run() -> Result<i32, String> {
                 .map_err(|e| e.to_string())?;
             Some(file)
         };
+        if startup.as_ref().is_some_and(|s| s.aborted()) {
+            return Err("Update startup was cancelled before the interface opened".into());
+        }
+        let updater = if args.is_empty() {
+            portable_pin.and_then(|pin| updater_wrapper::Session::bind(pin, &dir, &suffix))
+        } else {
+            None
+        };
+        if startup.as_ref().is_some_and(|s| s.aborted()) {
+            return Err("Update startup was cancelled before the interface opened".into());
+        }
         let mut cmd = Command::new(dir.join("bin/wow-steamos"));
         cmd.args(&args).env("WOW_BUNDLED", "1");
         for key in [
@@ -158,6 +185,10 @@ fn run() -> Result<i32, String> {
             .env("QT_PLUGIN_PATH", dir.join("plugins"))
             .env("QML2_IMPORT_PATH", dir.join("qml"))
             .env("QML_IMPORT_PATH", dir.join("qml"));
+        updater_wrapper::clear_context(&mut cmd, true);
+        if let Some(session) = &updater {
+            session.configure(&mut cmd);
+        }
         if let Some(file) = logfile {
             cmd.stderr(file);
         }
@@ -169,7 +200,17 @@ fn run() -> Result<i32, String> {
             format!("{} {}", std::process::id(), child.id()),
         )
         .map_err(|e| e.to_string())?;
-        let status = child.wait().map_err(|e| e.to_string())?;
+        let status = updater_wrapper::wait_native(&mut child, startup.as_ref())?;
+        if updater_wrapper::is_update_exit(status.code()) {
+            let session = updater
+                .as_ref()
+                .ok_or("Verified update restart had no bound portable session")?;
+            if !session.has_request()? {
+                return Err("Verified update restart had no owned request. The current portable is unchanged.".into());
+            }
+            update_finished = session.finish()?;
+            return Ok(0);
+        }
         // JSON callers consume the engine's structured refusal and exit code.
         // A modal startup dialog would hide ordinary safe refusals and block
         // unattended callers until someone dismisses it.
@@ -189,17 +230,39 @@ fn run() -> Result<i32, String> {
         }
         Ok(0)
     })();
-    if dir.exists() {
+    let retained = !update_finished && updater_wrapper::retained_recovery(&dir);
+    if dir.exists() && !retained {
         let _ = fs::remove_dir_all(&dir);
     }
-    result
+    if retained {
+        result.map_err(|e| {
+            format!(
+                "{e}\n\nUpdate recovery files retained at: {}",
+                dir.display()
+            )
+        })
+    } else {
+        result
+    }
 }
 fn main() {
     match run() {
         Ok(code) => std::process::exit(code),
         Err(message) => {
             eprintln!("{message}");
-            if std::env::args_os().nth(1).map(|a| a == "--engine-json").unwrap_or(false) {
+            if std::env::args_os()
+                .nth(1)
+                .map(|a| a == "--engine-json")
+                .unwrap_or(false)
+            {
+                std::process::exit(1);
+            }
+            let first = std::env::args_os().nth(1);
+            if updater_wrapper::suppress_startup_dialog()
+                || first.as_deref().is_some_and(|a| {
+                    a == "--engine-json" || a == "--build-info" || a == "--version" || a == "--help"
+                })
+            {
                 std::process::exit(1);
             }
             let shown = Command::new("kdialog")

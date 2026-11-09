@@ -1,4 +1,6 @@
 #include <QSettings>
+#include <QStringList>
+#include <QRegularExpression>
 #include "Bridge.h"
 #include <QGuiApplication>
 #include <QClipboard>
@@ -19,13 +21,14 @@
 #include <QFile>
 #include <QProcessEnvironment>
 #include <QtConcurrent>
-extern "C" {char *wow_request(const char*);void wow_free(char*);void wow_cancel();void wow_reset_cancel();int wow_steam_state();
+extern "C" {char *wow_request(const char*);void wow_free(char*);void wow_cancel();void wow_reset_cancel();int wow_update_cancel();void wow_update_reset_cancel();int wow_steam_state();
 #if WOW_ENABLE_DEVELOPER_TOOLS
 char *wow_steam_snapshot();
 #endif
 }
 static int steamDesktopRunning();
 Bridge::Bridge(bool demo,QObject *parent,bool selfCheck):QObject(parent),m_selfCheck(selfCheck),m_demo(demo){
+ m_startupPending=!demo&&!selfCheck&&qEnvironmentVariableIsSet("WOW_UPDATE_STARTUP_ACK");
  m_timer.setInterval(16);connect(&m_timer,&QTimer::timeout,this,&Bridge::pollInput);
  connect(&m_steamWorker,&QFutureWatcher<int>::finished,this,[this]{const int state=m_steamWorker.result();m_steamKnown=state>=0;m_steamPresent=state>0;m_steamError=state<0;m_probePending=false;
 #if WOW_ENABLE_DEVELOPER_TOOLS
@@ -35,7 +38,7 @@ if(m_trace)m_trace->write("probe_applied",{{"sequence",int(m_probeSequence)},{"c
  qApp->installEventFilter(this);
  if(!demo)setDirectInput(true);
 }
-Bridge::~Bridge(){m_steamWorker.waitForFinished();wow_cancel();m_worker.waitForFinished();closeController();if(m_direct)SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);}
+Bridge::~Bridge(){wow_update_cancel();m_steamWorker.waitForFinished();wow_cancel();m_worker.waitForFinished();m_updateWorker.waitForFinished();closeController();if(m_direct)SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);}
 static QVariantMap repairResponse(QVariantMap response,const QVariantMap &arguments){
  if(arguments.contains("_registration_generation"))response["registration_generation"]=arguments.value("_registration_generation");
  if(arguments.contains("_pointer_refresh"))response["pointer_refresh"]=arguments.value("_pointer_refresh");
@@ -48,12 +51,13 @@ void Bridge::completeSelfCheckRequest(const QString &action,const QVariantMap &r
  m_busy=false;emit busyChanged();emit completed(action,repairResponse(response,arguments));
 }
 void Bridge::request(const QString &action,const QVariantMap &arguments){
- if(m_busy)return;
+ if(busy())return;
  if(m_selfCheck&&m_selfCheckResponder){auto response=m_selfCheckResponder(action,arguments);if(response.isEmpty()){m_busy=true;emit busyChanged();return;}emit completed(action,repairResponse(response,arguments));return;}
  // Preview mode never invokes the filesystem-capable Rust API.
  if(m_demo && action!="catalog" && action!="demo"){
   emit completed(action,{{"ok",false},{"error","Preview mode: no changes are made. Open normally for real setup."}});return;
  }
+ wow_update_cancel();
  auto args=arguments;args["action"]=action;auto bytes=QJsonDocument::fromVariant(args).toJson(QJsonDocument::Compact);
  m_busy=true;emit busyChanged();wow_reset_cancel();
  disconnect(&m_worker,nullptr,this,nullptr);
@@ -63,7 +67,49 @@ void Bridge::request(const QString &action,const QVariantMap &arguments){
  });
  m_worker.setFuture(QtConcurrent::run([bytes]{char *result=wow_request(bytes.constData());QByteArray reply(result);wow_free(result);return reply;}));
 }
-void Bridge::cancel(){wow_cancel();}
+void Bridge::requestUpdate(const QString &action,const QVariantMap &arguments){
+ if(m_updateBusy||busy())return;
+ if(!QStringList{"updater_status","updater_check","updater_enabled","updater_install"}.contains(action))return;
+ // No network, updater writes or replacement in previews and interface fixtures.
+ if(m_demo||m_selfCheck)return;
+ auto args=arguments;args["action"]=action;
+ auto bytes=QJsonDocument::fromVariant(args).toJson(QJsonDocument::Compact);
+ if(action=="updater_check"||action=="updater_install")wow_update_reset_cancel();
+ m_updateBusy=true;m_updateInstalling=action=="updater_install";emit updateBusyChanged();
+ if(m_updateInstalling)emit busyChanged();
+ disconnect(&m_updateWorker,nullptr,this,nullptr);
+ connect(&m_updateWorker,&QFutureWatcher<QByteArray>::finished,this,[this,action]{
+  auto result=QJsonDocument::fromJson(m_updateWorker.result()).object().toVariantMap();
+  const bool installing=m_updateInstalling;
+  const bool prepared=installing&&result.value("ok").toBool()&&result.value("data").toMap().value("restart_required").toBool();
+  m_updateBusy=false;
+  if(!prepared)m_updateInstalling=false;
+  emit updateBusyChanged();if(installing&&!prepared)emit busyChanged();
+  emit updateCompleted(action,result);
+  if(prepared)QCoreApplication::exit(42);
+ });
+ // Updater dispatch owns separate update/operation locks and never touches
+ // shared setup cancellation. Feed errors are handled quietly by the backend.
+ m_updateWorker.setFuture(QtConcurrent::run([bytes,action]{
+  char *raw=wow_request(bytes.constData());QByteArray reply(raw);wow_free(raw);
+  if(action=="updater_enabled"){
+   auto failed=QJsonDocument::fromJson(reply).object();
+   if(!failed.value("ok").toBool()){
+    char *savedRaw=wow_request("{\"action\":\"updater_status\"}");
+    auto saved=QJsonDocument::fromJson(QByteArray(savedRaw)).object();wow_free(savedRaw);
+    if(saved.value("ok").toBool()&&saved.value("data").isObject())failed.insert("persisted_status",saved.value("data"));
+    reply=QJsonDocument(failed).toJson(QJsonDocument::Compact);
+   }
+  }
+  return reply;
+ }));
+}
+bool Bridge::cancel(){
+ bool accepted=false;
+ if(m_updateBusy)accepted=wow_update_cancel()!=0;
+ if(m_busy){wow_cancel();accepted=true;}
+ return accepted;
+}
 void Bridge::copyText(const QString &text){QGuiApplication::clipboard()->setText(text);}
 static void openExternal(const QUrl &url){
  auto env=QProcessEnvironment::systemEnvironment();
@@ -72,11 +118,21 @@ static void openExternal(const QUrl &url){
   if(env.contains(saved)&&!env.value(saved).isEmpty())env.insert(key,env.value(saved));else env.remove(key);
   env.remove(saved);
  }
+ for(const auto &key:env.keys())if(key.startsWith("WOW_UPDATE_")||key.startsWith("WOW_PORTABLE_"))env.remove(key);
  QProcess process;process.setProcessEnvironment(env);process.setProgram("xdg-open");process.setArguments({url.toString()});process.startDetached();
 }
 void Bridge::openPublisher(const QString &publisher){
  const QMap<QString,QString> urls{{"battle","https://download.battle.net/en-us/desktop"},{"curseforge","https://www.curseforge.com/download/app"},{"wowup_cf","https://wowup.io/"},{"wowup_wago","https://wowup.io/"}};
  if(urls.contains(publisher))openExternal(QUrl(urls[publisher]));
+}
+void Bridge::openReleasePage(const QString &page){
+ const QString prefix="/Coaxske/wow-steamos-installer/releases/tag/";
+ const QUrl url(page,QUrl::StrictMode);
+ const QString tag=url.path().mid(prefix.size());
+ static const QRegularExpression tagPattern("^[A-Za-z0-9.-]+$");
+ if(url.isValid()&&url.scheme()=="https"&&url.host()=="github.com"&&url.port()==-1&&url.userInfo().isEmpty()&&url.query().isEmpty()&&url.fragment().isEmpty()&&url.path().startsWith(prefix)&&!tag.isEmpty()&&tagPattern.match(tag).hasMatch())
+  openExternal(url);
+ else openExternal(QUrl("https://github.com/Coaxske/wow-steamos-installer/releases"));
 }
 void Bridge::openFolder(const QString &path){openExternal(QUrl::fromLocalFile(path));}
 QString Bridge::localPath(const QUrl &url){return url.toLocalFile();}

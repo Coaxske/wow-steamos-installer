@@ -101,6 +101,21 @@ int main(int argc, char **argv) {
     if (engine.rootObjects().isEmpty()) return 3;
     auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
     if (!window) return 3;
+    if (!demo && qEnvironmentVariableIsSet("WOW_UPDATE_STARTUP_ACK")) {
+        // A replacement is ready only after the normal window lock and QML
+        // window have loaded. Rust validates the wrapper's private capability.
+        QTimer::singleShot(0, &app, [window, &app, &bridge] {
+            if (!window->isVisible()) { app.exit(4); return; }
+            char *raw = wow_request("{\"action\":\"updater_ready\"}");
+            const QByteArray response(raw); wow_free(raw);
+            if (!QJsonDocument::fromJson(response).object().value("ok").toBool()) {
+                std::cerr << "The update startup acknowledgment could not be verified.\n";
+                app.exit(4); return;
+            }
+            bridge.completeUpdateStartup();
+            QMetaObject::invokeMethod(window, "beginNormalStartup");
+        });
+    }
     if (check) {
         QVariant guidance;
         if (!QMetaObject::invokeMethod(window, "checkGuidance", Q_RETURN_ARG(QVariant, guidance)) || !guidance.toBool()) {

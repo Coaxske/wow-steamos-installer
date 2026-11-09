@@ -24,6 +24,22 @@ ApplicationWindow {
     palette.button: "#233147"
     palette.highlight: "#2b858a"
     palette.highlightedText: "#ffffff"
+    property var updateInfo: ({enabled:true,candidate:null,signing_configured:false})
+    property bool updateDismissed: false
+    property bool initialUpdateCheck: false
+    property bool updateStatusRefreshNeeded: true
+    Timer {
+        interval: 25; repeat: false
+        running: scanComplete && page==="home" && updateStatusRefreshNeeded && !backend.demo && !backend.busy && !backend.updateBusy
+        onTriggered: { updateStatusRefreshNeeded=false; backend.requestUpdate("updater_status",{}) }
+    }
+    property string updateMessage: ""
+    property bool manualUpdateFallback: false
+    Timer {
+        interval: 1000; repeat: false
+        running: scanComplete && page==="home" && !backend.demo && !backend.busy && !backend.updateBusy && !initialUpdateCheck
+        onTriggered: { initialUpdateCheck=true; backend.requestUpdate("updater_check",{}) }
+    }
     property string page: "home"
     property var history: []
     property var session: ({state:{installations:[],addon_pending:false},catalog:[],home:"",data:""})
@@ -147,7 +163,7 @@ ApplicationWindow {
         clearRepairConsent();repairReviewScopeKey="";sharedTileChoice=0;partialClients.checked=false;reviewConsent.checked=false;
     }
     function clearFolderSearch(){folderSearchPending=false;folderSearchRequested=false;folderSearchPath=""}
-    function cancelOperation(){clearFolderSearch();if(page==="pointerSteps")clearControllerFlow();abandonRepair();backend.cancel();notice="Cancellation requested. A started Steam transaction must reach a safe checkpoint."}
+    function cancelOperation(){clearFolderSearch();if(page==="pointerSteps")clearControllerFlow();abandonRepair();notice=backend.cancel()?"Cancellation requested. A started Steam transaction must reach a safe checkpoint.":"The verified installer update is already prepared and restarting."}
     function returnHome(){clearControllerFlow();abandonRepair();history=[];page="home"}
     property bool repairCheckPending: false
     property string repairCheckId: ""
@@ -210,7 +226,7 @@ ApplicationWindow {
         abandonRepair();
         if(maintenanceDialog.visible){maintenanceDialog.close();return}
         if(folderDialog.visible){folderDialog.close();return}
-        if(backend.busy){clearFolderSearch();backend.cancel();notice="Cancellation requested. If a transaction has started, setup finishes or pauses at a recoverable checkpoint.";return}
+        if(backend.busy){clearFolderSearch();notice=backend.cancel()?"Cancellation requested. If a transaction has started, setup finishes or pauses at a recoverable checkpoint.":"The verified installer update is already prepared and restarting.";return}
         if(history.length){var h=history.slice();page=h.pop();history=h}else{page="home"}
     }
     function call(action,args) {
@@ -289,8 +305,9 @@ ApplicationWindow {
         scan={steam:[{path:"/home/player/.local/share/Steam",users:["Preview profile"],protons:[{name:"proton_11",label:"Proton 11"}]}],games:[],launchers:[],warnings:[],steam_running:false}
         plan={token:"preview",kind:"setup",summary:["Create a separate Battle.net environment in your selected game folder.","Use your selected installed Proton version.","Download Blizzard’s installer over HTTPS and add its Steam tile.","Keep existing games and shortcuts in place."],removal:[],destructive:false}
     }
-    Component.onCompleted: {if(backend.demo){previewSeed();Qt.callLater(focusPage)}else call("scan")}
-    onPageChanged: {if(page==="launcherBehavior")exitConsent.checked=false;if(repairFlowActive&&["home","games","repairOptions","sharedTileUpgrade","review"].indexOf(page)<0)abandonRepair();Qt.callLater(focusPage)}
+    function beginNormalStartup(){if(!backend.demo&&!backend.startupPending)call("scan")}
+    Component.onCompleted: {if(backend.demo){previewSeed();Qt.callLater(focusPage)}else beginNormalStartup()}
+    onPageChanged: {if(page==="home")updateStatusRefreshNeeded=true;if(page==="launcherBehavior")exitConsent.checked=false;if(repairFlowActive&&["home","games","repairOptions","sharedTileUpgrade","review"].indexOf(page)<0)abandonRepair();Qt.callLater(focusPage)}
     function revealFocusedControl(){
         var item=win.activeFocusItem
         var flick=contentScroll.contentItem
@@ -311,7 +328,36 @@ ApplicationWindow {
     Connections {
         target: backend
         function onBackRequested(){win.back()}
+        function onUpdateCompleted(action,response){
+            if(!response.ok){
+                if(action==="updater_enabled"){
+                    if(response.persisted_status)updateInfo=response.persisted_status;
+                    automaticUpdateChecks.checked=Qt.binding(function(){return win.updateInfo.enabled!==false});
+                    updateMessage=response.persisted_status?"Could not save update setting. Please try again.":"Could not confirm update setting. Checks may still be enabled.";
+                    return;
+                }
+                if(action==="updater_install"){manualUpdateFallback=true;updateMessage="The update could not be installed. Your current installer is kept. Open the release page to download it by hand.";}
+                return;
+            }
+            if(action==="updater_install"){
+                var d=response.data||{};
+                manualUpdateFallback=d.manual_required===true;
+                updateMessage=d.restart_required?"The verified update is ready. Restarting the installer.":(d.message||"Your current installer is kept.");
+            } else {
+                var previousBlock=updateInfo.install_blocked_message||"";
+                if(action==="updater_status"&&response.data&&response.data.install_ready===true&&updateMessage===previousBlock){
+                    updateMessage="";manualUpdateFallback=false;
+                }
+                updateInfo=response.data||updateInfo;
+                if(action==="updater_enabled"){
+                    automaticUpdateChecks.checked=Qt.binding(function(){return win.updateInfo.enabled!==false});
+                    updateMessage="";
+                    if(updateInfo.enabled===false)updateDismissed=true;
+                }
+            }
+        }
         function onCompleted(action,response){
+            updateStatusRefreshNeeded=true;
             if(response.controller_generation!==undefined&&response.controller_generation!==controllerGeneration)return;
             if(response.repair_generation!==undefined&&(!repairFlowActive||response.repair_generation!==repairGeneration))return;
             if(action==="review_repair"&&response.repair_generation!==undefined&&repairReviewScopeKey!==repairScopeKey){abandonRepair();errorText="Installed or missing editions changed. Choose repair again.";return}
@@ -414,6 +460,26 @@ ApplicationWindow {
                     width:contentScroll.availableWidth;spacing:18
                     ColumnLayout {
                         visible:page==="home";Layout.fillWidth:true;Layout.margins:24;spacing:16
+                        ColumnLayout {
+                            objectName: "updaterNotice"
+                            visible: !!updateInfo.candidate && !updateDismissed
+                            Layout.fillWidth: true; spacing: 8
+                            InfoText { Layout.fillWidth:true; text:"A newer version is available" }
+                            InfoText { objectName:"unfinishedUpdateMessage"; Layout.fillWidth:true; visible:!!updateInfo.candidate&&updateInfo.install_ready!==true; text:updateInfo.install_blocked_message||"Finish the current operation before updating." }
+                            InfoText { Layout.fillWidth:true; visible:!!updateInfo.candidate&&updateInfo.install_ready===true&&(updateInfo.candidate.automatic_assets_available!==true||updateInfo.signing_configured!==true); text:"Automatic installation is unavailable for this release. Use View release page to download it by hand." }
+                            ActionButton { objectName:"updateNow"; text:"Update now"; primary:true; Layout.fillWidth:true; enabled:!backend.busy&&!backend.updateBusy&&!!updateInfo.candidate&&updateInfo.candidate.automatic_assets_available===true&&updateInfo.signing_configured===true&&updateInfo.install_ready===true; onClicked:backend.requestUpdate("updater_install",{token:updateInfo.candidate.token,confirmed:true}) }
+                            ActionButton { objectName:"updateNotNow"; text:"Not now"; Layout.fillWidth:true; enabled:!backend.busy&&!backend.updateBusy; onClicked:updateDismissed=true }
+                            ActionButton { objectName:"updateReleasePage"; text:"View release page"; Layout.fillWidth:true; enabled:!backend.busy; onClicked:backend.openReleasePage(updateInfo.candidate ? updateInfo.candidate.page : "") }
+                        }
+                        InfoText { visible:updateMessage!==""; Layout.fillWidth:true; text:updateMessage }
+                        ActionButton { objectName:"manualUpdateReleasePage"; visible:manualUpdateFallback; text:"View release page"; Layout.fillWidth:true; enabled:!backend.busy; onClicked:backend.openReleasePage(updateInfo.candidate ? updateInfo.candidate.page : "") }
+                        InstallerCheckBox {
+                            id:automaticUpdateChecks
+                            objectName:"automaticUpdateChecks"; text:"Check for installer updates once a day"
+                            Layout.fillWidth:true; checked:updateInfo.enabled!==false
+                            enabled:!backend.busy&&!backend.updateBusy
+                            onToggled:backend.requestUpdate("updater_enabled",{enabled:checked})
+                        }
                         ActionButton{visible:!!session.steam_restart_pending;text:"Reopen Steam desktop controls";enabled:!backend.busy;onClicked:call("reopen_steam")}
                         InfoText{visible:!!session.state_error;Layout.fillWidth:true;text:"Setup records could not be read. Resetting archives those records and unfinished plans. Your games and Steam shortcuts stay in place. Then scan to reconnect them."}
                         ActionButton{visible:!!session.state_error;Layout.fillWidth:true;text:"Reset setup records and scan again";enabled:!backend.busy;onClicked:call("reset_state",{confirm:true})}
@@ -547,7 +613,7 @@ ApplicationWindow {
                     ColumnLayout {
                         visible:page==="games";Layout.fillWidth:true;Layout.margins:24;spacing:16
                         Label{text:setupStep==="launcher"?"Install Battle.net":setupStep==="download"?"Install your games":setupStep==="restore"?"Restore your settings":setupStep==="complete"?"Your games":"Your Battle.net Steam tile";font.pixelSize:28;font.bold:true;color:"#f2f6fc"}
-                        InfoText{Layout.fillWidth:true;text:setupStep==="launcher"?"Open the installer below. Finish installing Battle.net, then close Battle.net and return here.":setupStep==="download"?(games.length?"Installed games were found. Check them below to prepare your Steam shortcuts. Open Battle.net if you need updates or another edition.":"Open Battle.net, sign in, and download the editions you chose. Use the default install folder. When downloads finish, close Battle.net and return here."):setupStep==="restore"?"Your addon and game settings were saved before reinstalling. Restore them before opening the games, or start with new settings and keep the backup for later.":setupStep==="complete"?"Open Battle.net below, choose an installed edition and press Play.":"Open Battle.net from Steam. Choose the installed edition in Battle.net and press Play. Addon-manager integration is deferred for this one-tile release. Existing addons and managers are preserved. Optional launch checks are under Advanced."}
+                        InfoText{Layout.fillWidth:true;text:setupStep==="launcher"?"Open the installer below. Finish installing Battle.net, then close Battle.net and return here.":setupStep==="download"?(games.length?"Installed games were found. Check them below to prepare your Steam shortcuts. Open Battle.net if you need updates or another edition.":"Open Battle.net, sign in, and download the editions you chose. Use the default install folder. When downloads finish, close Battle.net and return here."):setupStep==="restore"?"Your addon and game settings were saved before reinstalling. Restore them before opening the games, or start with new settings and keep the backup for later.":setupStep==="complete"?"Open Battle.net below, choose an installed edition and press Play.":"Open Battle.net from Steam. Choose the installed edition in Battle.net and press Play. Addon-manager integration is deferred for this one-tile release. Existing addons and managers are preserved."}
                         InfoText{visible:setupStep==="launcher"||setupStep==="download";Layout.fillWidth:true;text:"Keep Steam open for Deck trackpad and keyboard controls. Battle.net uses mouse/touch input. In Gaming Mode use Gaming Mode pointer setup for ordinary trackpad mouse/click; Steam-held pointer is only a temporary workaround. KDE Connect also works for text. Sign in only inside Battle.net; remembered sign-in is optional there. If Battle.net lists multiple WoW accounts, select the account that owns the intended edition before pressing Play. This installer never asks for passwords or authentication codes.";font.pixelSize:14}
                         ActionButton{visible:setupStep==="launcher"||setupStep==="download";text:setupStep==="launcher"?"Open Battle.net installer":"Open Battle.net";Layout.fillWidth:true;primary:true;enabled:!backend.busy&&!!launcherTile();onClicked:launchBattleNet()}
                         ActionButton{visible:setupStep==="launcher";text:"Battle.net is installed — continue";Layout.fillWidth:true;enabled:!backend.busy;onClicked:call("review_launcher",{id:selectedId})}
