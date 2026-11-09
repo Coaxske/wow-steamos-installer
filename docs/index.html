@@ -15,7 +15,7 @@
 <h1>Deckhand</h1>
 <p class="lead">Play World of Warcraft on Steam Deck and Bazzite.</p>
 <p>Deckhand installs Blizzard's Battle.net app, adds one Battle.net button to your Steam library, and makes your game and addon folders easy to find. It is free, and its source code is public. Not affiliated with Blizzard or Valve.</p>
-<p class="notice"><strong>This is an early test version.</strong> Candidate 50 was checked with offline and simulated tests on the Bazzite build machine. It has not been run on Steam Deck. Earlier versions were tested on a Steam Deck that already had Battle.net and WoW set up, and with a brand-new installation on a Bazzite PC. Please report problems on the <a href="https://github.com/Coaxske/wow-steamos-installer/issues">Issues page</a>.</p>
+<p class="notice"><strong>This is an early test version.</strong> Updating from Candidate 49 to Candidate 50 was tested on Bazzite and Steam Deck and worked on both. The restarted window stayed open through a 30-minute check and closed normally. Candidate 50 game and controller checks have not been run. Earlier versions were tested on a Steam Deck that already had Battle.net and WoW set up, and with a brand-new installation on a Bazzite PC. Please report problems on the <a href="https://github.com/Coaxske/wow-steamos-installer/issues">Issues page</a>.</p>
 <p><a class="download" href="https://github.com/Coaxske/wow-steamos-installer/releases/download/v0.2.0-alpha.10-candidate.50/WoW-SteamOS-Rust-Linux-x86_64">Download installer</a></p>
 <p class="filename">WoW-SteamOS-Rust-Linux-x86_64</p>
 </header>
@@ -42,7 +42,7 @@
 <p>Setup asks you to approve Battle.net&#x27;s Close after Play setting. Before changing the setting, it backs up the original Battle.net settings. An already-enabled setting can be confirmed without changing it. This affects the selected installation in both Desktop and Gaming Mode.</p>
 </section>
 <section class="card" aria-labelledby="checks"><h2 id="checks">What was checked</h2>
-<p>Candidate 50 checks cover its name, setup hint, guarded update-file cleanup and startup logs using private simulated tests on the Bazzite build machine. Candidate 50 Steam Deck, game and live GitHub update checks have not run. The following device results belong to earlier versions.</p>
+<p>Candidate 50 checks cover its name, setup hint, guarded update-file cleanup and startup logs using private simulated tests on the Bazzite build machine. Updating from Candidate 49 to Candidate 50 was tested on Bazzite and Steam Deck and worked on both. The restarted window stayed open through a 30-minute check and closed normally. Candidate 50 game and controller checks have not been run. The following device results belong to earlier versions.</p>
 <ul>
 <li>Steam Deck with Battle.net and WoW already set up: checked in Game Mode and Desktop Mode (Candidate 48).</li>
 <li>Brand-new installation: worked on a Bazzite PC (Candidate 49). Battle.net and Classic Era installed from scratch, and the game reached the character screen. Battle.net crashed the first time after sign-in and worked when opened again. Not yet tested on Steam Deck.</li>

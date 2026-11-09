@@ -2,7 +2,7 @@
 
 Play World of Warcraft on Steam Deck and Bazzite. Deckhand installs Blizzard's Battle.net app, adds one Battle.net button to your Steam library, and makes your game and addon folders easy to find. It is free, and its source code is public. Not affiliated with Blizzard or Valve.
 
-**This is an early test version.** Candidate 50 was checked with offline and simulated tests on the Bazzite build machine. It has not been run on Steam Deck. Earlier versions were tested on a Steam Deck that already had Battle.net and WoW set up, and with a brand-new installation on a Bazzite PC. Please report problems on the [Issues page](https://github.com/Coaxske/wow-steamos-installer/issues).
+**This is an early test version.** Updating from Candidate 49 to Candidate 50 was tested on Bazzite and Steam Deck and worked on both. The restarted window stayed open through a 30-minute check and closed normally. Candidate 50 game and controller checks have not been run. Earlier versions were tested on a Steam Deck that already had Battle.net and WoW set up, and with a brand-new installation on a Bazzite PC. Please report problems on the [Issues page](https://github.com/Coaxske/wow-steamos-installer/issues).
 
 ## Is it safe?
 
@@ -87,7 +87,7 @@ Read the [install and removal guide](INSTALL-AND-REMOVE.md) for backup locations
 
 ## What was checked
 
-Candidate 50 checks cover its name, setup hint, guarded update-file cleanup and startup logs using isolated profiles and private fixtures on the Bazzite build machine. Network replies, interface actions and failures were simulated; packaged signature checks, file replacement, restart and rollback used real programs with separate test keys. No Candidate 50 game, controller, Steam Deck or live GitHub update result is claimed. The Candidate 49 to Candidate 50 live update check follows review and publication.
+Candidate 50 checks cover its name, setup hint, guarded update-file cleanup and startup logs using isolated profiles and private fixtures on the Bazzite build machine. Network replies, interface actions and failures were simulated; packaged signature checks, file replacement, restart and rollback used real programs with separate test keys. Updating from Candidate 49 to Candidate 50 was tested on Bazzite and Steam Deck and worked on both. The restarted window stayed open through a 30-minute check and closed normally. Candidate 50 game and controller checks have not been run.
 
 The following device results belong to earlier versions:
 
