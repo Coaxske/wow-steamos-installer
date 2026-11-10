@@ -1844,7 +1844,15 @@ fn dispatch_inner(req: Json) -> Result<Json> {
     }
     let _lock = fsutil::Lock::acquire(&ctx.data.join("operation.lock"))?;
     if ctx.state_error
-        && !["init", "scan", "diagnostics", "reset_state", "reopen_steam"].contains(&action)
+        && ![
+            "init",
+            "scan",
+            "diagnostics",
+            "addon_guide",
+            "reset_state",
+            "reopen_steam",
+        ]
+        .contains(&action)
     {
         return Err("Saved setup records could not be read. Use Reset setup records on Home. Game files and Steam shortcuts are unchanged.".into());
     }
@@ -1884,6 +1892,7 @@ fn dispatch_inner(req: Json) -> Result<Json> {
             "guided_existing",
             "reopen_steam",
             "diagnostics",
+            "addon_guide",
             "cancel_cleanup",
             "abandon_cleanup",
         ]
@@ -2117,10 +2126,16 @@ fn dispatch_inner(req: Json) -> Result<Json> {
             Ok(json!({"backups":items,"location":ctx.data.join("settings-backups")}))
         }
         "restore_settings" => restore_settings(&mut ctx, &req),
+        "addon_guide" => {
+            let scan = discovery::scan(&ctx.home, &ctx.state)?;
+            serde_json::to_value(crate::addon_guidance::describe(&scan.games)).map_err(|_| {
+                "The optional guide could not be prepared. Your setup is unchanged.".into()
+            })
+        }
         "diagnostics" => {
             let scan = discovery::scan(&ctx.home, &ctx.state)?;
-            let v = json!({"version":VERSION,"os":std::env::consts::OS,"architecture":std::env::consts::ARCH,"native_steam_count":scan.steam.len(),"launcher_count":scan.launchers.len(),"game_editions":scan.games.iter().map(|x|x.id.clone()).collect::<Vec<_>>(),"pending_transaction":ctx.data.join("transaction.json").exists(),"pending_cleanup":ctx.data.join("cleanup.json").exists(),"events":fsutil::load::<Vec<Json>>(&ctx.data.join("events.json")).unwrap_or_default(),"note":"No account IDs, usernames, paths, raw Steam files, or game settings included."});
-            Ok(json!({"text":serde_json::to_string_pretty(&v).unwrap()}))
+            let v = json!({"version":VERSION,"os":std::env::consts::OS,"architecture":std::env::consts::ARCH,"native_steam_count":scan.steam.len(),"launcher_count":scan.launchers.len(),"game_editions":scan.games.iter().map(|x|x.id.clone()).collect::<Vec<_>>(),"pending_transaction":ctx.data.join("transaction.json").exists(),"pending_cleanup":ctx.data.join("cleanup.json").exists(),"events":[],"note":"No account IDs, usernames, paths, raw Steam files, or game settings included."});
+            Ok(json!({"text":crate::problem_report::snapshot(&ctx.data, &v)}))
         }
         _ => Err("Unknown operation".into()),
     }

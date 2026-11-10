@@ -121,9 +121,14 @@ static void openExternal(const QUrl &url){
  for(const auto &key:env.keys())if(key.startsWith("WOW_UPDATE_")||key.startsWith("WOW_PORTABLE_"))env.remove(key);
  QProcess process;process.setProcessEnvironment(env);process.setProgram("xdg-open");process.setArguments({url.toString()});process.startDetached();
 }
+QString Bridge::publisherPage(const QString &publisher) const {
+ const QMap<QString,QString> urls{{"battle","https://download.battle.net/en-us/desktop"},{"curseforge","https://www.curseforge.com/download/app"},{"gearlever","https://flathub.org/apps/it.mijorus.gearlever"},{"issues","https://github.com/Coaxske/wow-steamos-installer/issues"},{"wowup_cf","https://wowup.io/"},{"wowup_wago","https://wowup.io/"}};
+ return urls.value(publisher);
+}
 void Bridge::openPublisher(const QString &publisher){
- const QMap<QString,QString> urls{{"battle","https://download.battle.net/en-us/desktop"},{"curseforge","https://www.curseforge.com/download/app"},{"wowup_cf","https://wowup.io/"},{"wowup_wago","https://wowup.io/"}};
- if(urls.contains(publisher))openExternal(QUrl(urls[publisher]));
+ if(m_demo||m_selfCheck)return; // Previews never open another application.
+ const auto page=publisherPage(publisher);
+ if(!page.isEmpty())openExternal(QUrl(page));
 }
 void Bridge::openReleasePage(const QString &page){
  const QString prefix="/Coaxske/wow-steamos-installer/releases/tag/";

@@ -30,7 +30,7 @@ add_custom_command(OUTPUT ${RUST_LIB}
   COMMENT "Building ${WOW_BUILD_MODE} Rust core")
 add_custom_target(rust-core DEPENDS ${RUST_LIB})
 qt_add_executable(wow-steamos ui/main.cpp ui/Bridge.cpp ui/Bridge.h)
-qt_add_resources(wow-steamos "ui" PREFIX "/" FILES ${WOW_MAIN_QML} ui/ActionButton.qml ui/InstallerCheckBox.qml ui/InfoText.qml ui/Guidance.js)
+qt_add_resources(wow-steamos "ui" PREFIX "/" FILES ${WOW_MAIN_QML} ui/ActionButton.qml ui/InstallerCheckBox.qml ui/InfoText.qml ui/Guidance.js ui/CurseForgeGuide.qml)
 add_dependencies(wow-steamos rust-core)
 target_compile_definitions(wow-steamos PRIVATE WOW_ENABLE_DEVELOPER_TOOLS=$<BOOL:${WOW_ENABLE_DEVELOPER_TOOLS}>)
 target_link_libraries(wow-steamos PRIVATE ${RUST_LIB} Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Concurrent Qt6::Widgets SDL2::SDL2 pthread dl)

@@ -1,3 +1,4 @@
+pub mod addon_guidance;
 pub mod addons;
 pub mod catalog;
 mod developer_tools;
@@ -9,6 +10,7 @@ pub mod folder_links;
 pub mod fsutil;
 pub mod merge;
 pub mod model;
+pub mod problem_report;
 pub mod products;
 pub mod release;
 mod state_merge;

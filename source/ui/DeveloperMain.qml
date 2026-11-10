@@ -759,8 +759,8 @@ ApplicationWindow {
                     ColumnLayout {
                         visible:page==="diagnostics";Layout.fillWidth:true;Layout.margins:26;spacing:14
                         Label{text:"Review before sharing";font.pixelSize:28;color:"#f2f6fc"}
-                        InfoText{Layout.fillWidth:true;text:"Only version, counts, edition IDs, and pending-operation flags are included. Copying is local; nothing is automatically sent."}
-                        TextArea{Layout.fillWidth:true;text:diagnosticText;readOnly:true;wrapMode:TextEdit.Wrap;font.family:"monospace";selectByMouse:true}
+                        InfoText{Layout.fillWidth:true;text:"This is the exact text Copy diagnostic text will copy. Recognized startup messages and error codes are kept; unknown lines and private details are left out. Nothing is sent automatically."}
+                        TextArea{Layout.fillWidth:true;text:diagnosticText;textFormat:TextEdit.PlainText;readOnly:true;wrapMode:TextEdit.Wrap;font.family:"monospace";selectByMouse:true}
                         ActionButton{text:"Copy diagnostic text";onClicked:{backend.copyText(diagnosticText);notice="Diagnostic text copied."}}
                     }
                 }
