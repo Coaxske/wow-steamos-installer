@@ -2,6 +2,17 @@
 
 Play World of Warcraft on Steam Deck and Bazzite. Deckhand installs Blizzard's Battle.net app, adds one Battle.net button to your Steam library, and makes your game and addon folders easy to find. It is free, and its source code is public. Not affiliated with Blizzard or Valve.
 
+## Deckhand or NonSteamLaunchers?
+
+[NonSteamLaunchers](https://github.com/moraroy/NonSteamLaunchers-On-Steam-Deck) is a free tool that installs many game launchers, including Battle.net, and adds them to Steam. If you want several launchers, it is a good choice.
+
+Deckhand only sets up Battle.net for World of Warcraft. In return, it can:
+- repair the Battle.net button in Steam if it breaks
+- remove what it set up, with an option to back up your WoW settings and addons
+- take over a Battle.net setup that already works in Steam
+- add shortcuts to your AddOns folders
+- close the Battle.net launcher once WoW starts
+
 **This is an early test version.** Updating from Candidate 49 to Candidate 50 was tested on Bazzite and Steam Deck and worked on both. The restarted window stayed open through a 30-minute check and closed normally. Candidate 50 game and controller checks have not been run. Earlier versions were tested on a Steam Deck that already had Battle.net and WoW set up, and with a brand-new installation on a Bazzite PC. Please report problems on the [Issues page](https://github.com/Coaxske/wow-steamos-installer/issues).
 
 ## Is it safe?
