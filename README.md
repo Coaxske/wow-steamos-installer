@@ -8,8 +8,8 @@ Play World of Warcraft on Steam Deck and Bazzite. Deckhand installs Blizzard's B
 
 Deckhand only sets up Battle.net for World of Warcraft. In return, it can:
 - repair the Battle.net button in Steam if it breaks
-- remove what it set up, with backups
-- take over a Battle.net setup you already have
+- remove what it set up, with an option to back up your WoW settings and addons
+- take over a Battle.net setup that already works in Steam
 - add shortcuts to your AddOns folders
 - close the Battle.net launcher once WoW starts
 
