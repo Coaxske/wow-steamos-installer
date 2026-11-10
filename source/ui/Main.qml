@@ -88,6 +88,12 @@ ApplicationWindow {
     property string operation: ""
     property string folderPurpose: "search"
     property string diagnosticText: ""
+    property bool showOptionalCurseForge: false
+    property var addonGuide: ({folders:[], selected_by_default:false})
+    function openAddonGuide() {
+        if(backend.demo){addonGuide=({folders:[],selected_by_default:false});go("curseforgeGuide")}
+        else call("addon_guide")
+    }
     property var settingsBackups: []
     property var legacyItems: []
     property var legacySelected: []
@@ -213,6 +219,22 @@ ApplicationWindow {
         var hiddenAtHome=!firstSignInHint.visible;
         session=savedSession;selectedId=savedId;page=savedPage;
         return shown && hiddenDuringInstall && hiddenAtHome;
+    }
+    function checkReportAndGuide(){
+        if(!backend.demo)return ({ok:false});
+        var savedPage=page,savedText=diagnosticText,savedHistory=history,savedGuide=addonGuide,savedOptIn=showOptionalCurseForge;
+        var offByDefault=!showOptionalCurseForge&&!curseForgeOptIn.checked;
+        diagnosticText="Deckhand problem report\nDeckhand launcher starting.\nNative interface exited: exit status: 0.\n";
+        page="diagnostics";
+        var exactPreview=diagnosticPreview.visible&&diagnosticPreview.readOnly&&diagnosticPreview.text===diagnosticText;
+        diagnosticCopyAction.clicked();
+        var copied=diagnosticText;
+        showOptionalCurseForge=true;openAddonGuide();
+        var guideVisible=page==="curseforgeGuide"&&optionalGuideView.visible;
+        optionalGuideView.skipRequested();
+        var skipped=page==="home"&&!showOptionalCurseForge;
+        page=savedPage;diagnosticText=savedText;history=savedHistory;addonGuide=savedGuide;showOptionalCurseForge=savedOptIn;
+        return ({ok:offByDefault&&exactPreview&&guideVisible&&skipped,copied:copied});
     }
     function checkGuidance(){
         return Guide.defaultProton([{name:"Cachy-Proton"},{name:"proton_11"}])==="proton_11"
@@ -415,6 +437,7 @@ ApplicationWindow {
                 go("adopt")}
             else if(action.indexOf("review_")===0||action==="set_product"){if(action==="review_repair")clearRepairConsent();plan=d;reviewDetails=false;deletionConsent.checked=false;reviewConsent.checked=false;go("review")}
             else if(action==="diagnostics"){diagnosticText=d.text;go("diagnostics")}
+            else if(action==="addon_guide"){addonGuide=d;go("curseforgeGuide")}
             else if(action==="legacy_candidates"){legacyItems=d.items;legacySelected=[];go("legacy")}
             else if(action==="settings_backups"){settingsBackups=d.backups;settingsBackupRoot=d.location||"";go("restore")}
             else {
@@ -514,6 +537,8 @@ ApplicationWindow {
                         }
                         ActionButton{visible:!!current.id&&setupStep!=="launcher"&&setupStep!=="download";Layout.fillWidth:true;objectName:"homeRepair";text:"Repair Battle.net tile";enabled:!backend.busy;onClicked:prepareReview()}
                         ActionButton{visible:!!current.id;text:"Remove";Layout.fillWidth:true;enabled:!backend.busy;onClicked:go("remove")}
+                        InstallerCheckBox{id:curseForgeOptIn;objectName:"curseForgeOptIn";text:"Show optional CurseForge guide";Layout.fillWidth:true;checked:showOptionalCurseForge;onToggled:showOptionalCurseForge=checked}
+                        ActionButton{objectName:"openCurseForgeGuide";visible:showOptionalCurseForge;text:"Open optional guide";Layout.fillWidth:true;enabled:!backend.busy;onClicked:openAddonGuide()}
                         ActionButton{objectName:"homeAdvanced";text:"Advanced";Layout.fillWidth:true;enabled:!backend.busy;onClicked:go("help")}
                         ActionButton{visible:!!session.pending_cleanup;Layout.fillWidth:true;text:"Cancel removal before changes start";enabled:!backend.busy;onClicked:call("cancel_cleanup")}
                         InfoText{visible:!!session.pending_cleanup;Layout.fillWidth:true;text:"If continuing fails, you can stop here. Changes already saved will stay; remaining game files will be kept."}
@@ -663,6 +688,7 @@ ApplicationWindow {
                             InfoText{Layout.fillWidth:true;text:"In Desktop Mode, open this folder and extract each addon into the matching Retail AddOns, Classic Era AddOns or Forever AddOns link. Keep the addon's own folder directly inside AddOns. Links use detected folders, including connected drives; your games and addons stay in place. Missing or occupied paths are reported without overwriting content."}
                             Repeater{model:folderInfo.links||[];InfoText{required property var modelData;Layout.fillWidth:true;text:modelData.name+(modelData.pending?": pending":!modelData.owned_unchanged?": changed; preserved":!modelData.target_available?": target unavailable; reconnect its drive":"")}}
                         }
+                        ActionButton{objectName:"completionCurseForgeGuide";visible:setupStep==="complete";text:"Optional CurseForge guide";Layout.fillWidth:true;enabled:!backend.busy;onClicked:{showOptionalCurseForge=true;openAddonGuide()}}
                         InfoText{visible:setupStep==="complete";Layout.fillWidth:true;text:"Add the other supported edition later: open Battle.net for this selected copy, download Retail or Classic Era into its default folder, then close Battle.net and WoW. Review the shortcuts below. Keep this copy; do not reinstall or create another environment. The review preserves existing game files and tile identities. Reuse the single Battle.net tile and its existing controls; no extra edition tile is created."}
                         ActionButton{objectName:"addEditionReview";visible:setupStep==="complete";text:"Check for another edition and review shortcuts";Layout.fillWidth:true;enabled:!backend.busy;onClicked:prepareReview()}
                         InstallerCheckBox{text:"Advanced";checked:advanced;onToggled:advanced=checked}
@@ -760,12 +786,23 @@ ApplicationWindow {
                         }}
                         ActionButton{text:"Review selected tile removal";enabled:legacySelected.length>0&&!backend.busy;onClicked:call("review_legacy",{id:selectedId,selected:legacySelected})}
                     }
+                    CurseForgeGuide {
+                        id:optionalGuideView;objectName:"optionalGuideView";visible:page==="curseforgeGuide";Layout.fillWidth:true;Layout.margins:26
+                        guide:addonGuide;busy:backend.busy
+                        onOpenPublisherRequested:function(key){backend.openPublisher(key)}
+                        onCopyPathRequested:function(path){backend.copyText(path);notice="Folder path copied."}
+                        onRefreshRequested:openAddonGuide()
+                        onSkipRequested:{showOptionalCurseForge=false;returnHome()}
+                        onDoneRequested:returnHome()
+                    }
                     ColumnLayout {
                         visible:page==="diagnostics";Layout.fillWidth:true;Layout.margins:26;spacing:14
                         Label{text:"Review before sharing";font.pixelSize:28;color:"#f2f6fc"}
-                        InfoText{Layout.fillWidth:true;text:"Only version, counts, edition IDs, and pending-operation flags are included. Copying is local; nothing is automatically sent."}
-                        TextArea{Layout.fillWidth:true;text:diagnosticText;readOnly:true;wrapMode:TextEdit.Wrap;font.family:"monospace";selectByMouse:true}
-                        ActionButton{text:"Copy diagnostic text";onClicked:{backend.copyText(diagnosticText);notice="Diagnostic text copied."}}
+                        InfoText{Layout.fillWidth:true;text:"This is the exact text Copy diagnostic text will copy. Recognized startup messages and error codes are kept; unknown lines and private details are left out. Nothing is sent automatically."}
+                        TextArea{id:diagnosticPreview;objectName:"diagnosticPreview";Layout.fillWidth:true;text:diagnosticText;textFormat:TextEdit.PlainText;readOnly:true;wrapMode:TextEdit.Wrap;font.family:"monospace";selectByMouse:true}
+                        ActionButton{id:diagnosticCopyAction;objectName:"diagnosticCopyAction";text:"Copy diagnostic text";onClicked:{backend.copyText(diagnosticText);notice="Diagnostic text copied."}}
+                        InfoText{Layout.fillWidth:true;text:"Review the text before pasting it into an issue. Do not add raw logs or settings."}
+                        ActionButton{objectName:"openDiagnosticIssues";text:"Open Issues page";enabled:!backend.busy;onClicked:backend.openPublisher("issues")}
                     }
                 }
             }

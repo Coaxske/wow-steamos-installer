@@ -21,7 +21,7 @@ Downloads must begin at this repository's HTTPS release addresses. Every redirec
 
 The download is staged beside the portable, not in the extracted application cache. The newest verified previous executable is kept as a backup. Older completed backups and their recovery records are removed only when the updater's private ownership records and both files still match. Unrelated files, modified copies and unresolved recovery remain. If replacement or restart fails, the prior executable is retained or restored. If the new process's exit cannot be confirmed, the updater keeps recovery files and refuses an unsafe automatic rollback. Its error names the actual verified backup location when available, explains how to open a safe copy, and links to the fixed releases page. A failed update-check preference write restores the displayed switch from a fresh readback and shows an error. A folder that cannot be written requires downloading the next installer by hand.
 
-The installer contains the production public key for verifying signed updates. The private signing key is stored outside the project and is not included in any build or release file. Private automated tests use separate test keys. Published Candidate 49 live-update results are documented with their limits in ACCEPTANCE-SUMMARY.md. Candidate 50 live updating and Steam Deck checks require the later reviewed test stage. If the production key is lost or compromised, clients that cannot verify a new signature must use the project's fixed release page and manually install the reviewed replacement.
+The installer contains the production public key for verifying signed updates. The private signing key is stored outside the project and is not included in any build or release file. Private automated tests use separate test keys. Published Candidate 49 live-update results are documented with their limits in ACCEPTANCE-SUMMARY.md. Candidate 50 live results and their limits are recorded there separately. Candidate 51 has not been tested on Steam Deck. If the production key is lost or compromised, clients that cannot verify a new signature must use the project's fixed release page and manually install the reviewed replacement.
 
 Candidate 48 users must download the current installer once by hand to get the updater. Candidate 49 already includes update checks.
 
@@ -54,3 +54,13 @@ Do not upload Steam or Battle.net settings, tokens, passwords, logs, captures, d
 On the project's GitHub page, open Security and choose Report a vulnerability. Please report security issues privately rather than in a public Issue.
 
 Startup diagnostics are optional. If a native window lock is live or unverifiable, existing logs are preserved and the native window check decides whether startup can continue. Other logging failures do not by themselves prevent startup. An actually held startup logging lock still refuses a concurrent launcher.
+
+## Candidate 51 cleaned problem reports
+
+View private diagnostics prepares one local snapshot. The displayed plain text is the exact text copied to the clipboard. Known startup messages, fixed error descriptions and exit codes can be included. Unknown free text is omitted rather than copied. Paths, user and account details, emails, network addresses, hostnames and Steam IDs are not intended report fields. Keep the original logs private and review the cleaned preview before sharing it.
+
+Nothing is sent automatically. Open Issues page opens the project's ordinary Issues page without attaching the report or adding it to the address. Copying is local; pasting and submitting an issue is your choice.
+
+## Optional addon-manager guide
+
+The optional CurseForge guide starts off and does not enable the developer addon downloader. Deckhand does not download, bundle or re-host CurseForge because the publisher provides no checksum or signature for its Linux app. The guide uses fixed official publisher and Flathub pages, opened only when chosen, and shows locally detected folders. It does not install Gear Lever, Flatpak runtimes or addons.

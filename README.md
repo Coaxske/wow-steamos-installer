@@ -41,6 +41,24 @@ The installer includes the production public key for verifying signed updates. T
 
 The GitHub check requests this repository's public release list. It does not send game settings, account names or installer records. GitHub receives ordinary connection information, such as your IP address and request headers. The check identifies itself as WoW-SteamOS-Updater/1; it does not send this installer's version or device identifiers. See [security and privacy](SECURITY.md).
 
+## Candidate 51 changes under review
+
+The download above is still Candidate 50. These additions are being reviewed for Candidate 51 and are not in that download yet.
+
+### Share a cleaned problem report
+
+Open **Advanced**, then **View private diagnostics**. The preview shows exactly what **Copy diagnostic text** will copy. It includes one cleaned snapshot of the current and previous startup logs. Recognized messages and exit codes are kept; unknown free text and private details are left out. Nothing is sent automatically. Review the preview before pasting it into an issue. Keep the original logs and settings private.
+
+### Optional CurseForge help
+
+CurseForge is an optional addon manager made by another publisher. **Show optional CurseForge guide** starts off. Choosing it only makes **Open optional guide** available; it does not download or run anything. The same guide is available after setup.
+
+The guide opens the [official CurseForge download page](https://www.curseforge.com/download/app) only when requested. Choose its Linux AppImage yourself. CurseForge does not publish a checksum or signature for this download, so Deckhand does not download, bundle or re-host it. CurseForge's official Linux support is for Ubuntu; this guide does not promise support on Steam Deck or Bazzite.
+
+[Gear Lever on Flathub](https://flathub.org/apps/it.mijorus.gearlever) can add an AppImage to the desktop app menu. If you choose to install it, open Discover, search for Gear Lever, check that its source is Flathub and choose Install. Then open the downloaded AppImage with Gear Lever and choose its integration action. Deckhand does not install Gear Lever or Flatpak runtimes.
+
+The guide lists the detected game and actual AddOns folders for each installation, including available connected drives. Point CurseForge at the matching installation. Unavailable or missing folders are reported instead of guessed or created. You can continue without CurseForge.
+
 ## Leftover update files and startup logs
 
 Candidate 50 can remove abandoned temporary update files only when its private records prove that it created them and that their identities still match. Files used by an active update or unresolved recovery, backups and unrelated or changed files stay in place. Older leftovers without trustworthy ownership records may remain.

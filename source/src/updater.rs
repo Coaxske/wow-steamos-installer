@@ -1571,7 +1571,7 @@ mod tests {
     fn newest_release_without_usable_assets_still_has_manual_notice() {
         let good = release("v0.2.0-alpha.10-candidate.50", false);
         for defect in ["signature", "checksum", "host", "duplicate", "all"] {
-            let mut newer = release("v0.2.0-alpha.10-candidate.51", false);
+            let mut newer = release("v0.2.0-alpha.10-candidate.999", false);
             match defect {
                 "signature" => {
                     newer["assets"].as_array_mut().unwrap().remove(2);
@@ -1593,8 +1593,8 @@ mod tests {
             let candidate = select_release(&bytes, "0.2.0-alpha.10-candidate.49")
                 .unwrap()
                 .unwrap();
-            assert_eq!(candidate.version, "0.2.0-alpha.10-candidate.51");
-            assert_eq!(candidate.page, page("v0.2.0-alpha.10-candidate.51"));
+            assert_eq!(candidate.version, "0.2.0-alpha.10-candidate.999");
+            assert_eq!(candidate.page, page("v0.2.0-alpha.10-candidate.999"));
             assert!(!candidate.automatic_assets_available);
             assert_eq!(candidate.size, 0);
             validate_candidate(&candidate).unwrap();
@@ -1730,7 +1730,7 @@ mod tests {
     fn unset_key_refuses_install_without_network_or_portable_env() {
         let p = temp();
         let bytes =
-            serde_json::to_vec(&vec![release("v0.2.0-alpha.10-candidate.51", false)]).unwrap();
+            serde_json::to_vec(&vec![release("v0.2.0-alpha.10-candidate.999", false)]).unwrap();
         let candidate = select_release(&bytes, env!("CARGO_PKG_VERSION"))
             .unwrap()
             .unwrap();

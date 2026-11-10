@@ -1,3 +1,30 @@
+# Candidate 51 review acceptance
+
+Candidate 51 is unpublished. The new problem report and optional addon guide were checked only on the Bazzite build machine in a network-disabled container with synthetic files and disposable profiles. No working Steam, Battle.net, game installation, account or Steam Deck was used.
+
+| Check | Result and method limits |
+| --- | --- |
+| Public offline suite | PASS: 314 library tests, 41 regression tests and one developer-tool refusal test, 356 total. |
+| Developer offline suite | PASS: 314 library tests and 41 regression tests, 355 total. |
+| Formatting and strict clippy | PASS in public and developer modes. Both native builds and their offscreen self-checks passed. |
+| Problem-report unit tests | PASS: 13 tests. Synthetic private data and unknown free text are omitted; known errors, exit codes and exception codes remain readable. Tests cover unsafe links, hardlinks, permissions and size limits. File-identity guards also refuse files changed during reading; no concurrent-rotation race was injected. |
+| Optional-guide unit tests | PASS: eight tests. Core editions and distinct copies use detected canonical paths; aliases are deduplicated; case conflicts, unavailable folders and missing AddOns are reported without creating folders. |
+| Packaged fixtures | PASS: seven private scenarios using the final public-mode portable. They cover report cleaning and readable codes, a fixed saved snapshot, refused log links, three detected editions, missing AddOns, public identity/tool refusal, and offscreen preview/Copy, default-off guide, skip and publisher-page boundaries. |
+| Portable wrapper | PASS: 16 offline checks. No live update or production signing operation was performed. |
+| Source and payload | The public package reports Candidate 51 with developer tools disabled. Its source archive matches the source fingerprint. No dependencies, production verifier or runtime trust rules changed. |
+| Easy Mode | NOT IMPLEMENTED. The current flow starts Blizzard's interactive installer and later requires an installed, closed launcher. A supported one-approval vendor-installation and sign-in handoff has not been established. No Easy Mode Home action or automated full-run/reuse/resume/decline result is claimed. |
+| Actual-device acceptance | NOT RUN for Candidate 51. Steam Deck controls, real Battle.net sign-in and resume, the first-sign-in crash, CurseForge/Gear Lever installation, games and live updates remain untested by this change. |
+
+The report uses a closed message vocabulary. Unknown text is omitted rather than passed through with guessed redactions. The preview and Copy share one saved string. Each log file is checked separately for stability; this does not establish a simultaneous atomic snapshot of both logs. Missing or changing files produce a fixed notice. Nothing is sent automatically.
+
+The CurseForge guide is off by default and can be skipped. Opening it only reads detected paths. Publisher pages open only after explicit button actions. No CurseForge, Gear Lever or Flatpak runtime download or installation was performed. Official Linux support for CurseForge is limited to Ubuntu; this guide does not establish support on either target device.
+
+Two existing updater tests used a candidate number that became the current version. Their synthetic newer-release fixtures were advanced; updater production logic was unchanged.
+
+Raw records, private fixture drivers, logs and build output are excluded from GitHub. The earlier results below keep their original version and method limits.
+
+---
+
 # Candidate 50 acceptance
 
 Candidate 50 is a published pre-release. Its automated checks ran on the Bazzite build machine in an isolated container with disposable profiles. Post-publication live update results are recorded separately below for Bazzite and Steam Deck. No new Candidate 50 game, physical-controller, fresh-installation or performance result is claimed.

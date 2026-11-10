@@ -1,5 +1,9 @@
-# Deckhand Candidate 50 features and limits
+# Deckhand Candidate 51 features and limits
 
+- Candidate 51 is under review. No new Steam Deck, account sign-in, game or physical-controller result is claimed.
+- Cleaned problem-report preview and Copy use the same local snapshot, including recognized current/previous startup-log messages and exit codes. Unknown free text is omitted.
+- An optional off-by-default CurseForge guide opens official pages only when chosen and lists detected game/AddOns folders. No CurseForge or Gear Lever downloader is included.
+- Easy Mode is not included while its vendor-installation handoff is unresolved; the existing guided setup is unchanged.
 - One installer-managed Battle.net button per selected installation. Choose Retail, Classic Era or experimental Forever inside Battle.net.
 - Guided setup, missing-button repair, reviewed reuse of an existing setup, and removal with separately verified settings backups.
 - Existing launcher, prefix, Proton, settings, game files and controller layouts stay in place when reusing a setup.

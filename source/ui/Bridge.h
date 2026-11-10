@@ -53,6 +53,7 @@ public:
  Q_INVOKABLE QString classicGuideMode();
  Q_INVOKABLE void setClassicGuideMode(const QString &mode);
  Q_INVOKABLE void copyText(const QString &text);
+ QString publisherPage(const QString &publisher) const;
  Q_INVOKABLE void openPublisher(const QString &publisher);
  Q_INVOKABLE void openFolder(const QString &path);
  Q_INVOKABLE QString localPath(const QUrl &url);

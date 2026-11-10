@@ -1,4 +1,4 @@
-# Deckhand Candidate 50 features
+# Deckhand Candidate 51 features
 
 - One Battle.net Steam button, with edition selection inside Battle.net.
 - Existing guided setup, discovery, reviewed repair and removal, and game/AddOns access links.
@@ -9,4 +9,12 @@
 - Optional private startup diagnostics with one previous log, including diagnostics from a restarted installer; logging failures do not by themselves block startup.
 - The public build excludes developer capture, external input, window-reading and addon-manager download tools. Private developer builds remain separate.
 
-The release's acceptance details distinguish offline and private simulated checks from actual device results. Candidate 50 live updating and Steam Deck acceptance require their later reviewed stages. Earlier Candidate 48 and 49 records retain their original scope.
+The release's acceptance details distinguish offline and private simulated checks from actual device results. Candidate 50 live-update results and earlier Candidate 48 and 49 records retain their original scope.
+
+## Candidate 51 additions
+
+- One cleaned problem-report snapshot, including recognized current and previous startup-log lines. Unknown free text is omitted; preview and Copy match.
+- Optional, off-by-default manual CurseForge instructions with detected game/AddOns folders and explicit official-page buttons. No download or install action is added.
+- Existing guided setup, update trust rules, production verifier and developer-tool separation are retained. Easy Mode is not included pending a supported vendor handoff.
+
+No Candidate 51 Steam Deck, real sign-in, game, controller or live-update acceptance is claimed. This review uses isolated and simulated checks only.

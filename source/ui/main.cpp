@@ -1,5 +1,6 @@
 #include "Bridge.h"
 #include <QApplication>
+#include <QClipboard>
 #include <QCoreApplication>
 #include <QDir>
 #include <QJsonArray>
@@ -121,10 +122,17 @@ int main(int argc, char **argv) {
         if (!QMetaObject::invokeMethod(window, "checkGuidance", Q_RETURN_ARG(QVariant, guidance)) || !guidance.toBool()) {
             std::cerr << "Guided flow checks failed\n"; return 10;
         }
-        QTimer::singleShot(1200, &app, [window, &app] {
+        QTimer::singleShot(1200, &app, [window, &app, &bridge] {
             QVariant signInHint;
             if (!QMetaObject::invokeMethod(window, "checkFirstSignInHint", Q_RETURN_ARG(QVariant, signInHint)) || !signInHint.toBool()) {
                 std::cerr << "First-sign-in hint screen check failed\n"; app.exit(11); return;
+            }
+            if(bridge.publisherPage("curseforge")!="https://www.curseforge.com/download/app" || bridge.publisherPage("gearlever")!="https://flathub.org/apps/it.mijorus.gearlever" || bridge.publisherPage("issues")!="https://github.com/Coaxske/wow-steamos-installer/issues" || !bridge.publisherPage("https://unrelated.invalid/app").isEmpty() || !bridge.publisherPage("curseforge?download=1").isEmpty()) {
+                std::cerr << "Publisher page boundary check failed\n"; app.exit(13); return;
+            }
+            QVariant reportGuide;
+            if (!QMetaObject::invokeMethod(window, "checkReportAndGuide", Q_RETURN_ARG(QVariant, reportGuide)) || !reportGuide.toMap().value("ok").toBool() || QGuiApplication::clipboard()->text() != reportGuide.toMap().value("copied").toString()) {
+                std::cerr << "Problem report or optional guide screen check failed\n"; app.exit(12); return;
             }
             auto *back = window->findChild<QObject *>("backButton");
             auto *footer = window->findChild<QQuickItem *>("footerBar");
@@ -134,7 +142,7 @@ int main(int argc, char **argv) {
             }
             std::cout << QJsonDocument(QJsonObject{
                 {"version", QString::fromUtf8(wow_version())}, {"application_name", QCoreApplication::applicationName()}, {"window_title", window->title()}, {"qml_loaded", true},
-                {"footer_present", true}, {"first_sign_in_hint", true}, {"classic_guide_mode", window->property("classicMode").toString()}, {"demo", true}, {"hardware_tested", false}
+                {"footer_present", true}, {"first_sign_in_hint", true}, {"problem_report_preview_copy", true}, {"optional_guide_default_off_and_skip", true}, {"publisher_links_allowlist", true}, {"classic_guide_mode", window->property("classicMode").toString()}, {"demo", true}, {"hardware_tested", false}
             }).toJson(QJsonDocument::Compact).constData() << std::endl;
             app.quit();
         });
